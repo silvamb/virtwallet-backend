@@ -1,0 +1,224 @@
+service: virtwallet
+
+provider:
+  name: aws
+  runtime: nodejs12.x
+  stage: ${opt:stage, 'dev'}
+  region: ${opt:stage, 'eu-west-1'}
+  iamRoleStatements:
+    - Effect: Allow
+      Action:
+        - dynamodb:Query
+        - dynamodb:Scan
+        - dynamodb:GetItem
+        - dynamodb:PutItem
+        - dynamodb:UpdateItem
+        - dynamodb:DeleteItem
+      Resource: "arn:aws:dynamodb:${opt:region, self:provider.region}:*:table/virtwallet"
+  stackTags:
+    Project: virtwallet
+
+custom:
+  cognitoIdpArn: ${file(./config.${self:provider.stage}.yml):cognitoIdpArn}
+
+package:
+  excludeDevDependencies: true
+  individually: true
+
+functions:
+  account:
+    handler: src/lambdas/account/accountLambda.handle
+    events:
+      - http:
+          path: account
+          method: post
+          authorizer:
+            arn: ${self:custom.cognitoIdpArn}
+            scopes:
+              - email
+      - http:
+          path: account
+          method: get
+          authorizer:
+            arn: ${self:custom.cognitoIdpArn}
+            scopes:
+              - email
+      - http:
+          path: account/{accountId}
+          method: get
+          authorizer:
+            arn: ${self:custom.cognitoIdpArn}
+            scopes:
+              - email
+          parameters:
+            paths:
+              accountId: true
+      - http:
+          path: account/{accountId}
+          method: put
+          authorizer:
+            arn: ${self:custom.cognitoIdpArn}
+            scopes:
+              - email
+          parameters:
+            paths:
+              accountId: true
+      - http:
+          path: account/{accountId}
+          method: delete
+          authorizer:
+            arn: ${self:custom.cognitoIdpArn}
+            scopes:
+              - email
+          parameters:
+            paths:
+              accountId: true
+    package:
+      include:
+        - src/lambdas/account/**
+        - src/libs/*
+        - node_modules/**
+      exclude:
+        - test/**
+        - .git/**
+        - .travis.yml
+  wallet:
+    handler: src/lambdas/wallet/walletLambda.handle
+    events:
+      - http:
+          path: account/{accountId}/wallet
+          method: get
+          authorizer:
+            arn: ${self:custom.cognitoIdpArn}
+            scopes:
+              - email
+          parameters:
+            paths:
+              accountId: true
+      - http:
+          path: account/{accountId}/wallet
+          method: POST
+          authorizer:
+            arn: ${self:custom.cognitoIdpArn}
+            scopes:
+              - email
+          parameters:
+            paths:
+              accountId: true
+      - http:
+          path: account/{accountId}/wallet/{walletId}
+          method: GET
+          authorizer:
+            arn: ${self:custom.cognitoIdpArn}
+            scopes:
+              - email
+          parameters:
+            paths:
+              accountId: true
+              walletId: true
+      - http:
+          path: account/{accountId}/wallet/{walletId}
+          method: PUT
+          authorizer:
+            arn: ${self:custom.cognitoIdpArn}
+            scopes:
+              - email
+          parameters:
+            paths:
+              accountId: true
+              walletId: true
+      - http:
+          path: account/{accountId}/wallet/{walletId}
+          method: DELETE
+          authorizer:
+            arn: ${self:custom.cognitoIdpArn}
+            scopes:
+              - email
+          parameters:
+            paths:
+              accountId: true
+              walletId: true
+    package:
+      include:
+        - src/lambdas/wallet/**
+        - libs/*
+        - node_modules/**
+      exclude:
+        - test/**
+        - .git/**
+        - .travis.yml
+  transaction:
+    handler: src/lambdas/transaction/transactionLambda.handle
+    events:
+      - http:
+          path: account/{accountId}/wallet/{walletId}/transaction
+          method: GET
+          authorizer:
+            arn: ${self:custom.cognitoIdpArn}
+            scopes:
+              - email
+          parameters:
+            paths:
+              accountId: true
+              walletId: true
+      - http:
+          path: account/{accountId}/wallet/{walletId}/transaction
+          method: PUT
+          authorizer:
+            arn: ${self:custom.cognitoIdpArn}
+            scopes:
+              - email
+          parameters:
+            paths:
+              accountId: true
+              walletId: true
+            querystrings:
+              from: false
+              to: false
+      - http:
+          path: account/{accountId}/wallet/{walletId}/transaction/{transactionId}
+          method: GET
+          authorizer:
+            arn: ${self:custom.cognitoIdpArn}
+            scopes:
+              - email
+          parameters:
+            paths:
+              accountId: true
+              walletId: true
+              transactionId: true
+      - http:
+          path: account/{accountId}/wallet/{walletId}/transaction/{transactionId}
+          method: PUT
+          authorizer:
+            arn: ${self:custom.cognitoIdpArn}
+            scopes:
+              - email
+          parameters:
+            paths:
+              accountId: true
+              walletId: true
+              transactionId: true
+      - http:
+          path: account/{accountId}/wallet/{walletId}/transaction/{transactionId}
+          method: DELETE
+          authorizer:
+            arn: ${self:custom.cognitoIdpArn}
+            scopes:
+              - email
+          parameters:
+            paths:
+              accountId: true
+              walletId: true
+              transactionId: true
+    package:
+      include:
+        - src/lambdas/transaction/**
+        - libs/*
+        - node_modules/**
+      exclude:
+        - test/**
+        - .git/**
+        - .travis.yml
+plugins:
+  - serverless-mocha-plugin
