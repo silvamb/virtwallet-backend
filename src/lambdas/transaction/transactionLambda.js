@@ -6,8 +6,8 @@ exports.handle = async event => {
     
     // FIX ME change for a utility function
     const accountId = event.pathParameters ? event.pathParameters.accountId : undefined;
-    const transactionId = event.pathParameters ? event.pathParameters.transactionId : undefined;
-    const operationMap = accountId && transactionId ? transactionOperationMap : topLevelOperationMap;
+    const txId = event.pathParameters ? event.pathParameters.txId : undefined;
+    const operationMap = accountId && txId ? transactionOperationMap : topLevelOperationMap;
     const operation = operationMap.get(event.httpMethod);
 
     const response = await transactionHandler.handle(operation, event);
@@ -22,7 +22,8 @@ exports.handle = async event => {
 
 const topLevelOperationMap = new Map([
     ['GET', 'list' ],
-    ['PUT', 'create' ]
+    ['PUT', 'create' ],
+    ['DELETE', 'deleteAll']
 ]);
 
 const transactionOperationMap = new Map([

@@ -1,13 +1,13 @@
-const uuidv4 = require("uuid/v4");
 const transaction = require('../../libs/transaction');
 const Transaction = transaction.Transaction;
 const dynamodb = require('../../libs/dynamodb');
 const DynamoDb = dynamodb.DynamoDb;
 const QueryBuilder = dynamodb.QueryBuilder;
-const FilterExpressionBuilder = dynamodb.FilterExpressionBuilder;
+const ExpressionBuilder = dynamodb.ExpressionBuilder;
 const fromItem = dynamodb.fromItem;
+const SK = dynamodb.SK;
 const getPK = transaction.getPK;
-const getSK = transaction.getSK;
+const getSKAttr = transaction.getSKAttr;
 
 class TransactionHandler {
     constructor(dbClient) {
@@ -39,7 +39,8 @@ class TransactionHandler {
     
         const transactions = transactionsToAdd.transactions.map((transactionDetails) => {
             const transaction = new Transaction();
-            transaction.transactionId = transactionDetails.transactionId;
+            transaction.txId = transactionDetails.txId;
+            transaction.txDate = transactionDetails.txDate;
             transaction.accountId = accountId;
             transaction.walletId = walletId;
             transaction.dt = transactionDetails.dt;
@@ -50,10 +51,11 @@ class TransactionHandler {
             transaction.includedBy = clientId;
             transaction.category = transactionDetails.category;
             transaction.source = transactionsToAdd.source;
+            transaction.sourceType = transactionsToAdd.sourceType;
 
             // Generate the Tx ID if it is not specified.
-            if(!transaction.transactionId && generateId) {
-                transaction.transactionId = uuidv4();
+            if(!transaction.txId && generateId) {
+                transaction.txId = String(new Date().getTime());
             }
 
             return transaction;
@@ -84,29 +86,24 @@ class TransactionHandler {
 
         const accountId = event.pathParameters.accountId;
         const walletId = event.pathParameters.walletId;
-        const to = event.queryStringParameters.to;
-        const from = event.queryStringParameters.from;
+        let to = event.queryStringParameters.to;
+        let from = event.queryStringParameters.from;
 
         const pk = getPK(accountId);
-        const sk = getSK(accountId, walletId);
-        
-        const queryBuilder = new QueryBuilder(pk).withSkStartingWith(sk);
+        const queryBuilder = new QueryBuilder(pk);
 
-        if(to && from) {
-            const fromAttr = dynamodb.StringAttributeType.toAttribute(from);
-            const toAttr = dynamodb.StringAttributeType.toAttribute(to);
-            const dateFilter = new FilterExpressionBuilder().between("dt", fromAttr, toAttr).build();
-
-            queryBuilder.withFilterExpression(dateFilter);
-        } else if(to) {
-            const toAttr = dynamodb.StringAttributeType.toAttribute(to);
-            const dateFilter = new FilterExpressionBuilder().lessThanOrEqual("dt", toAttr).build();
-            queryBuilder.withFilterExpression(dateFilter);
-        } else if(from) {
-            const fromAttr = dynamodb.StringAttributeType.toAttribute(from);
-            const dateFilter = new FilterExpressionBuilder().greaterThanOrEqual("dt", fromAttr).build();
-            queryBuilder.withFilterExpression(dateFilter);
+        if(!from) {
+            from = "0000-00-00";
         }
+
+        if(!to) {
+           to = "9999-99-99";
+        }
+
+        const fromAttr = getSKAttr(from, walletId);
+        const toAttr = getSKAttr(to, walletId);
+        const skExpression = new ExpressionBuilder().between(SK, fromAttr, toAttr).build();
+        queryBuilder.withSkExpression(skExpression); 
 
         const queryData = await this.dbClient.query(queryBuilder.build());
     
@@ -114,6 +111,8 @@ class TransactionHandler {
             return fromItem(item, new Transaction());
         });
     
+        console.log(transactions);
+
         return transactions;
     }
 
@@ -127,6 +126,29 @@ class TransactionHandler {
 
     async delete(_event) {
         throw new Error("Operation TransactioHandler.delete not implemented yet");
+    }
+
+    async deleteAll(event) {
+        const clientId = event.requestContext.authorizer.claims.client_id;
+        // TODO validate if the client has permissions to access the wallet.
+    
+        console.log(event);
+
+        const accountId = event.pathParameters.accountId;
+        const walletId = event.pathParameters.walletId;
+
+        const pk = getPK(accountId);
+        const fromAttr = getSKAttr("0000-00-00", walletId);
+        const toAttr = getSKAttr("9999-99-99", walletId);
+        const skExpression = new ExpressionBuilder().between(SK, fromAttr, toAttr).build();
+        const query = new QueryBuilder(pk).withSkExpression(skExpression).returnKeys().build();
+        const queryData = await this.dbClient.query(query);
+
+        console.log(`Returned ${queryData.Items.length} items to delete`);
+
+        const deleteAllResult = await this.dbClient.deleteAll(queryData.Items);
+
+        return deleteAllResult;
     }
 }
 

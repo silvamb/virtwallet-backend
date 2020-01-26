@@ -2,13 +2,15 @@ const dynamodb = require("./dynamodb");
 
 const DEBIT_BALANCE_TYPE = 'Debit';
 const CREDIT_BALANCE_TYPE = 'Credit';
-
+const AUTO_INPUT = 'A';
+const MANUAL_INPUT = 'M';
 
 const attrTypeMap = new Map([
     ["accountId", dynamodb.StringAttributeType],
     ["walletId", dynamodb.StringAttributeType],
+    ["txDate", dynamodb.StringAttributeType],
+    ["txId", dynamodb.StringAttributeType],
     ["dt", dynamodb.StringAttributeType],
-    ["transactionId", dynamodb.StringAttributeType],
     ["value", dynamodb.NumberAttributeType],
     ["description", dynamodb.StringAttributeType],
     ["type", dynamodb.StringAttributeType],
@@ -18,6 +20,7 @@ const attrTypeMap = new Map([
     ["version", dynamodb.NumberAttributeType],
     ["category", dynamodb.StringAttributeType],
     ["source", dynamodb.StringAttributeType],
+    ["sourceType", dynamodb.StringAttributeType],
 ]);
 
 const attrsToCompare = new Set([
@@ -30,12 +33,23 @@ const attrsToCompare = new Set([
 ]);
 
 const getPK = (accountId) => `ACCOUNT#${accountId}`;
-const getSK = (accountId, walletId, transactionId) => {
-    if(transactionId) {
-        return `TRANSACTION#${accountId}#${walletId}#${transactionId}`;
-    } else {
-        return `TRANSACTION#${accountId}#${walletId}`;
+
+
+const getSK = (txDate, walletId, txId) => {
+    let sk = `TX#`;
+    
+    const skParts = [txDate, walletId, txId].filter(v => v !== undefined).join('#');
+    
+    if(skParts) {
+        sk = sk.concat(skParts);
     }
+
+    return sk;
+}
+
+const getSKAttr = (txDate, walletId, txId) => {
+    const sk = getSK(txDate, walletId, txId);
+    return dynamodb.StringAttributeType.toAttribute(sk);
 }
 
 class TransactionChangeSet {
@@ -49,9 +63,13 @@ class TransactionChangeSet {
 class Transaction {
 
     constructor() {
+        // Key Attributes
         this.accountId = "";
         this.walletId = "";
-        this.transactionId = "";
+        this.txDate = "";
+        this.txId = "";
+
+        // Attributes
         this.dt = "";
         this.value = 0.00;
         this.description = "New transaction";
@@ -62,6 +80,7 @@ class Transaction {
         this.version = 1;
         this.category = ""; // TODO transform to a Class
         this.source = "MANUAL";
+        this.sourceType = MANUAL_INPUT;
     }
 
     getHash() {
@@ -69,7 +88,7 @@ class Transaction {
     }
 
     getRange() {
-        return getSK(this.accountId, this.walletId, this.transactionId);
+        return getSK(this.txDate, this.walletId, this.txId);
     }
 
     getAttrTypeMap() {
@@ -95,5 +114,8 @@ class Transaction {
 exports.Transaction = Transaction;
 exports.DEBIT_BALANCE_TYPE = DEBIT_BALANCE_TYPE;
 exports.CREDIT_BALANCE_TYPE = CREDIT_BALANCE_TYPE;
+exports.AUTO_INPUT = AUTO_INPUT
+exports.MANUAL_INPUT = MANUAL_INPUT;
 exports.getPK = getPK;
 exports.getSK = getSK;
+exports.getSKAttr = getSKAttr;

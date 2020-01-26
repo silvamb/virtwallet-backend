@@ -1,5 +1,6 @@
 
 const TABLE_NAME = "virtwallet";
+const BATCH_SIZE = 25;
 
 class AttributeValue {
     constructor(type, value) {
@@ -88,7 +89,7 @@ class DynamoDb {
 
     async putItems(objArray) {
         const totalItems = objArray.length;
-        const itemsInParalel = totalItems >= 25 ? 25 : totalItems;
+        const itemsInParalel = totalItems >= BATCH_SIZE ? BATCH_SIZE : totalItems;
         const queues = Array(itemsInParalel).fill(0).map((_val) => []);
         const flatResult = Array(totalItems);
 
@@ -105,12 +106,12 @@ class DynamoDb {
         console.log(`Starting ${itemsInParalel} workers`);
 
         const processQueue = async (objsToAdd, worker) => {
-            console.log(`[Worker-${worker}] - Starting work. Total items to process: [${objsToAdd.length}]`);
+            console.log(`[PutItem-${worker}] - Starting work. Total items to process: [${objsToAdd.length}]`);
 
             let obj, putItemResult, originalIndex;
             for(let i = 0; i < objsToAdd.length; i++) {
                 originalIndex = (itemsInParalel * i) + worker
-                console.log(`[Worker-${worker}] - Executing putItem for item [${originalIndex}], [${i}] in this queue`);
+                console.log(`[PutItem-${worker}] - Executing item [${originalIndex}], [${i}] in this queue`);
                 obj = objsToAdd[i];
                 try {
                     putItemResult = await this.putItem(obj);
@@ -167,6 +168,39 @@ class DynamoDb {
 
         return data;
     }
+
+    async deleteAll(items) {
+        console.log("Executing delete all for items:")
+        console.log(items);
+
+        const chunks = Math.ceil(items.length/BATCH_SIZE);
+
+        const requestItems = items.map(item => {
+            return {
+                DeleteRequest: {
+                    Key: {
+                        PK: item.PK,
+                        SK: item.SK
+                    }
+                }
+            };
+        });
+
+        const params = {RequestItems: {}};
+        let itemsSlice, data, sliceStart, sliceEnd;
+
+        console.log(`Deleting ${requestItems.length} items in ${chunks} chunk(s) of ${BATCH_SIZE} max`);
+        for(let i=0; i < chunks; i++) {
+            sliceStart = i * BATCH_SIZE;
+            sliceEnd = Math.min(sliceStart + BATCH_SIZE, requestItems.length);
+            itemsSlice = requestItems.slice(sliceStart, sliceEnd);
+            params.RequestItems[TABLE_NAME] = itemsSlice;
+
+            data = await this.dynamodb.batchWriteItem(params).promise();
+            console.log(`Executed chunk ${i+1} of ${chunks}`);
+            console.log(data);
+        }
+    }
 }
 
 class QueryBuilder {
@@ -189,6 +223,16 @@ class QueryBuilder {
         return this;
     }
 
+    withSkExpression(skExpression) {
+        this.KeyConditionExpression = this.KeyConditionExpression.concat(` AND ${skExpression.expression}`);
+
+        for(let [exprAttrName, exprAttrValue] of skExpression.exprAttributes) {
+            this.ExpressionAttributeValues[exprAttrName] = exprAttrValue;
+        }
+
+        return this;
+    }
+
     withFilterExpression(filterExpression) {
         this.FilterExpression = filterExpression.expression;
 
@@ -199,18 +243,36 @@ class QueryBuilder {
         return this;
     }
 
+    withLimit(limit) {
+        this.Limit = String(limit);
+        return this;
+    }
+
+    returnAttributes(...attributes) {
+        const projectionExpression = attributes.join(",");
+
+        this.ProjectionExpression = projectionExpression;
+        this.Select = "ALL_PROJECTED_ATTRIBUTES";
+        return this;
+    }
+
+    returnKeys() {
+        this.ProjectionExpression = "PK,SK";
+        return this;
+    }
+
     build() {
         return {
             ExpressionAttributeValues: this.ExpressionAttributeValues,
             KeyConditionExpression: this.KeyConditionExpression,
             FilterExpression: this.FilterExpression,
-            Select: "ALL_ATTRIBUTES",
+            ProjectionExpression: this.ProjectionExpression,
             TableName: TABLE_NAME
         };
     }
 }
 
-class FilterExpressionBuilder {
+class ExpressionBuilder {
 
     constructor() {
         this.expression = "";
@@ -239,13 +301,13 @@ class FilterExpressionBuilder {
      * @param {AttributeValue} to 
      */
     between(attrName, from, to) {
-        console.log(`Adding filter to attribute [${attrName}]: BETWEEN [${JSON.stringify(from)} to ${JSON.stringify(to)}]`);
+        console.log(`Adding filter to attribute [${attrName}]: BETWEEN [${JSON.stringify(from)} AND ${JSON.stringify(to)}]`);
 
         const startAttr = `:${attrName}_start`;
         const endAttr = `:${attrName}_end`;
         const exprAttrToAdd = new Map([
-            [startAttr, to],
-            [endAttr, from]
+            [startAttr, from],
+            [endAttr, to]
         ]);
         const expression = `${attrName} BETWEEN ${startAttr} AND ${endAttr}`;
 
@@ -293,7 +355,7 @@ class FilterExpressionBuilder {
 
 exports.DynamoDb = DynamoDb;
 exports.QueryBuilder = QueryBuilder;
-exports.FilterExpressionBuilder = FilterExpressionBuilder;
+exports.ExpressionBuilder = ExpressionBuilder;
 exports.toItem = toItem;
 exports.fromItem = fromItem;
 exports.AttributeValue = AttributeValue;
@@ -301,3 +363,5 @@ exports.StringAttributeType = StringAttributeType;
 exports.NumberAttributeType = NumberAttributeType;
 exports.StringSetAttributeType = StringSetAttributeType;
 exports.IntegerAttributeType = IntegerAttributeType;
+exports.PK = "PK";
+exports.SK = "SK";
