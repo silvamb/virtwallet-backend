@@ -294,6 +294,14 @@ class ExpressionBuilder {
         return this;
     }
 
+    equals(name, value) {
+        const attrName = `:${name}`;
+        const expression = `${name} = ${attrName}`;
+        const exprAttrToAdd = new Map([[attrName, value]]);
+
+        return this.addExpression(expression, exprAttrToAdd);
+    }
+
     /**
      *
      * @param {string} attrName 

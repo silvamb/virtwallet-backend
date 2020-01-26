@@ -119,3 +119,4 @@ exports.MANUAL_INPUT = MANUAL_INPUT;
 exports.getPK = getPK;
 exports.getSK = getSK;
 exports.getSKAttr = getSKAttr;
+exports.getFieldAttrType = (fieldName) => attrTypeMap.get(fieldName);

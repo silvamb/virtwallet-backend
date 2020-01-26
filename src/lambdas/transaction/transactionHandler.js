@@ -90,7 +90,6 @@ class TransactionHandler {
         let from = event.queryStringParameters.from;
 
         const pk = getPK(accountId);
-        const queryBuilder = new QueryBuilder(pk);
 
         if(!from) {
             from = "0000-00-00";
@@ -100,10 +99,16 @@ class TransactionHandler {
            to = "9999-99-99";
         }
 
-        const fromAttr = getSKAttr(from, walletId);
-        const toAttr = getSKAttr(to, walletId);
+        const fromAttr = getSKAttr(from);
+        const toAttr = getSKAttr(to);
         const skExpression = new ExpressionBuilder().between(SK, fromAttr, toAttr).build();
-        queryBuilder.withSkExpression(skExpression); 
+        const queryBuilder = new QueryBuilder(pk).withSkExpression(skExpression);
+
+        if(walletId) {
+            const walletIdAttr = transaction.getFieldAttrType("walletId").toAttribute(walletId);
+            const walletFilter = new ExpressionBuilder().equals("walletId", walletIdAttr).build();
+            queryBuilder.withFilterExpression(walletFilter)
+        }
 
         const queryData = await this.dbClient.query(queryBuilder.build());
     
@@ -138,11 +143,18 @@ class TransactionHandler {
         const walletId = event.pathParameters.walletId;
 
         const pk = getPK(accountId);
-        const fromAttr = getSKAttr("0000-00-00", walletId);
-        const toAttr = getSKAttr("9999-99-99", walletId);
+        const fromAttr = getSKAttr("0000-00-00");
+        const toAttr = getSKAttr("9999-99-99");
         const skExpression = new ExpressionBuilder().between(SK, fromAttr, toAttr).build();
-        const query = new QueryBuilder(pk).withSkExpression(skExpression).returnKeys().build();
-        const queryData = await this.dbClient.query(query);
+        const queryBuilder = new QueryBuilder(pk).withSkExpression(skExpression).returnKeys();
+
+        if(walletId) {
+            const walletIdAttr = transaction.getFieldAttrType("walletId").toAttribute(walletId);
+            const walletFilter = new ExpressionBuilder().equals("walletId", walletIdAttr).build();
+            queryBuilder.withFilterExpression(walletFilter)
+        }
+
+        const queryData = await this.dbClient.query(queryBuilder.build());
 
         console.log(`Returned ${queryData.Items.length} items to delete`);
 

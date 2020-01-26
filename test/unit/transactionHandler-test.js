@@ -62,9 +62,11 @@ describe('TransactionHandler unit tests', () => {
 
             const validateParams = (params) => {
                 expect(params.ExpressionAttributeValues[":pk"].S).to.be.equal("ACCOUNT#4801b837-18c0-4277-98e9-ba57130edeb3");
-                expect(params.ExpressionAttributeValues[":SK_start"].S).to.be.equal("TX#2020-01-01#ad7d4de0-184a-4d3d-a4c8-68d5ba87b87f");
-                expect(params.ExpressionAttributeValues[":SK_end"].S).to.be.equal("TX#2020-01-18#ad7d4de0-184a-4d3d-a4c8-68d5ba87b87f");
+                expect(params.ExpressionAttributeValues[":SK_start"].S).to.be.equal("TX#2020-01-01");
+                expect(params.ExpressionAttributeValues[":SK_end"].S).to.be.equal("TX#2020-01-18");
+                expect(params.FilterExpression).to.be.equals("walletId = :walletId");
                 expect(params.KeyConditionExpression).to.be.equal("PK = :pk AND SK BETWEEN :SK_start AND :SK_end");
+                expect(params.ExpressionAttributeValues).to.deep.include({":walletId":{S: "ad7d4de0-184a-4d3d-a4c8-68d5ba87b87f"}});
             };
 
             // TODO Add this to a JSON file
@@ -270,9 +272,11 @@ describe('TransactionHandler unit tests', () => {
                 query: (params) => {
                     expect(params.KeyConditionExpression).to.be.equals("PK = :pk AND SK BETWEEN :SK_start AND :SK_end");
                     expect(params.ProjectionExpression).to.be.equals("PK,SK");
+                    expect(params.FilterExpression).to.be.equals("walletId = :walletId");
                     expect(params.ExpressionAttributeValues).to.deep.include({":pk":{S: "ACCOUNT#4801b837-18c0-4277-98e9-ba57130edeb3"}});
-                    expect(params.ExpressionAttributeValues).to.deep.include({":SK_start":{S: "TX#0000-00-00#ad7d4de0-184a-4d3d-a4c8-68d5ba87b87f"}});
-                    expect(params.ExpressionAttributeValues).to.deep.include({":SK_end":{S: "TX#9999-99-99#ad7d4de0-184a-4d3d-a4c8-68d5ba87b87f"}});
+                    expect(params.ExpressionAttributeValues).to.deep.include({":SK_start":{S: "TX#0000-00-00"}});
+                    expect(params.ExpressionAttributeValues).to.deep.include({":SK_end":{S: "TX#9999-99-99"}});
+                    expect(params.ExpressionAttributeValues).to.deep.include({":walletId":{S: "ad7d4de0-184a-4d3d-a4c8-68d5ba87b87f"}});
 
                     return {
                         promise: () => Promise.resolve(expectedQueryResult)
