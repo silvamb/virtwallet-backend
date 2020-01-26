@@ -31,10 +31,14 @@ class WalletHandler {
     
         // TODO validate if user is a member of this account
 
-        console.log(`Creating new wallet for user ${clientId} and account ${accountId}.`);
+        const pk = getPK(accountId);
+        const skPrefix = getSK(accountId);
+        const nextWalletId = await this.dynamodb.getNext(pk, skPrefix);
+        const walletId = String(nextWalletId).padStart(4, '0');
+        console.log(`Creating new wallet ${walletId} for user ${clientId} and account ${accountId}.`);
     
         const wallet = new Wallet();
-        wallet.walletId = uuidv4();
+        wallet.walletId = walletId;
         wallet.accountId = accountId;
         wallet.ownerId = clientId;
         wallet.name = walletDetails.name;

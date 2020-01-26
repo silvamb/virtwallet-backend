@@ -7,32 +7,21 @@ const WalletHandler = require('../../src/lambdas/wallet/walletHandler').WalletHa
 
 class DynamoDbMock  {
 
-    constructor(validateFunction, returnValues) {
-        this.validateFunction = validateFunction;
-        this.returnValues = returnValues;
-    }
+    setMock(functionName, validateFunction = () => true, expectedResult = {ConsumedCapacity: 1}) {
 
-    putItem(params) {
-        this.validateFunction(params);
+        this[functionName] = (params) => {
+            validateFunction(params);
 
-        return {
-            promise: () => {
-                return Promise.resolve({ ConsumedCapacity: 1 });
+            return {
+                promise: () => {
+                    return Promise.resolve(expectedResult);
+                }
             }
         }
+
+        return this;
     }
 
-    query(params) {
-        this.validateFunction(params);
-
-        return {
-            promise: () => {
-                return this.returnValues;
-            }
-        }
-    }
-
-    
 };
 
 describe('WalletHandler unit tests', () => {
@@ -62,7 +51,18 @@ describe('WalletHandler unit tests', () => {
                 body: JSON.stringify(eventBody)
             };
 
-            const validateParams = (params) => {
+            const expectedQueryParams = (params) => {
+                expect(params.ExpressionAttributeValues[":pk"].S).to.be.equal("ACCOUNT#4801b837-18c0-4277-98e9-ba57130edeb3");
+                expect(params.ExpressionAttributeValues[":sk"].S).to.be.equal("WALLET#4801b837-18c0-4277-98e9-ba57130edeb3");
+                expect(params.KeyConditionExpression).to.be.equal("PK = :pk AND begins_with(SK, :sk)");
+            };
+
+            const expectedQueryResult = {
+                Count: 1,
+                ScannedCount: 1
+            };
+
+            const expectedCreationParams = (params) => {
                 expect(params.Item.ownerId.S).to.be.equal("10v21l6b17g3t27sfbe38b0i8n");
                 expect(params.Item.accountId.S).to.be.equal("4801b837-18c0-4277-98e9-ba57130edeb3");
                 expect(params.Item.type.S).to.be.equal("checking_account");
@@ -70,11 +70,16 @@ describe('WalletHandler unit tests', () => {
                 expect(params.Item.description.S).to.be.equal("Wallet Description");
             };
 
-            const walletHandler = new WalletHandler(new DynamoDbMock(validateParams));
+            const dynamoDbMock = new DynamoDbMock()
+                .setMock('query', expectedQueryParams, expectedQueryResult)
+                .setMock('putItem', expectedCreationParams);
+
+            const walletHandler = new WalletHandler(dynamoDbMock);
             const promise = walletHandler.create(event);
             return Promise.all([
                 expect(promise).to.eventually.has.property("ownerId", "10v21l6b17g3t27sfbe38b0i8n"),
                 expect(promise).to.eventually.has.property("accountId", "4801b837-18c0-4277-98e9-ba57130edeb3"),
+                expect(promise).to.eventually.has.property("walletId", "0002"),
                 expect(promise).to.eventually.has.property("type", "checking_account"),
                 expect(promise).to.eventually.has.property("name", "Wallet Name"),
                 expect(promise).to.eventually.has.property("description", "Wallet Description")
@@ -123,7 +128,9 @@ describe('WalletHandler unit tests', () => {
                 ScannedCount: 1
             };
 
-            const walletHandler = new WalletHandler(new DynamoDbMock(validateParams, expectedResult));
+            const dynamoDbMock = new DynamoDbMock().setMock('query', validateParams, expectedResult);
+
+            const walletHandler = new WalletHandler(dynamoDbMock);
             const promise = walletHandler.list(event);
 
             // TODO Add this to a JSON file
@@ -182,7 +189,9 @@ describe('WalletHandler unit tests', () => {
             ScannedCount: 1
         };
 
-        const walletHandler = new WalletHandler(new DynamoDbMock(validateParams, expectedResult));
+        const dynamoDbMock = new DynamoDbMock().setMock('query', validateParams, expectedResult);
+
+        const walletHandler = new WalletHandler(dynamoDbMock);
         const promise = walletHandler.get(event);
 
         // TODO Add this to a JSON file

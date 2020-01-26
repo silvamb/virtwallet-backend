@@ -35,10 +35,10 @@ const attrsToCompare = new Set([
 const getPK = (accountId) => `ACCOUNT#${accountId}`;
 
 
-const getSK = (txDate, walletId, txId) => {
+const getSK = (walletId, txDate, txId) => {
     let sk = `TX#`;
     
-    const skParts = [txDate, walletId, txId].filter(v => v !== undefined).join('#');
+    const skParts = [walletId, txDate, txId].filter(v => v !== undefined).join('#');
     
     if(skParts) {
         sk = sk.concat(skParts);
@@ -47,8 +47,8 @@ const getSK = (txDate, walletId, txId) => {
     return sk;
 }
 
-const getSKAttr = (txDate, walletId, txId) => {
-    const sk = getSK(txDate, walletId, txId);
+const getSKAttr = (walletId, txDate, txId) => {
+    const sk = getSK(walletId, txDate, txId);
     return dynamodb.StringAttributeType.toAttribute(sk);
 }
 
@@ -88,7 +88,7 @@ class Transaction {
     }
 
     getRange() {
-        return getSK(this.txDate, this.walletId, this.txId);
+        return getSK(this.walletId, this.txDate, this.txId);
     }
 
     getAttrTypeMap() {

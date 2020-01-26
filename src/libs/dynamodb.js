@@ -201,6 +201,14 @@ class DynamoDb {
             console.log(data);
         }
     }
+
+    async getNext(pk, sk) {
+        const query = new QueryBuilder(pk).withSkStartingWith(sk).count().build();
+
+        const data = await this.query(query);
+
+        return data.Count + 1;
+    }
 }
 
 class QueryBuilder {
@@ -258,6 +266,11 @@ class QueryBuilder {
 
     returnKeys() {
         this.ProjectionExpression = "PK,SK";
+        return this;
+    }
+
+    count() {
+        this.Select = "COUNT";
         return this;
     }
 

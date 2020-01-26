@@ -7,6 +7,7 @@ const ExpressionBuilder = dynamodb.ExpressionBuilder;
 const fromItem = dynamodb.fromItem;
 const SK = dynamodb.SK;
 const getPK = transaction.getPK;
+const getSK = transaction.getSK;
 const getSKAttr = transaction.getSKAttr;
 
 class TransactionHandler {
@@ -86,29 +87,16 @@ class TransactionHandler {
 
         const accountId = event.pathParameters.accountId;
         const walletId = event.pathParameters.walletId;
-        let to = event.queryStringParameters.to;
-        let from = event.queryStringParameters.from;
-
         const pk = getPK(accountId);
 
-        if(!from) {
-            from = "0000-00-00";
-        }
-
-        if(!to) {
-           to = "9999-99-99";
-        }
-
-        const fromAttr = getSKAttr(from);
-        const toAttr = getSKAttr(to);
+        const to = event.queryStringParameters.to || "0000-00-00";
+        const from = event.queryStringParameters.from || "9999-99-99";
+        const fromWalletId = walletId || "0000";
+        const toWalletId = walletId || "9999";
+        const fromAttr = getSKAttr(fromWalletId, from);
+        const toAttr = getSKAttr(toWalletId, to);
         const skExpression = new ExpressionBuilder().between(SK, fromAttr, toAttr).build();
         const queryBuilder = new QueryBuilder(pk).withSkExpression(skExpression);
-
-        if(walletId) {
-            const walletIdAttr = transaction.getFieldAttrType("walletId").toAttribute(walletId);
-            const walletFilter = new ExpressionBuilder().equals("walletId", walletIdAttr).build();
-            queryBuilder.withFilterExpression(walletFilter)
-        }
 
         const queryData = await this.dbClient.query(queryBuilder.build());
     
@@ -143,18 +131,10 @@ class TransactionHandler {
         const walletId = event.pathParameters.walletId;
 
         const pk = getPK(accountId);
-        const fromAttr = getSKAttr("0000-00-00");
-        const toAttr = getSKAttr("9999-99-99");
-        const skExpression = new ExpressionBuilder().between(SK, fromAttr, toAttr).build();
-        const queryBuilder = new QueryBuilder(pk).withSkExpression(skExpression).returnKeys();
+        const sk = getSK(walletId);
+        const query = new QueryBuilder(pk).withSkStartingWith(sk).returnKeys().build();
 
-        if(walletId) {
-            const walletIdAttr = transaction.getFieldAttrType("walletId").toAttribute(walletId);
-            const walletFilter = new ExpressionBuilder().equals("walletId", walletIdAttr).build();
-            queryBuilder.withFilterExpression(walletFilter)
-        }
-
-        const queryData = await this.dbClient.query(queryBuilder.build());
+        const queryData = await this.dbClient.query(query);
 
         console.log(`Returned ${queryData.Items.length} items to delete`);
 

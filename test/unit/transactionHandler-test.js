@@ -52,7 +52,7 @@ describe('TransactionHandler unit tests', () => {
                 },
                 pathParameters: {
                     accountId: "4801b837-18c0-4277-98e9-ba57130edeb3",
-                    walletId: "ad7d4de0-184a-4d3d-a4c8-68d5ba87b87f"
+                    walletId: "0001"
                 },
                 queryStringParameters: {
                     from: "2020-01-01",
@@ -62,11 +62,9 @@ describe('TransactionHandler unit tests', () => {
 
             const validateParams = (params) => {
                 expect(params.ExpressionAttributeValues[":pk"].S).to.be.equal("ACCOUNT#4801b837-18c0-4277-98e9-ba57130edeb3");
-                expect(params.ExpressionAttributeValues[":SK_start"].S).to.be.equal("TX#2020-01-01");
-                expect(params.ExpressionAttributeValues[":SK_end"].S).to.be.equal("TX#2020-01-18");
-                expect(params.FilterExpression).to.be.equals("walletId = :walletId");
+                expect(params.ExpressionAttributeValues[":SK_start"].S).to.be.equal("TX#0001#2020-01-01");
+                expect(params.ExpressionAttributeValues[":SK_end"].S).to.be.equal("TX#0001#2020-01-18");
                 expect(params.KeyConditionExpression).to.be.equal("PK = :pk AND SK BETWEEN :SK_start AND :SK_end");
-                expect(params.ExpressionAttributeValues).to.deep.include({":walletId":{S: "ad7d4de0-184a-4d3d-a4c8-68d5ba87b87f"}});
             };
 
             // TODO Add this to a JSON file
@@ -75,9 +73,9 @@ describe('TransactionHandler unit tests', () => {
                 Items: [
                     {
                         PK: { "S": "ACCOUNT#4801b837-18c0-4277-98e9-ba57130edeb3" },
-                        SK: { "S": "TX#2020-01-01#ad7d4de0-184a-4d3d-a4c8-68d5ba87b87f#202001010001" },
+                        SK: { "S": "TX#0001#2020-01-01#202001010001" },
                         accountId: { "S": "4801b837-18c0-4277-98e9-ba57130edeb3" },
-                        walletId: { "S": "ad7d4de0-184a-4d3d-a4c8-68d5ba87b87f" },
+                        walletId: { "S": "0001" },
                         txDate: { "S": "2020-01-01" },
                         txId: { "S": "202001010001" },
                         dt: { "S": "2020-01-01T00:00:00.000Z" },
@@ -102,7 +100,7 @@ describe('TransactionHandler unit tests', () => {
             // TODO Add this to a JSON file
             const expectedList = {
                 accountId: "4801b837-18c0-4277-98e9-ba57130edeb3",
-                walletId: "ad7d4de0-184a-4d3d-a4c8-68d5ba87b87f",
+                walletId: "0001",
                 txDate: "2020-01-01",
                 txId: "202001010001",
                 dt: "2020-01-01T00:00:00.000Z",
@@ -131,9 +129,9 @@ describe('TransactionHandler unit tests', () => {
                 Attributes: [
                     {
                         PK: { "S": "ACCOUNT#4801b837-18c0-4277-98e9-ba57130edeb3" },
-                        SK: { "S": "TX#2020-01-01#ad7d4de0-184a-4d3d-a4c8-68d5ba87b87f#202001010001" },
+                        SK: { "S": "TX#0001#2020-01-01#202001010001" },
                         accountId: { "S": "4801b837-18c0-4277-98e9-ba57130edeb3" },
-                        walletId: { "S": "ad7d4de0-184a-4d3d-a4c8-68d5ba87b87f" },
+                        walletId: { "S": "0001" },
                         txDate: { "S": "2020-01-01" },
                         txId: { "S": "202001010001" },
                         dt: { "S": "2020-01-01T00:00:00.000Z" },
@@ -170,9 +168,9 @@ describe('TransactionHandler unit tests', () => {
                 Attributes: [
                     {
                         PK: { "S": "ACCOUNT#4801b837-18c0-4277-98e9-ba57130edeb3" },
-                        SK: { "S": "TX#2020-01-01#ad7d4de0-184a-4d3d-a4c8-68d5ba87b87f#202001010001" },
+                        SK: { "S": "TX#0001#2020-01-01#202001010001" },
                         accountId: { "S": "4801b837-18c0-4277-98e9-ba57130edeb3" },
-                        walletId: { "S": "ad7d4de0-184a-4d3d-a4c8-68d5ba87b87f" },
+                        walletId: { "S": "0001" },
                         txDate: { "S": "2020-01-01" },
                         txId: { "S": "202001010001" },
                         dt: { "S": "2020-01-01T00:00:00.000Z" },
@@ -218,7 +216,7 @@ describe('TransactionHandler unit tests', () => {
                 },
                 pathParameters: {
                     accountId: "4801b837-18c0-4277-98e9-ba57130edeb3",
-                    walletId: "ad7d4de0-184a-4d3d-a4c8-68d5ba87b87f"
+                    walletId: "0001"
                 }
             };
 
@@ -229,7 +227,7 @@ describe('TransactionHandler unit tests', () => {
                             "S": "ACCOUNT#4801b837-18c0-4277-98e9-ba57130edeb3"
                         },
                         "SK": {
-                            "S": "TX#2019-12-30#ad7d4de0-184a-4d3d-a4c8-68d5ba87b87f#201912300011"
+                            "S": "TX#0001#2019-12-30f#201912300011"
                         }
                     },
                     {
@@ -237,7 +235,7 @@ describe('TransactionHandler unit tests', () => {
                             "S": "ACCOUNT#4801b837-18c0-4277-98e9-ba57130edeb3"
                         },
                         "SK": {
-                            "S": "TX#2019-12-30#ad7d4de0-184a-4d3d-a4c8-68d5ba87b87f#201912300012"
+                            "S": "TX#0001#2019-12-30#201912300012"
                         }
                     }
                 ],
@@ -270,13 +268,10 @@ describe('TransactionHandler unit tests', () => {
 
             const dynamoDbMock = {
                 query: (params) => {
-                    expect(params.KeyConditionExpression).to.be.equals("PK = :pk AND SK BETWEEN :SK_start AND :SK_end");
+                    expect(params.KeyConditionExpression).to.be.equals("PK = :pk AND begins_with(SK, :sk)");
                     expect(params.ProjectionExpression).to.be.equals("PK,SK");
-                    expect(params.FilterExpression).to.be.equals("walletId = :walletId");
                     expect(params.ExpressionAttributeValues).to.deep.include({":pk":{S: "ACCOUNT#4801b837-18c0-4277-98e9-ba57130edeb3"}});
-                    expect(params.ExpressionAttributeValues).to.deep.include({":SK_start":{S: "TX#0000-00-00"}});
-                    expect(params.ExpressionAttributeValues).to.deep.include({":SK_end":{S: "TX#9999-99-99"}});
-                    expect(params.ExpressionAttributeValues).to.deep.include({":walletId":{S: "ad7d4de0-184a-4d3d-a4c8-68d5ba87b87f"}});
+                    expect(params.ExpressionAttributeValues).to.deep.include({":sk":{S: "TX#0001"}});
 
                     return {
                         promise: () => Promise.resolve(expectedQueryResult)

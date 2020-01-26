@@ -17,7 +17,17 @@ const attrTypeMap = new Map([
 
 
 const getPK = (accountId) => `ACCOUNT#${accountId}`;
-const getSK = (accountId, walletId) => `WALLET#${accountId}#${walletId}`;
+const getSK = (accountId, walletId) => {
+    let sk = `WALLET#`;
+    
+    const skParts = [accountId, walletId].filter(v => v !== undefined).join('#');
+    
+    if(skParts) {
+        sk = sk.concat(skParts);
+    }
+
+    return sk;
+}
 
 const isTypeValid = (type) => {
     return [CHECKING_ACCOUNT, CREDIT_CARD, CASH, SAVINGS_ACCOUNT].indexOf(type) >= 0;
