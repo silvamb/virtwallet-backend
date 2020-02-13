@@ -4,13 +4,15 @@ const transactionHandler = new TransactionHandler(new AWS.DynamoDB());
 
 exports.handle = async event => {
     
+    const parameters = parseEvent(event);
+
     // FIX ME change for a utility function
-    const accountId = event.pathParameters ? event.pathParameters.accountId : undefined;
-    const txId = event.pathParameters ? event.pathParameters.txId : undefined;
+    const accountId = parameters.accountId;
+    const txId = parameters.txId;
     const operationMap = accountId && txId ? transactionOperationMap : topLevelOperationMap;
     const operation = operationMap.get(event.httpMethod);
 
-    const response = await transactionHandler.handle(operation, event);
+    const response = await transactionHandler.handle(operation, parameters);
 
     try {
         return new Response(response);
@@ -19,6 +21,20 @@ exports.handle = async event => {
         return new Response({message: err.message}, 500);
     }
 };
+
+function parseEvent(event) {
+    console.log("Parsing event");
+    console.log(event);
+
+    return {
+        clientId: event.requestContext.authorizer.claims.client_id,
+        accountId: event.pathParameters.accountId,
+        walletId: event.pathParameters.walletId,
+        txId: event.pathParameters.txId,
+        transactions: event.body ? JSON.parse(event.body) : undefined,
+        queryStringParameters: event.queryStringParameters
+    };
+}
 
 const topLevelOperationMap = new Map([
     ['GET', 'list' ],

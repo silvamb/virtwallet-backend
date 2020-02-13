@@ -16,22 +16,26 @@ class TransactionHandler {
         this.dbClient = new DynamoDb(dbClient);
     }
 
-    async handle(operation, event) {
+    async handle(operation, parameters) {
         console.log(`Invoking operation TransactionHandler.${operation}`);
 
         if(!this[operation]) {
             throw new Error(`Invalid operation TransactionHandler.${operation}`);
         }
 
-        return await this[operation](event);
+        return await this[operation](parameters);
     }
 
-    async create(event) {
-        const clientId = event.requestContext.authorizer.claims.client_id;
-        const accountId = event.pathParameters.accountId;
-        const walletId = event.pathParameters.walletId;
-        const generateId = true;
-        const transactionsToAdd = JSON.parse(event.body);
+    async create(parameters) {
+        const clientId = parameters.clientId;
+        const accountId = parameters.accountId;
+        const walletId = parameters.walletId;
+        const transactionsToAdd = parameters.transactions;
+
+        let generateId = false;
+        if(parameters.queryStringParameters) {
+            generateId = parameters.queryStringParameters.generateId;
+        }
 
         // TODO validate if user is a member of this account
         // TODO validate transaction details
@@ -79,18 +83,16 @@ class TransactionHandler {
         return retVal;
     }
 
-    async list(event) {
-        const clientId = event.requestContext.authorizer.claims.client_id;
+    async list(parameters) {
         // TODO validate if the client has permissions to access the wallet.
-    
-        console.log(event);
 
-        const accountId = event.pathParameters.accountId;
-        const walletId = event.pathParameters.walletId;
+        const accountId = parameters.accountId;
+        const walletId = parameters.walletId;
+
         const pk = getPK(accountId);
 
-        const to = event.queryStringParameters.to || "0000-00-00";
-        const from = event.queryStringParameters.from || "9999-99-99";
+        const to = parameters.queryStringParameters.to || "0000-00-00";
+        const from = parameters.queryStringParameters.from || "9999-99-99";
         const fromWalletId = walletId || "0000";
         const toWalletId = walletId || "9999";
         const fromAttr = getSKAttr(fromWalletId, from);
@@ -109,26 +111,23 @@ class TransactionHandler {
         return transactions;
     }
 
-    async get(_event) {
+    async get(_parameters) {
         throw new Error("Operation TransactionHandler.get not implemented yet");
     }
 
-    async update(_event) {
+    async update(_parameters) {
         throw new Error("Operation TransactionHandler.update not implemented yet");
     }
 
-    async delete(_event) {
+    async delete(_parameters) {
         throw new Error("Operation TransactioHandler.delete not implemented yet");
     }
 
-    async deleteAll(event) {
-        const clientId = event.requestContext.authorizer.claims.client_id;
+    async deleteAll(parameters) {
         // TODO validate if the client has permissions to access the wallet.
-    
-        console.log(event);
 
-        const accountId = event.pathParameters.accountId;
-        const walletId = event.pathParameters.walletId;
+        const accountId = parameters.accountId;
+        const walletId = parameters.walletId;
 
         const pk = getPK(accountId);
         const sk = getSK(walletId);

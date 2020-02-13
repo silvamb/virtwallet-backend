@@ -16,6 +16,15 @@ provider:
         - dynamodb:DeleteItem
         - dynamodb:BatchWriteItem
       Resource: "arn:aws:dynamodb:${opt:region, self:provider.region}:*:table/virtwallet"
+    - Effect: Allow
+      Action: 
+        - sqs:SendMessage
+        - sqs:ReceiveMessage
+      Resource: "*"
+    - Effect: Allow
+      Action: 
+        - s3:GetObject
+      Resource: "arn:aws:s3:::*"
   stackTags:
     Project: virtwallet
 
@@ -232,5 +241,55 @@ functions:
         - test/**
         - .git/**
         - .travis.yml
+  fileRouter:
+    handler: src/lambdas/file-router/fileRouterLambda.handle
+    environment:
+      ulster_csv:
+        Ref: UlsterCsvParserSQSQueue
+    events:
+      - s3:
+          bucket: virtwallet-user-files
+          event: s3:ObjectCreated:*
+          rules:
+            - prefix: account-files/
+    package:
+      include:
+        - src/lambdas/file-router/**
+        - libs/*
+        - node_modules/**
+      exclude:
+        - test/**
+        - .git/**
+        - .travis.yml
+  ulsterCsvFileParser:
+    handler: src/lambdas/ulster-statement-csv-parser/ulsterStatementCsvParserLambda.handle
+    environment:
+      transaction_queue_url:
+        Ref: TransactionsSQSQueue
+    events:
+      - sqs:
+          arn:
+            Fn::GetAtt:
+              - UlsterCsvParserSQSQueue
+              - Arn
+    package:
+      include:
+        - src/lambdas/ulster-statement-csv-parser/**
+        - libs/*
+        - node_modules/**
+      exclude:
+        - test/**
+        - .git/**
+        - .travis.yml
+resources:
+  Resources:
+    UlsterCsvParserSQSQueue:
+      Type: AWS::SQS::Queue
+      Properties:
+        QueueName: UlsterCsvParserQueue
+    TransactionsSQSQueue:
+      Type: AWS::SQS::Queue
+      Properties:
+        QueueName: TransactionsQueue
 plugins:
   - serverless-mocha-plugin

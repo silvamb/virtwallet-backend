@@ -40,25 +40,15 @@ describe('TransactionHandler unit tests', () => {
     describe('list transactions tests', () => {
         it('should list transactions in a period with success', () => {
 
-            // TODO Add this to a JSON file
-            const event = {
-                httpMethod: 'GET',
-                requestContext: {
-                    authorizer: {
-                        claims: {
-                            client_id: "10v21l6b17g3t27sfbe38b0i8n"
-                        }
-                    }
-                },
-                pathParameters: {
-                    accountId: "4801b837-18c0-4277-98e9-ba57130edeb3",
-                    walletId: "0001"
-                },
+            const parameters = {
+                clientId: "10v21l6b17g3t27sfbe38b0i8n",
+                accountId: "4801b837-18c0-4277-98e9-ba57130edeb3",
+                walletId: "0001",
                 queryStringParameters: {
                     from: "2020-01-01",
                     to: "2020-01-18"
                 }
-            };
+            }
 
             const validateParams = (params) => {
                 expect(params.ExpressionAttributeValues[":pk"].S).to.be.equal("ACCOUNT#4801b837-18c0-4277-98e9-ba57130edeb3");
@@ -95,7 +85,7 @@ describe('TransactionHandler unit tests', () => {
             };
 
             const transactionHandler = new TransactionHandler(new DynamoDbMock(validateParams, expectedResult));
-            const promise = transactionHandler.list(event);
+            const promise = transactionHandler.list(parameters);
 
             // TODO Add this to a JSON file
             const expectedList = {
@@ -124,6 +114,15 @@ describe('TransactionHandler unit tests', () => {
         it('should create transactions in a bulk less than 25', () => {
             const eventJson =  fs.readFileSync('./test/unit/events/transactions_15.json');
             const event = JSON.parse(eventJson);
+
+            const parameters = {
+                clientId: event.requestContext.authorizer.claims.client_id,
+                accountId: event.pathParameters.accountId,
+                walletId: event.pathParameters.walletId,
+                txId: event.pathParameters.txId,
+                transactions: event.body ? JSON.parse(event.body) : undefined,
+                queryStringParameters: event.queryStringParameters
+            };
             
             const expectedResult = {
                 Attributes: [
@@ -155,7 +154,7 @@ describe('TransactionHandler unit tests', () => {
             };
 
             const transactionHandler = new TransactionHandler(new DynamoDbMock(validateParams, expectedResult));
-            const promise = transactionHandler.create(event);
+            const promise = transactionHandler.create(parameters);
 
             return expect(promise).to.eventually.deep.include(expectedResult);
         });
@@ -164,6 +163,15 @@ describe('TransactionHandler unit tests', () => {
             const eventJson =  fs.readFileSync('./test/unit/events/transactions_1.json');
             const event = JSON.parse(eventJson);
             
+            const parameters = {
+                clientId: event.requestContext.authorizer.claims.client_id,
+                accountId: event.pathParameters.accountId,
+                walletId: event.pathParameters.walletId,
+                txId: event.pathParameters.txId,
+                transactions: event.body ? JSON.parse(event.body) : undefined,
+                queryStringParameters: event.queryStringParameters
+            };
+
             const expectedResult = {
                 Attributes: [
                     {
@@ -196,29 +204,20 @@ describe('TransactionHandler unit tests', () => {
             };
 
             const transactionHandler = new TransactionHandler(new DynamoDbMock(validateParams, expectedResult));
-            const promise = transactionHandler.create(event);
+            const promise = transactionHandler.create(parameters);
 
             return expect(promise).to.eventually.deep.include(expectedResult);
         });
     });
 
     describe('DeleteAllTransactionTests', () => {
-        it('should delete all transactions', () => {
+        it('should delete all transactions from a wallet', () => {
             // TODO Add this to a JSON file
-            const event = {
-                httpMethod: 'DELETE',
-                requestContext: {
-                    authorizer: {
-                        claims: {
-                            client_id: "10v21l6b17g3t27sfbe38b0i8n"
-                        }
-                    }
-                },
-                pathParameters: {
-                    accountId: "4801b837-18c0-4277-98e9-ba57130edeb3",
-                    walletId: "0001"
-                }
-            };
+            const parameters = {
+                clientId: "10v21l6b17g3t27sfbe38b0i8n",
+                accountId: "4801b837-18c0-4277-98e9-ba57130edeb3",
+                walletId: "0001",
+            }
 
             const expectedQueryResult = {
                 "Items": [
@@ -288,7 +287,7 @@ describe('TransactionHandler unit tests', () => {
             }
 
             const transactionHandler = new TransactionHandler(dynamoDbMock);
-            const promise = transactionHandler.deleteAll(event);
+            const promise = transactionHandler.deleteAll(parameters);
             return expect(promise).to.eventually.be.fulfilled;
         });
     });

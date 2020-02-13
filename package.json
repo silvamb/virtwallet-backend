@@ -6,6 +6,8 @@
   "author": "Matheus Silva <crush.comp04@gmail.com>",
   "license": "GPLv3",
   "dependencies": {
+    "csv-parser": "^2.3.2",
+    "moment": "^2.24.0",
     "uuid": "^3.3.3"
   },
   "devDependencies": {
