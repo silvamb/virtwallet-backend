@@ -72,8 +72,7 @@ class TransactionHandler {
             console.log(`Persisting single transaction in DynamoDb: [${JSON.stringify(transactions[0])}]`);
             const item = await this.dbClient.putItem(transactions[0]);
 
-            console.log("Put item returned.");
-            console.log(item);
+            console.log("Put item returned", item);
 
             retVal = item;
         } else {

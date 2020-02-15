@@ -4,17 +4,17 @@ const transactionHandler = new TransactionHandler(new AWS.DynamoDB());
 
 exports.handle = async event => {
     
-    const parameters = parseEvent(event);
-
-    // FIX ME change for a utility function
-    const accountId = parameters.accountId;
-    const txId = parameters.txId;
-    const operationMap = accountId && txId ? transactionOperationMap : topLevelOperationMap;
-    const operation = operationMap.get(event.httpMethod);
-
-    const response = await transactionHandler.handle(operation, parameters);
-
     try {
+        const parameters = parseEvent(event);
+
+        // FIX ME change for a utility function
+        const accountId = parameters.accountId;
+        const txId = parameters.txId;
+        const operationMap = accountId && txId ? transactionOperationMap : topLevelOperationMap;
+        const operation = operationMap.get(event.httpMethod);
+
+        const response = await transactionHandler.handle(operation, parameters);
+
         return new Response(response);
     } catch(err) {
         console.log(err);
