@@ -124,7 +124,7 @@ describe('TransactionHandler unit tests', () => {
                 queryStringParameters: event.queryStringParameters
             };
             
-            const expectedResult = {
+            const expectedItem = {
                 Attributes: [
                     {
                         PK: { "S": "ACCOUNT#4801b837-18c0-4277-98e9-ba57130edeb3" },
@@ -153,10 +153,12 @@ describe('TransactionHandler unit tests', () => {
             const validateParams = (params) => {
             };
 
-            const transactionHandler = new TransactionHandler(new DynamoDbMock(validateParams, expectedResult));
+            const expectedResult = Array(15).fill({success: true});
+
+            const transactionHandler = new TransactionHandler(new DynamoDbMock(validateParams, expectedItem));
             const promise = transactionHandler.create(parameters);
 
-            return expect(promise).to.eventually.deep.include(expectedResult);
+            return expect(promise).to.eventually.be.deep.equals(expectedResult);
         });
 
         it('should create a single transaction', () => {

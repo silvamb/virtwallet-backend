@@ -119,8 +119,11 @@ class DynamoDb {
                 obj = objsToAdd[i];
                 try {
                     putItemResult = await this.putItem(obj, overwrite);
+                    putItemResult = new PutItemResult(putItemResult);
+                    console.log(`[PutItem-${worker}] - Item [${originalIndex}] processed with success`);
                 } catch(err) {
-                    putItemResult = err;
+                    putItemResult = new PutItemResult(err, false);
+                    console.log(`[PutItem-${worker}] - Item [${originalIndex}] processed with error`, err);
                 }
 
                 flatResult[(itemsInParalel * i) + worker] = putItemResult;
@@ -376,6 +379,15 @@ class ExpressionBuilder {
             exprAttributes: this.exprAttributes
         }
     }
+}
+
+class PutItemResult {
+
+    constructor(result, success = true) {
+        this.data = result;
+        this.success = success;
+    }
+
 }
 
 exports.DynamoDb = DynamoDb;

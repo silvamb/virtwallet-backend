@@ -74,6 +74,7 @@ class TransactionHandler {
             retVal = item;
         } else {
             retVal = await this.dbClient.putItems(transactions, overwrite);
+            retVal = retVal.map(transformPutItemsResult);
         }
 
         return retVal;
@@ -137,6 +138,19 @@ class TransactionHandler {
 
         return deleteAllResult;
     }
+}
+
+function transformPutItemsResult(result) {
+    const transformedResult = {
+        success: result.success
+    };
+
+    if(!result.success) {
+        transformedResult.code = result.data.code;
+        transformedResult.message = result.data.message;
+    }
+
+    return transformedResult;
 }
 
 exports.TransactionHandler = TransactionHandler;
