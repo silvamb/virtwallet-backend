@@ -32,7 +32,7 @@ function parseEvent(event) {
         walletId: event.pathParameters.walletId,
         txId: event.pathParameters.txId,
         transactions: event.body ? JSON.parse(event.body) : undefined,
-        queryStringParameters: event.queryStringParameters
+        generateId: 'queryStringParameters' in event && queryStringParameters.generateId
     };
 }
 

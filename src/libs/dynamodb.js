@@ -72,7 +72,7 @@ class DynamoDb {
         this.dynamodb = dynamodb;
     }
 
-    async putItem(obj) {
+    async putItem(obj, overwrite = true) {
         const item = toItem(obj);
 
         console.log(`Executing putItem, item [${JSON.stringify(item)}] `);
@@ -84,10 +84,14 @@ class DynamoDb {
             ReturnValues: "ALL_OLD"
         };
 
+        if(!overwrite) {
+            params.ConditionExpression = "attribute_not_exists(PK)";
+        }
+
         return this.dynamodb.putItem(params).promise();
     }
 
-    async putItems(objArray) {
+    async putItems(objArray, overwrite = true) {
         const totalItems = objArray.length;
         const itemsInParalel = totalItems >= BATCH_SIZE ? BATCH_SIZE : totalItems;
         const queues = Array(itemsInParalel).fill(0).map((_val) => []);
@@ -114,7 +118,7 @@ class DynamoDb {
                 console.log(`[PutItem-${worker}] - Executing item [${originalIndex}], [${i}] in this queue`);
                 obj = objsToAdd[i];
                 try {
-                    putItemResult = await this.putItem(obj);
+                    putItemResult = await this.putItem(obj, overwrite);
                 } catch(err) {
                     putItemResult = err;
                 }

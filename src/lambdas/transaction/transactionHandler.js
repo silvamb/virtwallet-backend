@@ -31,11 +31,8 @@ class TransactionHandler {
         const accountId = parameters.accountId;
         const walletId = parameters.walletId;
         const transactionsToAdd = parameters.transactions;
-
-        let generateId = false;
-        if(parameters.queryStringParameters) {
-            generateId = parameters.queryStringParameters.generateId;
-        }
+        const overwrite = !('overwrite' in parameters) || parameters.overwrite;
+        const generateId = parameters.generateId;
 
         // TODO validate if user is a member of this account
         // TODO validate transaction details
@@ -70,13 +67,13 @@ class TransactionHandler {
 
         if(transactions.length == 1) {
             console.log(`Persisting single transaction in DynamoDb: [${JSON.stringify(transactions[0])}]`);
-            const item = await this.dbClient.putItem(transactions[0]);
+            const item = await this.dbClient.putItem(transactions[0], overwrite);
 
             console.log("Put item returned", item);
 
             retVal = item;
         } else {
-            retVal = await this.dbClient.putItems(transactions);
+            retVal = await this.dbClient.putItems(transactions, overwrite);
         }
 
         return retVal;

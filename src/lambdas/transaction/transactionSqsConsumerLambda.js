@@ -42,6 +42,7 @@ function parseRecord(record) {
             source: record.fileName,
             sourceType: "A", // TODO use transaction API constants
             transactions: record.transactions,
-        }
+        },
+        overwrite: false
     };
 }
