@@ -23,8 +23,9 @@ provider:
       Resource: "*"
     - Effect: Allow
       Action: 
+        - s3:PutObject
         - s3:GetObject
-      Resource: "arn:aws:s3:::*"
+      Resource: "arn:aws:s3:::virtwallet-user-files/account-files*"
   stackTags:
     Project: virtwallet
 
@@ -151,6 +152,34 @@ functions:
     package:
       include:
         - src/lambdas/wallet/**
+        - libs/*
+        - node_modules/**
+      exclude:
+        - test/**
+        - .git/**
+        - .travis.yml
+  requestFileUpload:
+    handler: src/lambdas/request-file-upload/requestFileUploadLambda.handle
+    events:
+      - http:
+          path: account/{accountId}/wallet/{walletId}/upload/{parserId}
+          method: GET
+          authorizer:
+            arn: ${self:custom.cognitoIdpArn}
+            scopes:
+              - email
+          parameters:
+            paths:
+              accountId: true
+              walletId: true
+              parserId: true
+            querystrings:
+              fileName: true
+    environment:
+      ACCOUNT_FILES_BUCKET: virtwallet-user-files
+    package:
+      include:
+        - src/lambdas/request-file-upload/**
         - libs/*
         - node_modules/**
       exclude:
