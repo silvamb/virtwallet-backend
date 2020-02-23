@@ -1,7 +1,7 @@
-const account = require('../../libs/account');
+const account = require('libs/account');
 const Account = account.Account;
-const DynamoDb = require('../../libs/dynamodb').DynamoDb;
-const fromItem = require('../../libs/dynamodb').fromItem;
+const DynamoDb = require('libs/dynamodb').DynamoDb;
+const fromItem = require('libs/dynamodb').fromItem;
 
 class AccountHandler {
 

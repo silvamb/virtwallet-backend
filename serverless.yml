@@ -37,62 +37,6 @@ package:
   individually: true
 
 functions:
-  account:
-    handler: src/lambdas/account/accountLambda.handle
-    events:
-      - http:
-          path: account
-          method: post
-          authorizer:
-            arn: ${self:custom.cognitoIdpArn}
-            scopes:
-              - email
-      - http:
-          path: account
-          method: get
-          authorizer:
-            arn: ${self:custom.cognitoIdpArn}
-            scopes:
-              - email
-      - http:
-          path: account/{accountId}
-          method: get
-          authorizer:
-            arn: ${self:custom.cognitoIdpArn}
-            scopes:
-              - email
-          parameters:
-            paths:
-              accountId: true
-      - http:
-          path: account/{accountId}
-          method: put
-          authorizer:
-            arn: ${self:custom.cognitoIdpArn}
-            scopes:
-              - email
-          parameters:
-            paths:
-              accountId: true
-      - http:
-          path: account/{accountId}
-          method: delete
-          authorizer:
-            arn: ${self:custom.cognitoIdpArn}
-            scopes:
-              - email
-          parameters:
-            paths:
-              accountId: true
-    package:
-      include:
-        - src/lambdas/account/**
-        - src/libs/*
-        - node_modules/**
-      exclude:
-        - test/**
-        - .git/**
-        - .travis.yml
   wallet:
     handler: src/lambdas/wallet/walletLambda.handle
     events:
