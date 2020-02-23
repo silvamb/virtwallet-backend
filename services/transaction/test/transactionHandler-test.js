@@ -4,7 +4,7 @@ chai.use(chaiAsPromised);
 const expect = chai.expect;
 const fs = require('fs');
 
-const TransactionHandler = require('../../src/lambdas/transaction/transactionHandler').TransactionHandler;
+const TransactionHandler = require('../src/transactionHandler').TransactionHandler;
 
 async function waitAndReturn(maxTime, retVal) {
     return new Promise(resolve => {
@@ -112,7 +112,7 @@ describe('TransactionHandler unit tests', () => {
 
     describe('CreateTransactionTests', () => {
         it('should create transactions in a bulk less than 25', () => {
-            const eventJson =  fs.readFileSync('./test/unit/events/transactions_15.json');
+            const eventJson =  fs.readFileSync('./test/events/transactions_15.json');
             const event = JSON.parse(eventJson);
 
             const parameters = {
@@ -162,7 +162,7 @@ describe('TransactionHandler unit tests', () => {
         });
 
         it('should create a single transaction', () => {
-            const eventJson =  fs.readFileSync('./test/unit/events/transactions_1.json');
+            const eventJson =  fs.readFileSync('./test/events/transactions_1.json');
             const event = JSON.parse(eventJson);
             
             const parameters = {

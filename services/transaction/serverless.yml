@@ -1,0 +1,39 @@
+service: virtwallet-transaction
+
+provider:
+  name: aws
+  runtime: nodejs12.x
+  stage: ${opt:stage, 'dev'}
+  region: ${opt:stage, 'eu-west-1'}
+  apiGateway:
+    restApiId:
+      'Fn::ImportValue': Virtwallet-${self:provider.stage}-RestApiId
+    restApiRootResourceId:
+      'Fn::ImportValue': Virtwallet-${self:provider.stage}-RootResourceId
+    restApiResources:
+      '/account': 
+        'Fn::ImportValue': Virtwallet-${self:provider.stage}-ApiGatewayAccountResourceId
+      '/account/{accountId}': 
+        'Fn::ImportValue': Virtwallet-${self:provider.stage}-ApiGatewayAccountAccountIdVarResourceId
+      '/account/{accountId}/wallet': 
+        'Fn::ImportValue': Virtwallet-${self:provider.stage}-ApiGatewayWalletResourceId
+      '/account/{accountId}/wallet/{walletId}': 
+        'Fn::ImportValue': Virtwallet-${self:provider.stage}-ApiGatewayWalletWalletIdVarResourceId
+  stackTags:
+    Project: virtwallet
+    Service: transaction
+
+custom:
+  restApiAuthorizerId: '${cf:virtwallet-rest-api-${self:provider.stage}.VirtwalletRestApiAuthorizerId}'
+
+package:
+  excludeDevDependencies: true
+  exclude:
+    - .git/**
+    - test/**
+    - '*.yml'
+    - '*.json'
+
+functions: ${file(./sls-functions.yml)}
+plugins:
+  - serverless-iam-roles-per-function
