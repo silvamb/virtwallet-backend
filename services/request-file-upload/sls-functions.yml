@@ -1,0 +1,27 @@
+apigw-event-handler:
+  handler: src/requestFileUploadLambda.handle
+  events:
+    - http:
+        path: account/{accountId}/wallet/{walletId}/upload/{parserId}
+        method: GET
+        authorizer:
+          type: COGNITO_USER_POOLS
+          authorizerId: ${self:custom.restApiAuthorizerId}
+          scopes:
+            - email
+        parameters:
+          paths:
+            accountId: true
+            walletId: true
+            parserId: true
+          querystrings:
+            fileName: true
+  environment:
+    ACCOUNT_FILES_BUCKET: virtwallet-user-files
+  iamRoleStatementsName: virtwallet-request-file-upload-${self:provider.stage}-iam-role
+  iamRoleStatements:
+    - Effect: Allow
+      Action: 
+        - s3:PutObject
+        - s3:GetObject
+      Resource: "arn:aws:s3:::virtwallet-user-files/account-files*"

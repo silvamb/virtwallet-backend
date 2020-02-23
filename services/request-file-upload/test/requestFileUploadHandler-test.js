@@ -1,7 +1,7 @@
 const chai = require("chai");
 const expect = chai.expect;
 
-const requestFileUploadHandler = require('../../src/lambdas/request-file-upload/requestFileUploadHandler');
+const requestFileUploadHandler = require('../src/requestFileUploadHandler');
 const S3FileHandler = requestFileUploadHandler.S3FileHandler;
 const CreateFileUrlParameters = requestFileUploadHandler.CreateFileUrlParameters;
 

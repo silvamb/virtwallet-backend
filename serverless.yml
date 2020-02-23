@@ -37,34 +37,6 @@ package:
   individually: true
 
 functions:
-  requestFileUpload:
-    handler: src/lambdas/request-file-upload/requestFileUploadLambda.handle
-    events:
-      - http:
-          path: account/{accountId}/wallet/{walletId}/upload/{parserId}
-          method: GET
-          authorizer:
-            arn: ${self:custom.cognitoIdpArn}
-            scopes:
-              - email
-          parameters:
-            paths:
-              accountId: true
-              walletId: true
-              parserId: true
-            querystrings:
-              fileName: true
-    environment:
-      ACCOUNT_FILES_BUCKET: virtwallet-user-files
-    package:
-      include:
-        - src/lambdas/request-file-upload/**
-        - libs/*
-        - node_modules/**
-      exclude:
-        - test/**
-        - .git/**
-        - .travis.yml
   fileRouter:
     handler: src/lambdas/file-router/fileRouterLambda.handle
     environment:
