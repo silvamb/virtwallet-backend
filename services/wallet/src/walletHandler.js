@@ -1,8 +1,7 @@
-const uuidv4 = require("uuid/v4");
-const wallet = require('../../libs/wallet');
+const wallet = require('libs/wallet');
 const Wallet = wallet.Wallet;
-const DynamoDb = require('../../libs/dynamodb').DynamoDb;
-const fromItem = require('../../libs/dynamodb').fromItem;
+const DynamoDb = require('libs/dynamodb').DynamoDb;
+const fromItem = require('libs/dynamodb').fromItem;
 const getPK = wallet.getPK;
 const getSK = wallet.getSK;
 

@@ -3,7 +3,7 @@ const chaiAsPromised = require("chai-as-promised");
 chai.use(chaiAsPromised);
 const expect = chai.expect;
 
-const WalletHandler = require('../../src/lambdas/wallet/walletHandler').WalletHandler;
+const WalletHandler = require('../src/walletHandler').WalletHandler;
 
 class DynamoDbMock  {
 

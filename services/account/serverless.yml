@@ -28,3 +28,16 @@ package:
 functions: ${file(./sls-functions.yml)}
 plugins:
   - serverless-iam-roles-per-function
+
+resources:
+  Outputs:
+    ApiGatewayAccountResourceId:
+      Description: Id of '/account' resource created
+      Value: !Ref ApiGatewayResourceAccount
+      Export:
+        Name: Virtwallet-${self:provider.stage}-ApiGatewayAccountResourceId
+    ApiGatewayAccountAccountIdVarResourceId:
+      Description: Id of '/account/{accountId}' resource created
+      Value: !Ref ApiGatewayResourceAccountAccountidVar
+      Export:
+        Name: Virtwallet-${self:provider.stage}-ApiGatewayAccountAccountIdVarResourceId
