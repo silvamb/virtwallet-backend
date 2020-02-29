@@ -2,9 +2,9 @@ const chai = require("chai");
 const chaiAsPromised = require("chai-as-promised");
 chai.use(chaiAsPromised);
 const expect = chai.expect;
-const fs = require('fs')
+const fs = require('fs');
 
-const ulsterCsvParserHandler = require('../../src/lambdas/ulster-statement-csv-parser/ulsterStatementCsvParserHandler');
+const ulsterCsvParserHandler = require('../src/ulsterStatementCsvParserHandler');
 
 const UlsterStatementCsvParserHandler = ulsterCsvParserHandler.UlsterCsvParserHandler;
 
@@ -12,7 +12,7 @@ process.env.transaction_queue_url = "arn:aws:sqs:us-east-1:123456789:myqueue";
 
 describe('UlsterStatementCsvParserHandlerTest', () => {
     it('should parse file with success', () => {
-        const fileStream = fs.createReadStream('./test/unit/csv/ACCOUNTNAME12345678-20200105.csv');
+        const fileStream = fs.createReadStream('./test/csv/ACCOUNTNAME12345678-20200105.csv');
         const expectedBucket = "someS3Bucket";
         const expectedKey = "s3Key";
 

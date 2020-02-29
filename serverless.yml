@@ -37,26 +37,6 @@ package:
   individually: true
 
 functions:
-  ulsterCsvFileParser:
-    handler: src/lambdas/ulster-statement-csv-parser/ulsterStatementCsvParserLambda.handle
-    environment:
-      transaction_queue_url:
-        Ref: TransactionsSQSQueue
-    events:
-      - sqs:
-          arn:
-            Fn::GetAtt:
-              - UlsterCsvParserSQSQueue
-              - Arn
-    package:
-      include:
-        - src/lambdas/ulster-statement-csv-parser/**
-        - libs/*
-        - node_modules/**
-      exclude:
-        - test/**
-        - .git/**
-        - .travis.yml
   transactionSqsConsumer:
     handler: src/lambdas/transaction/transactionSqsConsumerLambda.handle
     events:

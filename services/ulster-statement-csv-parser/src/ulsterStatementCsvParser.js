@@ -5,7 +5,7 @@ const stream = require('stream');
 const util = require('util');
 const finished = util.promisify(stream.finished);
 
-const transaction = require('../../libs/transaction');
+const transaction = require('libs/transaction');
 const Transaction = transaction.Transaction;
 const DEBIT_BALANCE_TYPE = transaction.DEBIT_BALANCE_TYPE;
 const CREDIT_BALANCE_TYPE = transaction.CREDIT_BALANCE_TYPE;
