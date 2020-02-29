@@ -15,7 +15,7 @@ provider:
     Service: account
 
 custom:
-  restApiAuthorizerId: '${cf:virtwallet-rest-api-${self:provider.stage}.VirtwalletRestApiAuthorizerId}'
+  restApiAuthorizerId: '${cf:virtwallet-resources-${self:provider.stage}.VirtwalletRestApiAuthorizerId}'
 
 package:
   excludeDevDependencies: true

@@ -1,0 +1,92 @@
+service: virtwallet-resources
+
+provider:
+  name: aws
+  runtime: nodejs12.x
+  stage: ${opt:stage, 'dev'}
+  region: ${opt:stage, 'eu-west-1'}
+  stackTags:
+    Project: virtwallet
+    Service: resources
+
+resources:
+  Resources:
+    VirtwalletRestApiGW:
+      Type: AWS::ApiGateway::RestApi
+      Properties:
+        Name: VirtwalletApi-${self:provider.stage}
+    
+    VirtwalletRestApiAuthorizer:
+      Type: AWS::ApiGateway::Authorizer
+      Properties:
+        Name: cognito-${opt:stage, self:provider.stage}
+        Type: COGNITO_USER_POOLS
+        IdentitySource: method.request.header.Authorization
+        ProviderARNs:
+          - ${file(../../config.${self:provider.stage}.yml):cognitoIdpArn}
+        RestApiId:
+          Ref: VirtwalletRestApiGW
+
+    UserFilesBucket:
+      Type: AWS::S3::Bucket
+      Properties:
+        BucketName: ${file(../../config.${self:provider.stage}.yml):userFilesBucket}
+
+    UlsterCsvParserSQSQueue:
+      Type: AWS::SQS::Queue
+      Properties:
+        QueueName: virtwallet-${opt:stage, self:provider.stage}-ulsterCsvParserQueue
+
+    TransactionsSQSQueue:
+      Type: AWS::SQS::Queue
+      Properties:
+        QueueName: virtwallet-${opt:stage, self:provider.stage}-transactionsQueue
+
+  Outputs:
+    VirtwalletRestApiId:
+      Value:
+        Ref: VirtwalletRestApiGW
+      Export:
+        Name: Virtwallet-${self:provider.stage}-RestApiId
+
+    VirtwalletRestApiRootResourceId:
+      Value:
+        Fn::GetAtt:
+          - VirtwalletRestApiGW
+          - RootResourceId
+      Export:
+        Name: Virtwallet-${self:provider.stage}-RootResourceId
+
+    VirtwalletRestApiAuthorizerId:
+      Value:
+        Ref: VirtwalletRestApiAuthorizer
+      Export:
+        Name: Virtwallet-${self:provider.stage}-RestApiAuthorizerId
+
+    UlsterCsvParserQueueArn:
+      Value:
+        Fn::GetAtt:
+          - UlsterCsvParserSQSQueue
+          - Arn
+      Export:
+        Name: Virtwallet-${self:provider.stage}-UlsterCsvParserQueueArn
+    
+    UlsterCsvParserQueueUrl:
+      Value:
+        Ref: UlsterCsvParserSQSQueue
+      Export:
+        Name: Virtwallet-${self:provider.stage}-UlsterCsvParserQueueUrl
+
+    TransactionQueueUrl:
+      Value:
+        Ref: TransactionsSQSQueue
+      Export:
+        Name: Virtwallet-${self:provider.stage}-TransactionQueueUrl
+
+    TransactionQueueArn:
+      Value:
+        Fn::GetAtt:
+          - TransactionsSQSQueue
+          - Arn
+      Export:
+        Name: Virtwallet-${self:provider.stage}-TransactionQueueArn
