@@ -1,0 +1,28 @@
+service: virtwallet-parser-router
+
+provider:
+  name: aws
+  runtime: nodejs12.x
+  stage: ${opt:stage, 'dev'}
+  region: ${opt:stage, 'eu-west-1'}
+  stackTags:
+    Project: virtwallet
+    Service: parser-router
+
+custom:
+  userFilesBucket: ${file(../../config.${self:provider.stage}.yml):userFilesBucket}
+  ulsterCsvParserSQSQueueArn: '${cf:virtwallet-resources-${self:provider.stage}.UlsterCsvParserQueueArn}'
+  ulsterCsvParserSQSQueueUrl: '${cf:virtwallet-resources-${self:provider.stage}.UlsterCsvParserQueueUrl}'
+
+package:
+  excludeDevDependencies: true
+  exclude:
+    - .git/**
+    - test/**
+    - '*.yml'
+    - '*.json'
+
+functions: ${file(./sls-functions.yml)}
+
+plugins:
+  - serverless-iam-roles-per-function

@@ -3,7 +3,7 @@ const chaiAsPromised = require("chai-as-promised");
 chai.use(chaiAsPromised);
 const expect = chai.expect;
 
-const FileRouter = require('../../src/lambdas/file-router/fileRouterHandler').FileRouter;
+const FileRouter = require('../src/fileRouterHandler').FileRouter;
 
 process.env.ulster_csv_parser = "arn:aws:sqs:us-east-1:123456789:myqueue";
 

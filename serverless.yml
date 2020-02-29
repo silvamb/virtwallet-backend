@@ -37,26 +37,6 @@ package:
   individually: true
 
 functions:
-  fileRouter:
-    handler: src/lambdas/file-router/fileRouterLambda.handle
-    environment:
-      ulster_csv:
-        Ref: UlsterCsvParserSQSQueue
-    events:
-      - s3:
-          bucket: virtwallet-user-files
-          event: s3:ObjectCreated:*
-          rules:
-            - prefix: account-files/
-    package:
-      include:
-        - src/lambdas/file-router/**
-        - libs/*
-        - node_modules/**
-      exclude:
-        - test/**
-        - .git/**
-        - .travis.yml
   ulsterCsvFileParser:
     handler: src/lambdas/ulster-statement-csv-parser/ulsterStatementCsvParserLambda.handle
     environment:
