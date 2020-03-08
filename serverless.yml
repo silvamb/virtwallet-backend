@@ -36,25 +36,6 @@ package:
   excludeDevDependencies: true
   individually: true
 
-functions:
-  transactionSqsConsumer:
-    handler: src/lambdas/transaction/transactionSqsConsumerLambda.handle
-    events:
-      - sqs:
-          arn:
-            Fn::GetAtt:
-              - TransactionsSQSQueue
-              - Arn
-    package:
-      include:
-        - src/lambdas/transaction/transactionSqsConsumerLambda.js
-        - src/lambdas/transaction/transactionHandler.js
-        - libs/*
-        - node_modules/**
-      exclude:
-        - test/**
-        - .git/**
-        - .travis.yml
 resources:
   Resources:
     UlsterCsvParserSQSQueue:

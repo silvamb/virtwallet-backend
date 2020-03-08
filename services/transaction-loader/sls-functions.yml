@@ -1,0 +1,15 @@
+sqs-handler:
+  handler: src/transactionSqsConsumerLambda.handle
+  events:
+    - sqs:
+        arn:
+          Fn::ImportValue: Virtwallet-${self:provider.stage}-TransactionQueueArn
+
+  iamRoleStatementsName: virtwallet-trasaction-loader-${self:provider.stage}-iam-role
+
+  iamRoleStatements:
+    - Effect: Allow
+      Action: 
+        - sqs:ReceiveMessage
+      Resource:
+        Fn::ImportValue: Virtwallet-${self:provider.stage}-TransactionQueueArn

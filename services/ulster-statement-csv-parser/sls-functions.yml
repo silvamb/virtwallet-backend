@@ -6,7 +6,7 @@ sqs-handler:
   events:
     - sqs:
         arn:
-          Fn::ImportValue: Virtwallet-${self:provider.stage}-TransactionQueueArn
+          Fn::ImportValue: Virtwallet-${self:provider.stage}-UlsterCsvParserQueueUrl
 
   iamRoleStatementsName: virtwallet-ulster-csv-parser-${self:provider.stage}-iam-role
 
