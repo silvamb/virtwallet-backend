@@ -1,0 +1,71 @@
+apigw-event-handler:
+  handler: src/categoryLambda.handle
+  events:
+    - http:
+        path: account/{accountId}/category
+        method: GET
+        authorizer:
+          type: COGNITO_USER_POOLS
+          authorizerId: ${self:custom.restApiAuthorizerId}
+          scopes:
+            - email
+        parameters:
+          paths:
+            accountId: true
+    - http:
+        path: account/{accountId}/category
+        method: POST
+        authorizer:
+          type: COGNITO_USER_POOLS
+          authorizerId: ${self:custom.restApiAuthorizerId}
+          scopes:
+            - email
+        parameters:
+          paths:
+            accountId: true
+    - http:
+        path: account/{accountId}/category/{categoryId}
+        method: GET
+        authorizer:
+          type: COGNITO_USER_POOLS
+          authorizerId: ${self:custom.restApiAuthorizerId}
+          scopes:
+            - email
+        parameters:
+          paths:
+            accountId: true
+            categoryId: true
+    - http:
+        path: account/{accountId}/category/{categoryId}
+        method: PUT
+        authorizer:
+          type: COGNITO_USER_POOLS
+          authorizerId: ${self:custom.restApiAuthorizerId}
+          scopes:
+            - email
+        parameters:
+          paths:
+            accountId: true
+            categoryId: true
+    - http:
+        path: account/{accountId}/category/{categoryId}
+        method: DELETE
+        authorizer:
+          type: COGNITO_USER_POOLS
+          authorizerId: ${self:custom.restApiAuthorizerId}
+          scopes:
+            - email
+        parameters:
+          paths:
+            accountId: true
+            categoryId: true
+  iamRoleStatements:
+    - Effect: Allow
+      Action:
+        - dynamodb:Query
+        - dynamodb:Scan
+        - dynamodb:GetItem
+        - dynamodb:PutItem
+        - dynamodb:UpdateItem
+        - dynamodb:DeleteItem
+      Resource: "arn:aws:dynamodb:${opt:region, self:provider.region}:*:table/virtwallet"
