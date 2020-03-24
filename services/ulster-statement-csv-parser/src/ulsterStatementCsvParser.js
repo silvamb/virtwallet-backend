@@ -79,6 +79,14 @@ function parseLine(fields, dayCounter) {
         transformCLTx(transaction);
     }
 
+    const keywordEnd = transaction.description.indexOf(',');
+
+    if(keywordEnd < 0) {
+        transaction.keyword = transaction.description.trim();
+    } else {
+        transaction.keyword = transaction.description.substring(0, keywordEnd).trim();
+    }
+
     return transaction;
 }
 
@@ -166,6 +174,12 @@ function transformCLTx(transaction) {
 
     // Strip the date from the description and leave only the text.
     transaction.description = matches[1].trim();
+}
+
+function getKeyword(parsedTransaction) {
+    const keywordEnd = transaction.description.indexOf(',');
+
+    return transaction.description.substring(0, keywordEnd).trim();
 }
 
 exports.UlsterCsvParser = UlsterCsvParser;

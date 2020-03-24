@@ -19,6 +19,7 @@ const attrTypeMap = new Map([
     ["includedBy", dynamodb.StringAttributeType],
     ["version", dynamodb.NumberAttributeType],
     ["category", dynamodb.StringAttributeType],
+    ["keyword", dynamodb.StringAttributeType],
     ["source", dynamodb.StringAttributeType],
     ["sourceType", dynamodb.StringAttributeType],
 ]);
@@ -79,6 +80,7 @@ class Transaction {
         this.includedBy = "";
         this.version = 1;
         this.category = ""; // TODO transform to a Class
+        this.keyword = "";
         this.source = "MANUAL";
         this.sourceType = MANUAL_INPUT;
     }
