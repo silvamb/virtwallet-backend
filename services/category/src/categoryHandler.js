@@ -79,11 +79,11 @@ class CategoryHandler {
         return category;
     }
 
-    async update(_category) {
+    async update(_clientId, _category) {
         throw new Error("Operation CategoryHandler.update not implemented yet");
     }
 
-    async delete(_accountId, _categoryId) {
+    async delete(_clientId, _accountId, _categoryId) {
         throw new Error("Operation CategoryHandler.delete not implemented yet");
     }
 }

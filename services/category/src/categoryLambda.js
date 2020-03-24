@@ -1,6 +1,6 @@
 const AWS = require('aws-sdk');
-const WalletHandler = require('./walletHandler').WalletHandler;
-const walletHandler = new WalletHandler(new AWS.DynamoDB());
+const CategoryHandler = require('./categoryHandler').CategoryHandler;
+const categoryHandler = new CategoryHandler(new AWS.DynamoDB());
 
 exports.handle = async event => {
     
@@ -8,11 +8,12 @@ exports.handle = async event => {
 
     // FIX ME change for a utility function
     const accountId = event.pathParameters ? event.pathParameters.accountId : undefined;
-    const walletId = event.pathParameters ? event.pathParameters.walletId : undefined;
-    const operationMap = accountId && walletId ? walletOperationMap : topLevelOperationMap;
-    const operation = operationMap.get(event.httpMethod);
+    const categoryId = event.pathParameters ? event.pathParameters.categoryId : undefined;
+    
+    const operationMap = accountId && categoryId ? categoryOperationMap : topLevelOperationMap;
+    const operationHandler = operationMap.get(event.httpMethod);
 
-    const response = await walletHandler.handle(operation, event);
+    const response = await operationHandler(event);
 
     try {
         return new Response(response);
@@ -22,15 +23,52 @@ exports.handle = async event => {
     }
 };
 
+async function listCategories(event) {
+    const clientId = event.requestContext.authorizer.claims.client_id;
+    const accountId = event.pathParameters.accountId;
+
+    return await categoryHandler.list(clientId, accountId);
+}
+
+async function createCategory(event) {
+    const clientId = event.requestContext.authorizer.claims.client_id;
+    const accountId = event.pathParameters.accountId;
+    const categoriesToAdd = JSON.parse(event.body);
+
+    return await categoryHandler.create(clientId, accountId, categoriesToAdd);
+}
+
+async function getCategory(event) {
+    const accountId = event.pathParameters.accountId;
+    const categoryId = event.pathParameters.categoryId;
+
+    return await categoryHandler.get(accountId, categoryId);
+}
+
+async function deleteCategory(event) {
+    const clientId = event.requestContext.authorizer.claims.client_id;
+    const accountId = event.pathParameters.accountId;
+    const categoryId = event.pathParameters.categoryId;
+
+    return await categoryHandler.delete(clientId, accountId, categoryId);
+}
+
+async function updateCategory(event) {
+    const accountId = event.pathParameters.accountId;
+    const category = JSON.parse(event.body);
+
+    return await categoryHandler.update(accountId, categoryId, category);
+}
+
 const topLevelOperationMap = new Map([
-    ['GET', 'list' ],
-    ['POST', 'create' ]
+    ['GET', listCategories ],
+    ['POST', createCategory ]
 ]);
 
-const walletOperationMap = new Map([
-    ['GET', 'get' ],
-    ['PUT', 'update' ],
-    ['DELETE', 'delete' ]
+const categoryOperationMap = new Map([
+    ['GET', getCategory ],
+    ['PUT', updateCategory ],
+    ['DELETE', deleteCategory ]
 ]);
 
 // TODO Extract to a utility function
