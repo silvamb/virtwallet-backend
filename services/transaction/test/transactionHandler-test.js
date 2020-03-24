@@ -77,6 +77,7 @@ describe('TransactionHandler unit tests', () => {
                         includedBy: { "S": "10v21l6b17g3t27sfbe38b0i8n"},
                         version: { "N": 1 },
                         category: { "S": "NO_CATEGORY"},
+                        keyword: { "S": "Transaction"},
                         source: { "S": "JOHNDOE12345678-20200107.csv"},
                         sourceType: {"S": "A"}
                     }
@@ -102,6 +103,7 @@ describe('TransactionHandler unit tests', () => {
                 includedBy: "10v21l6b17g3t27sfbe38b0i8n",
                 version: 1,
                 category: "NO_CATEGORY",
+                keyword: "Transaction",
                 source: "JOHNDOE12345678-20200107.csv",
                 sourceType: "A"
             };
@@ -141,7 +143,8 @@ describe('TransactionHandler unit tests', () => {
                         balanceType: { "S": "Debit" },
                         includedBy: { "S": "10v21l6b17g3t27sfbe38b0i8n"},
                         version: { "N": 1},
-                        category: { "S": "NO_CATEGORY"}
+                        category: { "S": "NO_CATEGORY"},
+                        keyword: { "S": "Transaction"}
                     }
                 ],
                 ConsumedCapacity: {
@@ -191,7 +194,8 @@ describe('TransactionHandler unit tests', () => {
                         balanceType: { "S": "Debit" },
                         includedBy: { "S": "10v21l6b17g3t27sfbe38b0i8n"},
                         version: { "N": 1},
-                        category: { "S": "NO_CATEGORY"}
+                        category: { "S": "NO_CATEGORY"},
+                        keyword: { "S": "Transaction"}
                     }
                 ],
                 ConsumedCapacity: {
