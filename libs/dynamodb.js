@@ -295,17 +295,13 @@ class QueryBuilder {
 class ExpressionBuilder {
 
     constructor() {
-        this.expression = "";
+        this.expressionParts = [];
         this.exprAttributes = new Map();
     }
 
-    addExpression(expression, exprAttrToAdd, logicalOp = "AND") {
+    addExpression(expression, exprAttrToAdd = new Map()) {
         console.log(`Adding expression [${expression}] with values ${exprAttrToAdd}`);
-        if(this.expression.length > 0) {
-            this.expression = ` ${logicalOp} ${this.expression}`;
-        } else {
-            this.expression = expression;
-        }
+        this.expressionParts.push(expression);
 
         for (let [exprAttrName, exprAttrValue] of exprAttrToAdd) {
             this.exprAttributes.set(exprAttrName, exprAttrValue);
@@ -373,9 +369,19 @@ class ExpressionBuilder {
         return this.addExpression(expression, exprAttrToAdd);
     }
 
+    get or() {
+        this.addExpression("OR");
+        return this;
+    }
+
+    get and() {
+        this.addExpression("AND");
+        return this;
+    }
+
     build() {
         return {
-            expression: this.expression,
+            expression: this.expressionParts.join(" "),
             exprAttributes: this.exprAttributes
         }
     }
