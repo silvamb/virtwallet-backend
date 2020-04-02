@@ -1,0 +1,35 @@
+service: virtwallet-category-rule
+
+provider:
+  name: aws
+  runtime: nodejs12.x
+  stage: ${opt:stage, 'dev'}
+  region: ${opt:stage, 'eu-west-1'}
+  apiGateway:
+    restApiId:
+      'Fn::ImportValue': Virtwallet-${self:provider.stage}-RestApiId
+    restApiRootResourceId:
+      'Fn::ImportValue': Virtwallet-${self:provider.stage}-RootResourceId
+    restApiResources:
+      '/account': 
+        'Fn::ImportValue': Virtwallet-${self:provider.stage}-ApiGatewayAccountResourceId
+      '/account/{accountId}': 
+        'Fn::ImportValue': Virtwallet-${self:provider.stage}-ApiGatewayAccountAccountIdVarResourceId
+  stackTags:
+    Project: virtwallet
+    Service: category-rule
+
+custom:
+  restApiAuthorizerId: '${cf:virtwallet-resources-${self:provider.stage}.VirtwalletRestApiAuthorizerId}'
+
+package:
+  excludeDevDependencies: true
+  exclude:
+    - .git/**
+    - test/**
+    - '*.yml'
+    - '*.json'
+
+functions: ${file(./sls-functions.yml)}
+plugins:
+  - serverless-iam-roles-per-function

@@ -1,0 +1,71 @@
+apigw-event-handler:
+  handler: src/categoryRuleLambda.handle
+  events:
+    - http:
+        path: account/{accountId}/categoryRule
+        method: GET
+        authorizer:
+          type: COGNITO_USER_POOLS
+          authorizerId: ${self:custom.restApiAuthorizerId}
+          scopes:
+            - email
+        parameters:
+          paths:
+            accountId: true
+    - http:
+        path: account/{accountId}/categoryRule
+        method: POST
+        authorizer:
+          type: COGNITO_USER_POOLS
+          authorizerId: ${self:custom.restApiAuthorizerId}
+          scopes:
+            - email
+        parameters:
+          paths:
+            accountId: true
+    - http:
+        path: account/{accountId}/categoryRule/{categoryRuleId}
+        method: GET
+        authorizer:
+          type: COGNITO_USER_POOLS
+          authorizerId: ${self:custom.restApiAuthorizerId}
+          scopes:
+            - email
+        parameters:
+          paths:
+            accountId: true
+            categoryRuleId: true
+    - http:
+        path: account/{accountId}/categoryRule/{categoryRuleId}
+        method: PUT
+        authorizer:
+          type: COGNITO_USER_POOLS
+          authorizerId: ${self:custom.restApiAuthorizerId}
+          scopes:
+            - email
+        parameters:
+          paths:
+            accountId: true
+            categoryRuleId: true
+    - http:
+        path: account/{accountId}/categoryRule/{categoryRuleId}
+        method: DELETE
+        authorizer:
+          type: COGNITO_USER_POOLS
+          authorizerId: ${self:custom.restApiAuthorizerId}
+          scopes:
+            - email
+        parameters:
+          paths:
+            accountId: true
+            categoryRuleId: true
+  iamRoleStatements:
+    - Effect: Allow
+      Action:
+        - dynamodb:Query
+        - dynamodb:Scan
+        - dynamodb:GetItem
+        - dynamodb:PutItem
+        - dynamodb:UpdateItem
+        - dynamodb:DeleteItem
+      Resource: "arn:aws:dynamodb:${opt:region, self:provider.region}:*:table/virtwallet"
