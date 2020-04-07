@@ -32,16 +32,6 @@ resources:
       Properties:
         BucketName: ${file(../../config.${self:provider.stage}.yml):userFilesBucket}
 
-    UlsterCsvParserSQSQueue:
-      Type: AWS::SQS::Queue
-      Properties:
-        QueueName: virtwallet-${opt:stage, self:provider.stage}-ulsterCsvParserQueue
-
-    TransactionsSQSQueue:
-      Type: AWS::SQS::Queue
-      Properties:
-        QueueName: virtwallet-${opt:stage, self:provider.stage}-transactionsQueue
-
   Outputs:
     VirtwalletRestApiId:
       Value:
@@ -62,31 +52,3 @@ resources:
         Ref: VirtwalletRestApiAuthorizer
       Export:
         Name: Virtwallet-${self:provider.stage}-RestApiAuthorizerId
-
-    UlsterCsvParserQueueArn:
-      Value:
-        Fn::GetAtt:
-          - UlsterCsvParserSQSQueue
-          - Arn
-      Export:
-        Name: Virtwallet-${self:provider.stage}-UlsterCsvParserQueueArn
-    
-    UlsterCsvParserQueueUrl:
-      Value:
-        Ref: UlsterCsvParserSQSQueue
-      Export:
-        Name: Virtwallet-${self:provider.stage}-UlsterCsvParserQueueUrl
-
-    TransactionQueueUrl:
-      Value:
-        Ref: TransactionsSQSQueue
-      Export:
-        Name: Virtwallet-${self:provider.stage}-TransactionQueueUrl
-
-    TransactionQueueArn:
-      Value:
-        Fn::GetAtt:
-          - TransactionsSQSQueue
-          - Arn
-      Export:
-        Name: Virtwallet-${self:provider.stage}-TransactionQueueArn

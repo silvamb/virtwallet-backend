@@ -11,8 +11,6 @@ provider:
 
 custom:
   userFilesBucket: ${file(../../config.${self:provider.stage}.yml):userFilesBucket}
-  ulsterCsvParserSQSQueueArn: '${cf:virtwallet-resources-${self:provider.stage}.UlsterCsvParserQueueArn}'
-  ulsterCsvParserSQSQueueUrl: '${cf:virtwallet-resources-${self:provider.stage}.UlsterCsvParserQueueUrl}'
 
 package:
   excludeDevDependencies: true

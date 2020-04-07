@@ -1,15 +1,21 @@
-sqs-handler:
-  handler: src/transactionSqsConsumerLambda.handle
+eventBridge-handler:
+  handler: src/transactionLoaderLambda.handle
   events:
-    - sqs:
-        arn:
-          Fn::ImportValue: Virtwallet-${self:provider.stage}-TransactionQueueArn
-
+    - eventBridge:
+        pattern:
+          source:
+            - virtwallet
+          detail-type:
+            - transactions parsed
   iamRoleStatementsName: virtwallet-trasaction-loader-${self:provider.stage}-iam-role
 
   iamRoleStatements:
     - Effect: Allow
-      Action: 
-        - sqs:ReceiveMessage
-      Resource:
-        Fn::ImportValue: Virtwallet-${self:provider.stage}-TransactionQueueArn
+      Action:
+        - dynamodb:Query
+        - dynamodb:Scan
+        - dynamodb:GetItem
+        - dynamodb:PutItem
+        - dynamodb:UpdateItem
+        - dynamodb:DeleteItem
+      Resource: "arn:aws:dynamodb:${opt:region, self:provider.region}:*:table/virtwallet"

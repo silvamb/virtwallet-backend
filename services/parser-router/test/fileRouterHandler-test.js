@@ -5,26 +5,38 @@ const expect = chai.expect;
 
 const FileRouter = require('../src/fileRouterHandler').FileRouter;
 
-process.env.ulster_csv_parser = "arn:aws:sqs:us-east-1:123456789:myqueue";
-
 describe('FileRouterUnitTests', () => {
     it('should enqueue a file parse request with success', () => {
 
-        const sqsMock = {
-            sendMessage: (params) => {
+        const expectedResult = {
+            FailedEntryCount: 0, 
+            Entries: [{
+                EventId: "11710aed-b79e-4468-a20b-bb3c0c3b4860"
+            }]
+        };
+
+        const eventBridgeMock = {
+            putEvents: (params) => {
+                expect(params.Entries[0].Source).to.be.equal("virtwallet");
+                expect(params.Entries[0].DetailType).to.be.equal("file ready to parse");
+                
+                const detail = JSON.parse(params.Entries[0].Detail);
+                expect(detail.account).to.be.equal("a03af6a8-e246-410a-8ca5-bfab980648cc");
+                expect(detail.wallet).to.be.equal("0001");
+                expect(detail.parserName).to.be.equal("ulster_csv_parser");
+                expect(detail.fileName).to.be.equal("myfile.csv");
+                expect(detail.bucketName).to.be.equal("my-bucket");
+                expect(detail.objectKey).to.be.equal("account-files/a03af6a8-e246-410a-8ca5-bfab980648cc/0001/parsers/ulster_csv_parser/myfile.csv");
+
                 return {
                     promise: () => {
-                        return Promise.resolve({
-                            ResponseMetadata: { RequestId: '8cc461be-b2ce-5dae-b50f-121339d04406' },
-                            MD5OfMessageBody: 'b7df356e84c341d0a5d829e2bb3612b3',
-                            MessageId: '33e9f5c3-c1a7-4dc7-be21-e144b2f5a53c'
-                          });
+                        return Promise.resolve(expectedResult);
                     }
                 }
             }
         };
 
-        const fileRouter  = new FileRouter(sqsMock);
+        const fileRouter  = new FileRouter(eventBridgeMock);
 
         const record = {
             s3: {
@@ -37,23 +49,6 @@ describe('FileRouterUnitTests', () => {
             }
         }
 
-        return expect(fileRouter.routeToQueue(record)).to.eventually.be.fulfilled;
-    });
-
-    it('should thrown an error when the queue is not found', () => {
-        const fileRouter  = new FileRouter();
-
-        const record = {
-            s3: {
-                bucket: {
-                    name: "my-bucket"
-                },
-                object: {
-                    key: "account-files/a03af6a8-e246-410a-8ca5-bfab980648cc/0001/parsers/unsupported_parser/myfile.csv"
-                }
-            }
-        };
-
-        return expect(fileRouter.routeToQueue(record)).to.eventually.be.rejected;
+        return expect(fileRouter.publishEvent(record)).to.eventually.become(expectedResult);
     });
 });

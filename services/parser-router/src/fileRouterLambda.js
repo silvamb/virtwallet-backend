@@ -1,6 +1,6 @@
 const AWS = require('aws-sdk');
 const FileRouter = require('./fileRouterHandler').FileRouter;
-const fileRouter = new FileRouter(new AWS.SQS());
+const fileRouter = new FileRouter(new AWS.EventBridge());
 
 exports.handle = async event => {
     
@@ -10,7 +10,7 @@ exports.handle = async event => {
         throw new Error('No records to process!');
     }
 
-    const promises = records.map(routeToQueue);
+    const promises = records.map(publishEvents);
 
     const results = await Promise.all(promises);
     
@@ -19,6 +19,6 @@ exports.handle = async event => {
     return results;
 };
 
-function routeToQueue(record) {
-    return fileRouter.routeToQueue(record);
+function publishEvents(record) {
+    return fileRouter.publishEvent(record);
 }

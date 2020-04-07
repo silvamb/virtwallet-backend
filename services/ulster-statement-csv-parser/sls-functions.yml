@@ -1,23 +1,24 @@
-sqs-handler:
+eventBridge-handler:
   handler: src/ulsterStatementCsvParserLambda.handle
-  environment:
-    transaction_queue_url:
-      Fn::ImportValue: Virtwallet-${self:provider.stage}-TransactionQueueUrl
   events:
-    - sqs:
-        arn:
-          Fn::ImportValue: Virtwallet-${self:provider.stage}-UlsterCsvParserQueueUrl
+    - eventBridge:
+        pattern:
+          source:
+            - virtwallet
+          detail-type:
+            - file ready to parse
+          detail:
+            parserName:
+              - ulster_csv
 
   iamRoleStatementsName: virtwallet-ulster-csv-parser-${self:provider.stage}-iam-role
 
   iamRoleStatements:
     - Effect: Allow
       Action: 
-        - sqs:SendMessage
-        - sqs:ReceiveMessage
-      Resource:
-        Fn::ImportValue: Virtwallet-${self:provider.stage}-TransactionQueueArn
-    - Effect: Allow
-      Action: 
         - s3:GetObject
       Resource: "arn:aws:s3:::${self:custom.userFilesBucket}/account-files*"
+    - Effect: Allow
+      Action: 
+        - events:PutEvents
+      Resource: "*"

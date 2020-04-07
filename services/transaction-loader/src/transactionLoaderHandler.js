@@ -1,17 +1,18 @@
 
 const Transaction = require('libs/transaction').Transaction;
+const DynamoDb = require('libs/dynamodb').DynamoDb;
 
-function parseRecord(record) {
-    console.log("Parsing record", record);
+function parseEvent(detail) {
+    console.log("Parsing event detail", detail);
 
     return {
         clientId: "NOT_DEFINED", // TODO Load from DynamoDB
-        accountId: record.account,
-        walletId: record.wallet,
+        accountId: detail.account,
+        walletId: detail.wallet,
         transactions: {
-            source: record.fileName,
+            source: detail.fileName,
             sourceType: "A", // TODO use transaction API constants
-            transactions: record.transactions,
+            transactions: detail.transactions,
         },
         overwrite: false
     };
@@ -19,16 +20,14 @@ function parseRecord(record) {
 
 class TransactionLoaderHandler {
 
-    constructor(dbClient) {
-        this.dbClient = dbClient; 
+    constructor(dynamodb) {
+        this.dbClient = new DynamoDb(dynamodb);
     }
 
-    async processRecord(record) {
-        console.log(`Start processing message [${record.messageId}]`);
-        const msgBody = JSON.parse(record.body);
+    async processEvent(detail) {
+        console.log(`Start processing transactions from file [${detail.fileName}]`);
     
-        const parameters = parseRecord(msgBody);
-
+        const parameters = parseEvent(detail);
 
         const clientId = parameters.clientId;
         const accountId = parameters.accountId;
@@ -55,6 +54,7 @@ class TransactionLoaderHandler {
             transaction.balanceType = transactionDetails.balanceType;
             transaction.includedBy = clientId;
             transaction.category = transactionDetails.category;
+            transaction.keyword = transactionDetails.keyword;
             transaction.source = transactionsToAdd.source;
             transaction.sourceType = transactionsToAdd.sourceType;
     
@@ -80,11 +80,24 @@ class TransactionLoaderHandler {
             retVal = retVal.map(transformPutItemsResult);
         }
     
-        console.log(`Finished processing message [${record.messageId}]`);
+        console.log(`Finished processing transaction from file [${detail.fileName}]`);
 
         return retVal;
     }
 
+}
+
+function transformPutItemsResult(result) {
+    const transformedResult = {
+        success: result.success
+    };
+
+    if(!result.success) {
+        transformedResult.code = result.data.code;
+        transformedResult.message = result.data.message;
+    }
+
+    return transformedResult;
 }
 
 exports.TransactionLoaderHandler = TransactionLoaderHandler;

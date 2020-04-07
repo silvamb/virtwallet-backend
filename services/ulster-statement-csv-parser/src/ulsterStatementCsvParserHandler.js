@@ -2,42 +2,39 @@
 const UlsterCsvParser = require('./ulsterStatementCsvParser').UlsterCsvParser;
 
 class UlsterCsvParserHandler {
-    constructor(s3, sqsClient) {
+    constructor(s3, eventbridge) {
         this.s3 = s3;
-        this.sqsClient = sqsClient;
+        this.eventbridge = eventbridge;
         this.parser = new UlsterCsvParser(s3);
     }
 
     async handle(fileInfo) {
         const transactions = await this.parser.parseCsvFile(fileInfo.bucketName, fileInfo.objectKey);
 
-        const enqueueResult = await enqueueTransactions(this.sqsClient, transactions, fileInfo);
+        const result = await publishEvent(this.eventbridge, transactions, fileInfo);
 
-        console.log("Enqueue result ", enqueueResult);
+        console.log("Publish event result ", result);
 
-        return enqueueResult;
+        return result;
     }
 
 }
 
-async function enqueueTransactions(sqsClient, transactions, fileInfo) {
-    const queueUrl = process.env.transaction_queue_url;
-    
-    if(!queueUrl) {
-        throw new Error("Transactions queue URL not defined");
-    }
+async function publishEvent(eventbridge, transactions, fileInfo) {
+    const details = Object.assign({}, fileInfo);
 
-    const message = Object.assign({}, fileInfo);
+    details.transactions = transactions;
 
-    message.transactions = transactions;
-
-    var params = {
-        MessageBody: JSON.stringify(message),
-        QueueUrl: queueUrl
+    const params = {
+        Entries: [{
+            Source: 'virtwallet',
+            DetailType: 'transactions parsed',  // TODO add Event types in a file in libs
+            Time: new Date(),
+            Detail: JSON.stringify(details)
+        }]
     };
 
-    console.log("Enqueueing transactions");
-    return sqsClient.sendMessage(params).promise();
+    return eventbridge.putEvents(params).promise();
 }
 
 exports.UlsterCsvParserHandler = UlsterCsvParserHandler;

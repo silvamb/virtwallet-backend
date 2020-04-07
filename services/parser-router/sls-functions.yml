@@ -1,7 +1,5 @@
 s3-event-handler:
   handler: src/fileRouterLambda.handle
-  environment:
-    ulster_csv: ${self:custom.ulsterCsvParserSQSQueueUrl}
   events:
     - s3:
         bucket: ${self:custom.userFilesBucket}
@@ -13,5 +11,5 @@ s3-event-handler:
   iamRoleStatements:
     - Effect: Allow
       Action: 
-        - sqs:SendMessage
-      Resource: ${self:custom.ulsterCsvParserSQSQueueArn}
+        - events:PutEvents
+      Resource: "*"

@@ -1,28 +1,31 @@
 
 class FileRouter {
-    constructor(sqsClient) {
-        this.sqsClient = sqsClient;
+    constructor(eventbridge) {
+        this.eventbridge = eventbridge;
     }
 
-    async routeToQueue(record) {
-        console.log("Routing new S3 Record", record.s3);
+    async publishEvent(record) {
+        console.log("Publishing event for new S3 Record", record.s3);
 
         const fileInfo = getInfoFromObjKey(record.s3);
-    
+
         console.log("File info extracted from S3 key", fileInfo);
 
-        const queueUrl = process.env[fileInfo.parserName];
-    
-        if(!queueUrl) {
-            throw new Error(`Queue URL not defined for queue ${fileInfo.parserName}`);
-        }
-    
-        const enqueueResult = await enqueue(this.sqsClient, queueUrl, fileInfo);
+        const params = {
+            Entries: [{
+                Source: 'virtwallet',
+                DetailType: 'file ready to parse', // TODO add Event types in a file in libs
+                Time: new Date(),
+                Detail: JSON.stringify(fileInfo)
+            }]
+        };
 
-        console.log("Enqueue Result", enqueueResult);
+        const result = await this.eventbridge.putEvents(params).promise();
+
+        console.log("Event Result", result);
         // TODO handle errors and update the file record in dynamodb
 
-        return enqueueResult.MessageId;
+        return result;
     }
 }
 
@@ -43,16 +46,6 @@ function getInfoFromObjKey(s3Info) {
         bucketName: s3Info.bucket.name,
         objectKey: s3Info.object.key
     };
-}
-
-function enqueue(sqsClient, queueUrl, fileInfo) {
-    
-    var params = {
-        MessageBody: JSON.stringify(fileInfo),
-        QueueUrl: queueUrl
-    };
-
-    return sqsClient.sendMessage(params).promise();
 }
 
 exports.FileRouter = FileRouter;

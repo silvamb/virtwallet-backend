@@ -1,27 +1,15 @@
 const handler = require('./ulsterStatementCsvParserHandler');
 const UlsterCsvParserHandler = handler.UlsterCsvParserHandler;
 const AWS = require('aws-sdk');
-const csvParserHandler = new UlsterCsvParserHandler(new AWS.S3(), new AWS.SQS());
+const csvParserHandler = new UlsterCsvParserHandler(new AWS.S3(), new AWS.EventBridge());
 
 exports.handle = async event => {
     
-    const records = event.Records;
+    // FIX THIS. ADD PERMISSIONS IN SERVERLESS YAML TOO
 
-    if(!Array.isArray(records) || records.length < 1 ) {
-        throw new Error('No records to process!');
-    }
+    const detail = event.detail;
 
-    const promises = records.map(processRecord);
+    const result = await csvParserHandler.handle(detail);
 
-    const results = await Promise.all(promises);
-    
-    results.forEach(result => console.log(result));
-
-    return results;
+    return result;
 };
-
-async function processRecord(record) {
-    const msgBody = JSON.parse(record.body);
-
-    return await csvParserHandler.handle(msgBody);
-}
