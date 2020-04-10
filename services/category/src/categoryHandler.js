@@ -1,91 +1,49 @@
 const category = require('libs/category');
-const Category = category.Category;
-const DynamoDb = require('libs/dynamodb').DynamoDb;
-const fromItem = require('libs/dynamodb').fromItem;
-const getPK = category.getPK;
-const getSK = category.getSK;
 
-class CategoryHandler {
+exports.handle = async (event, dynamodb) => {
+    // FIX ME change for a utility function
+    const accountId = event.pathParameters ? event.pathParameters.accountId : undefined;
+    const categoryId = event.pathParameters ? event.pathParameters.categoryId : undefined;
+    
+    const operationMap = accountId && categoryId ? categoryOperationMap : topLevelOperationMap;
+    const operationHandler = operationMap.get(event.httpMethod);
 
-    constructor(dynamodb) {
-        console.log("Creating Category Handler");
-        this.dynamodb = new DynamoDb(dynamodb);
+    if(!operationHandler) {
+        throw new Error(`Method ${event.httpMethod} for resource ${event.resource} not implemented yet`);
     }
 
-    async create(clientId, accountId, categoriesToAdd) {
-        // TODO validate if user is a member of this account
+    return await operationHandler(event, dynamodb);
+};
 
-        const pk = getPK(accountId);
-        const skPrefix = getSK();
-        console.log(`Creating new categories for user ${clientId} and account ${accountId}.`);
+const listCategories = (event, dynamodb) => {
+    //const clientId = event.requestContext.authorizer.claims.client_id;
+    const accountId = event.pathParameters.accountId;
 
-        const nextCategoryId = await this.dynamodb.getNext(pk, skPrefix);
-        console.log(`Categories id starting at ${nextCategoryId}.`);
-
-        const categories = categoriesToAdd.map((categoryDetails, index) => {
-            const category = new Category();
-            category.accountId = accountId;
-            category.categoryId = String(nextCategoryId + index).padStart(2, '0');
-            category.name = categoryDetails.name;
-            category.description = categoryDetails.description;
-
-            return category;
-        });
-
-        let retVal;
-
-        if (categories.length == 1) {
-            console.log(`Persisting new category in DynamoDb: [${JSON.stringify(categories[0])}]`);
-            const item = await this.dynamodb.putItem(categories[0]);
-
-            console.log("Put item returned", item);
-
-            retVal = item;
-        } else {
-            console.log(`Persisting ${categories.length} new categories in DynamoDb`);
-            retVal = await this.dynamodb.putItems(categories);
-        }
-
-        return retVal;
-    }
-
-    async list(_clientId, accountId) {
-        // TODO validate if user is a member of this account
-        console.log(`Listing categories for account [${accountId}]`);
-
-        const pk = getPK(accountId);
-
-        const queryData = await this.dynamodb.queryAll(pk);
-
-        const categories = queryData.Items.map((item) => {
-            return fromItem(item, new Category());
-        });
-
-        console.log(`Categories retrieved for account [${accountId}]: ${categories.length}`);
-        console.log(categories);
-
-        return categories;
-    }
-
-    async get(accountId, categoryId) {
-        // TODO validate if user is a member of this account
-
-        const pk = getPK(accountId);
-        const sk = getSK(categoryId);
-
-        const queryData = await this.dynamodb.queryAll(pk, sk);
-        const category = fromItem(queryData.Items[0], new Category());
-
-        return category;
-    }
-
-    async update(_clientId, _category) {
-        throw new Error("Operation CategoryHandler.update not implemented yet");
-    }
-
-    async delete(_clientId, _accountId, _categoryId) {
-        throw new Error("Operation CategoryHandler.delete not implemented yet");
-    }
+    return category.list(dynamodb, accountId);
 }
 
-exports.CategoryHandler = CategoryHandler;
+const createCategory = (event, dynamodb) => {
+    //const clientId = event.requestContext.authorizer.claims.client_id;
+    const accountId = event.pathParameters.accountId;
+    const categoriesToAdd = JSON.parse(event.body);
+
+    return category.create(dynamodb, accountId, categoriesToAdd);
+}
+
+const getCategory = (event, dynamodb) => {
+    const accountId = event.pathParameters.accountId;
+    const categoryId = event.pathParameters.categoryId;
+
+    const cat = new category.Category(accountId, categoryId);
+
+    return cat.load(dynamodb);
+}
+
+const topLevelOperationMap = new Map([
+    ['GET', listCategories ],
+    ['POST', createCategory ]
+]);
+
+const categoryOperationMap = new Map([
+    ['GET', getCategory ],
+]);

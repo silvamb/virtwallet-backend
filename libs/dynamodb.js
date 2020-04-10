@@ -159,7 +159,7 @@ class DynamoDb {
         }
 
         const data = await this.dynamodb.query(params).promise();
-        console.log(data);
+        console.log("Query returned:", data);
 
         return data;
     }
