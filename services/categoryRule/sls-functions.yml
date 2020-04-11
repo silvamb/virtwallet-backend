@@ -25,18 +25,6 @@ apigw-event-handler:
             accountId: true
     - http:
         path: account/{accountId}/categoryRule/{categoryRuleId}
-        method: GET
-        authorizer:
-          type: COGNITO_USER_POOLS
-          authorizerId: ${self:custom.restApiAuthorizerId}
-          scopes:
-            - email
-        parameters:
-          paths:
-            accountId: true
-            categoryRuleId: true
-    - http:
-        path: account/{accountId}/categoryRule/{categoryRuleId}
         method: PUT
         authorizer:
           type: COGNITO_USER_POOLS

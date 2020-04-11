@@ -3,7 +3,7 @@ const chaiAsPromised = require("chai-as-promised");
 chai.use(chaiAsPromised);
 const expect = chai.expect;
 
-const CategoryRuleHandler = require('../src/categoryRuleHandler').CategoryRuleHandler;
+const categoryRuleHandler = require('../src/categoryRuleHandler');
 
 // Add to a test lib
 class DynamoDbMock  {
@@ -41,6 +41,20 @@ describe('CategoryRuleHandler unit tests', () => {
             const clientId = "10v21l6b17g3t27sfbe38b0i8n";
             const accountId = "4801b837-18c0-4277-98e9-ba57130edeb3";
 
+            const event = {
+                resource: "/account/{accountId}/categoryRule",
+                httpMethod: "POST",
+                pathParameters: { accountId: accountId },
+                body: JSON.stringify(categoriesRulesToAdd),
+                requestContext: {
+                    authorizer: {
+                        claims: {
+                            client_id: clientId,
+                        },
+                    },
+                },
+            };
+
             const expectedCreationParams = (params) => {
                 expect(params.Item.PK.S).to.be.equal(`ACCOUNT#${accountId}`);
                 expect(params.Item.SK.S).to.be.equal(`RULE#KEYWORD#${expectedKeyword}`);
@@ -51,8 +65,7 @@ describe('CategoryRuleHandler unit tests', () => {
             const dynamoDbMock = new DynamoDbMock()
                 .setMock('putItem', expectedCreationParams);
 
-            const categoryRuleHandler = new CategoryRuleHandler(dynamoDbMock);
-            const promise = categoryRuleHandler.create(clientId, accountId, categoriesRulesToAdd);
+            const promise = categoryRuleHandler.handle(event, dynamoDbMock);
             return expect(promise).to.eventually.be.fulfilled;
         });
 
@@ -74,6 +87,20 @@ describe('CategoryRuleHandler unit tests', () => {
 
             const clientId = "10v21l6b17g3t27sfbe38b0i8n";
             const accountId = "4801b837-18c0-4277-98e9-ba57130edeb3";
+
+            const event = {
+                resource: "/account/{accountId}/categoryRule",
+                httpMethod: "POST",
+                pathParameters: { accountId: accountId },
+                body: JSON.stringify(categoriesRulesToAdd),
+                requestContext: {
+                    authorizer: {
+                        claims: {
+                            client_id: clientId,
+                        },
+                    },
+                },
+            };
 
             const expectedQueryParams = (params) => {
                 expect(params.ExpressionAttributeValues[":pk"].S).to.be.equal("ACCOUNT#4801b837-18c0-4277-98e9-ba57130edeb3");
@@ -101,18 +128,83 @@ describe('CategoryRuleHandler unit tests', () => {
                 .setMock('query', expectedQueryParams, expectedQueryResult)
                 .setMock('putItem', expectedCreationParams);
 
-            const categoryRuleHandler = new CategoryRuleHandler(dynamoDbMock);
-            const promise = categoryRuleHandler.create(clientId, accountId, categoriesRulesToAdd);
+            const promise = categoryRuleHandler.handle(event, dynamoDbMock);
 
             return expect(promise).to.eventually.be.fulfilled;
         });
+
+        it('should throw an error when creating a invalid expression rule type', () => {
+            const expectedRuleType = "invalid";
+            const expectedParameter = "keyword";
+            const expectedCategory = "02";
+            const expectedRuleName = "Rule01"
+            const expectedPriority = 1;
+
+
+            const categoriesRulesToAdd = [{
+                ruleType: expectedRuleType,
+                parameter: expectedParameter,
+                categoryId: expectedCategory,
+                name: expectedRuleName,
+                priority: expectedPriority
+            }];
+
+            const clientId = "10v21l6b17g3t27sfbe38b0i8n";
+            const accountId = "4801b837-18c0-4277-98e9-ba57130edeb3";
+
+            const event = {
+                resource: "/account/{accountId}/categoryRule",
+                httpMethod: "POST",
+                pathParameters: { accountId: accountId },
+                body: JSON.stringify(categoriesRulesToAdd),
+                requestContext: {
+                    authorizer: {
+                        claims: {
+                            client_id: clientId,
+                        },
+                    },
+                },
+            };
+
+            const expectedQueryParams = (params) => {
+                expect(params.ExpressionAttributeValues[":pk"].S).to.be.equal("ACCOUNT#4801b837-18c0-4277-98e9-ba57130edeb3");
+                expect(params.ExpressionAttributeValues[":sk"].S).to.be.equal("RULE#EXPRESSION#");
+                expect(params.KeyConditionExpression).to.be.equal("PK = :pk AND begins_with(SK, :sk)");
+            };
+
+            const expectedQueryResult = {
+                Count: 1,
+                ScannedCount: 1
+            };
+
+            const dynamoDbMock = new DynamoDbMock()
+                .setMock('query', expectedQueryParams, expectedQueryResult);
+
+            const promise = categoryRuleHandler.handle(event, dynamoDbMock);
+
+            return expect(promise).to.eventually.be.rejectedWith(Error, `Invalid rule type: [invalid]`);
+        });
     });
 
-    describe('list categories test', () => {
+    describe('list category rules test', () => {
         it('should list all categories rules from an account', () => {
 
             const clientId = "10v21l6b17g3t27sfbe38b0i8n";
             const accountId = "4801b837-18c0-4277-98e9-ba57130edeb3";
+
+            const event = {
+                resource: "/account/{accountId}/categoryRule",
+                httpMethod: "GET",
+                pathParameters: { accountId: accountId },
+                body: null,
+                requestContext: {
+                    authorizer: {
+                        claims: {
+                            client_id: clientId,
+                        },
+                    },
+                },
+            };
 
             const validateParams = (params) => {
                 expect(params.ExpressionAttributeValues[":pk"].S).to.be.equal("ACCOUNT#4801b837-18c0-4277-98e9-ba57130edeb3");
@@ -126,6 +218,7 @@ describe('CategoryRuleHandler unit tests', () => {
                     {
                         PK: {"S": "ACCOUNT#4801b837-18c0-4277-98e9-ba57130edeb3"},
                         SK: {"S": "RULE#KEYWORD#Some_Keyword"},
+                        accountId: {"S": accountId},
                         keyword:  {"S": "Some_Keyword"},
                         categoryId:  {"S": "01"},
                         name: {"S": "Category Name"},
@@ -133,6 +226,7 @@ describe('CategoryRuleHandler unit tests', () => {
                     {
                         PK: {"S": "ACCOUNT#4801b837-18c0-4277-98e9-ba57130edeb3"},
                         SK: {"S": "RULE#EXPRESSION#01"},
+                        accountId: {"S": accountId},
                         ruleId:  {"S": "01"},
                         ruleType:  {"S": "startsWith"},
                         parameter:  {"S": "aword"},
@@ -146,12 +240,12 @@ describe('CategoryRuleHandler unit tests', () => {
 
             const dynamoDbMock = new DynamoDbMock().setMock('query', validateParams, expectedResult);
 
-            const categoryRuleHandler = new CategoryRuleHandler(dynamoDbMock);
-            const promise = categoryRuleHandler.list(clientId, accountId);
+            const promise = categoryRuleHandler.handle(event, dynamoDbMock);
 
             const expectedRule = {
+                accountId: accountId,
                 ruleId: "01",
-                ruleType: "startsWith",
+                _ruleType: "startsWith",
                 parameter: "aword",
                 name: "Rule01",
                 priority: "10",
@@ -159,50 +253,6 @@ describe('CategoryRuleHandler unit tests', () => {
             };
 
             return expect(promise).to.eventually.deep.include(expectedRule);
-        });
-    });
-
-    describe('get category test', () => {
-        it('should get an category from an user and account', () => {
-            const accountId = "4801b837-18c0-4277-98e9-ba57130edeb3";
-            const expectedCategoryId = "15";
-            const expectedRuleType = "keyword";
-            const expectedKeyword = "someKeyword"
-
-            const validateParams = (params) => {
-                expect(params.ExpressionAttributeValues[":pk"].S).to.be.equal(`ACCOUNT#${accountId}`);
-                expect(params.ExpressionAttributeValues[":sk"].S).to.be.equal(`RULE#KEYWORD#${expectedKeyword}`);
-                expect(params.KeyConditionExpression).to.be.equal("PK = :pk AND SK =:sk");
-            };
-
-            // TODO Add this to a JSON file
-            const expectedResult = {
-                Count: 1,
-                Items: [
-                    {
-                        PK: {"S": `ACCOUNT#${accountId}`},
-                        SK: {"S": `RULE#KEYWORD#${expectedKeyword}`},
-                        categoryId:  {"S": expectedCategoryId},
-                        keyword: {"S": expectedKeyword}
-                    }
-                ],
-                ScannedCount: 1
-            };
-
-            const dynamoDbMock = new DynamoDbMock().setMock('query', validateParams, expectedResult);
-
-            const categoryRuleHandler = new CategoryRuleHandler(dynamoDbMock);
-            const promise = categoryRuleHandler.get(accountId, expectedKeyword, expectedRuleType);
-
-            // TODO Add this to a JSON file
-            const expectedCategoryRule = {
-                categoryId: expectedCategoryId,
-                keyword: expectedKeyword,
-                priority: 100,
-                ruleType: expectedRuleType
-            };
-
-            return expect(promise).to.eventually.become(expectedCategoryRule);
         });
     });
 });
