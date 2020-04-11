@@ -245,7 +245,7 @@ describe('CategoryRuleHandler unit tests', () => {
             const expectedRule = {
                 accountId: accountId,
                 ruleId: "01",
-                _ruleType: "startsWith",
+                ruleType: "startsWith",
                 parameter: "aword",
                 name: "Rule01",
                 priority: "10",

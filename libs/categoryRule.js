@@ -100,11 +100,7 @@ class ExpressionCategoryRule extends CategoryRule {
         if(!isTypeValid(ruleType)) {
             throw new Error(`Invalid rule type: [${ruleType}]`);
         }
-        this._ruleType = ruleType;
-    }
-
-    get ruleType(){
-        return this._ruleType
+        super.ruleType = ruleType;
     }
 
     test(text) {
