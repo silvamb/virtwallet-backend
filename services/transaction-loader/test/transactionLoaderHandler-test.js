@@ -89,7 +89,7 @@ describe('TransactionLoaderHandler unit tests', () => {
                 type: "GSD",
                 balance: "4000",
                 balanceType: "Debit",
-                category: "NO_CATEGORY",
+                categoryId: "NO_CATEGORY",
                 keyword: "Transaction1"
             },
             {
@@ -101,7 +101,7 @@ describe('TransactionLoaderHandler unit tests', () => {
                 type: "POS",
                 balance: "1000",
                 balanceType: "Debit",
-                category: "NO_CATEGORY",
+                categoryId: "NO_CATEGORY",
                 keyword: "Transaction2"
             }]
         };

@@ -53,7 +53,7 @@ class TransactionLoaderHandler {
             transaction.balance = transactionDetails.balance;
             transaction.balanceType = transactionDetails.balanceType;
             transaction.includedBy = clientId;
-            transaction.category = transactionDetails.category;
+            transaction.categoryId = transactionDetails.categoryId;
             transaction.keyword = transactionDetails.keyword;
             transaction.source = transactionsToAdd.source;
             transaction.sourceType = transactionsToAdd.sourceType;

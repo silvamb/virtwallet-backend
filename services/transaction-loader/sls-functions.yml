@@ -6,7 +6,7 @@ eventBridge-handler:
           source:
             - virtwallet
           detail-type:
-            - transactions parsed
+            - transactions classified
   iamRoleStatementsName: virtwallet-trasaction-loader-${self:provider.stage}-iam-role
 
   iamRoleStatements:

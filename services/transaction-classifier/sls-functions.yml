@@ -1,0 +1,22 @@
+eventBridge-handler:
+  handler: src/transactionClassifierLambda.handle
+  events:
+    - eventBridge:
+        pattern:
+          source:
+            - virtwallet
+          detail-type:
+            - transactions parsed
+  iamRoleStatementsName: virtwallet-transaction-classifier-${self:provider.stage}-iam-role
+
+  iamRoleStatements:
+    - Effect: Allow
+      Action:
+        - dynamodb:Query
+        - dynamodb:Scan
+        - dynamodb:GetItem
+      Resource: "arn:aws:dynamodb:${opt:region, self:provider.region}:*:table/virtwallet"
+    - Effect: Allow
+      Action: 
+        - events:PutEvents
+      Resource: "*"
