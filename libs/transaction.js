@@ -18,7 +18,7 @@ const attrTypeMap = new Map([
     ["balanceType", dynamodb.StringAttributeType],
     ["includedBy", dynamodb.StringAttributeType],
     ["version", dynamodb.NumberAttributeType],
-    ["category", dynamodb.StringAttributeType],
+    ["categoryId", dynamodb.StringAttributeType],
     ["keyword", dynamodb.StringAttributeType],
     ["source", dynamodb.StringAttributeType],
     ["sourceType", dynamodb.StringAttributeType],
@@ -79,7 +79,7 @@ class Transaction {
         this.balanceType = DEBIT_BALANCE_TYPE;
         this.includedBy = "";
         this.version = 1;
-        this.category = ""; // TODO transform to a Class
+        this.categoryId = "";
         this.keyword = "";
         this.source = "MANUAL";
         this.sourceType = MANUAL_INPUT;

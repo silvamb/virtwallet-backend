@@ -51,7 +51,7 @@ class TransactionHandler {
             transaction.balance = transactionDetails.balance;
             transaction.balanceType = transactionDetails.balanceType;
             transaction.includedBy = clientId;
-            transaction.category = transactionDetails.category;
+            transaction.categoryId = transactionDetails.categoryId;
             transaction.source = transactionsToAdd.source;
             transaction.sourceType = transactionsToAdd.sourceType;
 
@@ -88,8 +88,8 @@ class TransactionHandler {
 
         const pk = getPK(accountId);
 
-        const to = parameters.queryStringParameters.to || "0000-00-00";
-        const from = parameters.queryStringParameters.from || "9999-99-99";
+        const to = parameters.to || "0000-00-00";
+        const from = parameters.from || "9999-99-99";
         const fromWalletId = walletId || "0000";
         const toWalletId = walletId || "9999";
         const fromAttr = getSKAttr(fromWalletId, from);

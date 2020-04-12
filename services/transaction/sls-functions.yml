@@ -13,6 +13,9 @@ apigw-event-handler:
           paths:
             accountId: true
             walletId: true
+          querystrings:
+            from: true
+            to: true
     - http:
         path: account/{accountId}/wallet/{walletId}/transaction
         method: PUT

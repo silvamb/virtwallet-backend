@@ -44,10 +44,8 @@ describe('TransactionHandler unit tests', () => {
                 clientId: "10v21l6b17g3t27sfbe38b0i8n",
                 accountId: "4801b837-18c0-4277-98e9-ba57130edeb3",
                 walletId: "0001",
-                queryStringParameters: {
-                    from: "2020-01-01",
-                    to: "2020-01-18"
-                }
+                from: "2020-01-01",
+                to: "2020-01-18"
             }
 
             const validateParams = (params) => {
@@ -76,7 +74,7 @@ describe('TransactionHandler unit tests', () => {
                         balanceType: { "S": "Debit" },
                         includedBy: { "S": "10v21l6b17g3t27sfbe38b0i8n"},
                         version: { "N": 1 },
-                        category: { "S": "NO_CATEGORY"},
+                        categoryId: { "S": "NO_CATEGORY"},
                         keyword: { "S": "Transaction"},
                         source: { "S": "JOHNDOE12345678-20200107.csv"},
                         sourceType: {"S": "A"}
@@ -102,7 +100,7 @@ describe('TransactionHandler unit tests', () => {
                 balanceType: "Debit",
                 includedBy: "10v21l6b17g3t27sfbe38b0i8n",
                 version: 1,
-                category: "NO_CATEGORY",
+                categoryId: "NO_CATEGORY",
                 keyword: "Transaction",
                 source: "JOHNDOE12345678-20200107.csv",
                 sourceType: "A"
@@ -123,7 +121,8 @@ describe('TransactionHandler unit tests', () => {
                 walletId: event.pathParameters.walletId,
                 txId: event.pathParameters.txId,
                 transactions: event.body ? JSON.parse(event.body) : undefined,
-                queryStringParameters: event.queryStringParameters
+                to: event.queryStringParameters ? event.queryStringParameters.to : null,
+                from: event.queryStringParameters ? event.queryStringParameters.from : null
             };
             
             const expectedItem = {
@@ -143,7 +142,7 @@ describe('TransactionHandler unit tests', () => {
                         balanceType: { "S": "Debit" },
                         includedBy: { "S": "10v21l6b17g3t27sfbe38b0i8n"},
                         version: { "N": 1},
-                        category: { "S": "NO_CATEGORY"},
+                        categoryId: { "S": "NO_CATEGORY"},
                         keyword: { "S": "Transaction"}
                     }
                 ],
@@ -174,7 +173,8 @@ describe('TransactionHandler unit tests', () => {
                 walletId: event.pathParameters.walletId,
                 txId: event.pathParameters.txId,
                 transactions: event.body ? JSON.parse(event.body) : undefined,
-                queryStringParameters: event.queryStringParameters
+                to: event.queryStringParameters ? event.queryStringParameters.to : null,
+                from: event.queryStringParameters ? event.queryStringParameters.from : null
             };
 
             const expectedResult = {
@@ -194,7 +194,7 @@ describe('TransactionHandler unit tests', () => {
                         balanceType: { "S": "Debit" },
                         includedBy: { "S": "10v21l6b17g3t27sfbe38b0i8n"},
                         version: { "N": 1},
-                        category: { "S": "NO_CATEGORY"},
+                        categoryId: { "S": "NO_CATEGORY"},
                         keyword: { "S": "Transaction"}
                     }
                 ],
