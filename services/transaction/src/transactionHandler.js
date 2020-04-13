@@ -39,7 +39,7 @@ class TransactionHandler {
 
         console.log(`Creating transactions for user ${clientId} and wallet ${walletId}.`);
     
-        const transactions = transactionsToAdd.transactions.map((transactionDetails) => {
+        const transactions = transactionsToAdd.map((transactionDetails) => {
             const transaction = new Transaction();
             transaction.txId = transactionDetails.txId;
             transaction.txDate = transactionDetails.txDate;
@@ -52,6 +52,7 @@ class TransactionHandler {
             transaction.balanceType = transactionDetails.balanceType;
             transaction.includedBy = clientId;
             transaction.categoryId = transactionDetails.categoryId;
+            transaction.keyword = transactionDetails.keyword || transactionDetails.description.trim();
             transaction.source = transactionsToAdd.source;
             transaction.sourceType = transactionsToAdd.sourceType;
 

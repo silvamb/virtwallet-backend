@@ -23,8 +23,7 @@ exports.handle = async event => {
 };
 
 function parseEvent(event) {
-    console.log("Parsing event");
-    console.log(event);
+    console.log("Parsing event:", event);
 
     return {
         clientId: event.requestContext.authorizer.claims.client_id,

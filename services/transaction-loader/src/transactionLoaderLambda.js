@@ -6,7 +6,7 @@ exports.handle = async event => {
     
     const detail = event.detail;
 
-    const result = handler.processEvent(detail);
+    const result = await handler.processEvent(detail);
     
     console.log(result);
 
