@@ -20,8 +20,9 @@ function parseEvent(detail) {
 
 class TransactionLoaderHandler {
 
-    constructor(dynamodb) {
+    constructor(dynamodb, eventbridge) {
         this.dbClient = new DynamoDb(dynamodb);
+        this.eventbridge = eventbridge;
     }
 
     async processEvent(detail) {
@@ -70,17 +71,18 @@ class TransactionLoaderHandler {
     
         if(transactions.length == 1) {
             console.log(`Persisting single transaction in DynamoDb: [${JSON.stringify(transactions[0])}]`);
-            const item = await this.dbClient.putItem(transactions[0], overwrite);
-    
-            console.log("Put item returned", item);
-    
-            retVal = item;
+            retVal = await this.dbClient.putItem(transactions[0], overwrite);
+            retVal = [transformPutItemsResult(retVal)];
         } else {
             retVal = await this.dbClient.putItems(transactions, overwrite);
             retVal = retVal.map(transformPutItemsResult);
         }
-    
+        
+        
+
         console.log(`Finished processing transaction from file [${detail.fileName}]`);
+
+        await publishEvent(this.eventbridge, retVal, transactions);
 
         return retVal;
     }
@@ -98,6 +100,42 @@ function transformPutItemsResult(result) {
     }
 
     return transformedResult;
+}
+
+async function publishEvent(eventbridge, results, transactions) {
+    const eventDetail = {
+        transactions: []
+    };
+
+    for(let i = 0; i < results.length; i++) {
+        if(results[i].success) {
+            eventDetail.transactions.push({
+                accountId: transactions[i].accountId,
+                walletId: transactions[i].walletId,
+                txDate: transactions[i].txDate,
+                value: transactions[i].value,
+                categoryId: transactions[i].categoryId
+            });
+        }
+    }
+
+    if(eventDetail.transactions.length > 0) {
+        const params = {
+            Entries: [
+                {
+                    Source: "virtwallet",
+                    DetailType: "transactions created", // TODO add Event types in a file in libs
+                    Time: new Date(),
+                    Detail: JSON.stringify(eventDetail),
+                },
+            ],
+        };
+    
+        console.log("Publishing [transactions created] event", params);
+    
+        const putEventResult = await eventbridge.putEvents(params).promise();
+        console.log("Publishing [transactions created] event result", putEventResult);
+    }
 }
 
 exports.TransactionLoaderHandler = TransactionLoaderHandler;

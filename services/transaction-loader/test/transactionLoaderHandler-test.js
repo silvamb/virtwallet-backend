@@ -36,6 +36,32 @@ class DynamoDbMock {
 
 };
 
+class EventBridgeMock {
+    constructor(expectedTransactions) {
+        this.expectedTransactions = expectedTransactions;
+    }
+
+    putEvents(params){
+        expect(params.Entries[0].Source).to.be.equal("virtwallet");
+        expect(params.Entries[0].DetailType).to.be.equal("transactions created");
+        const detail = JSON.parse(params.Entries[0].Detail);
+        expect(detail).to.be.deep.equals(this.expectedTransactions);
+
+        return {
+            promise: () => {
+                return Promise.resolve(expectedPutEventResult);
+            }
+        }
+    }
+}
+
+const expectedPutEventResult = {
+    FailedEntryCount: 0, 
+    Entries: [{
+        EventId: "11710aed-b79e-4468-a20b-bb3c0c3b4860"
+    }]
+};
+
 describe('TransactionLoaderHandler unit tests', () => {
     it('should process single transaction with success', () => {
         const detail = {
@@ -53,7 +79,8 @@ describe('TransactionLoaderHandler unit tests', () => {
                 description: "Transaction1",
                 type: "GSD",
                 balance: "4000",
-                balanceType: "Debit"
+                balanceType: "Debit",
+                categoryId: "04"
             }]
         };
 
@@ -67,7 +94,20 @@ describe('TransactionLoaderHandler unit tests', () => {
             // TODO validate input
         };
 
-        const transactionLoaderHandler = new TransactionLoaderHandler(new DynamoDbMock(validateParams, expectedResult));
+        const dynamoDbMock = new DynamoDbMock(validateParams, expectedResult);
+
+        const expectedTransactions = [
+            {
+                accountId: "a03af6a8-e246-410a-8ca5-bfab980648cc",
+                walletId: "0001",
+                txDate: "2020-01-01",
+                value: "5.27",
+                categoryId: "04"
+            }
+        ];
+        const eventBridgeMock = new EventBridgeMock(expectedTransactions);
+
+        const transactionLoaderHandler = new TransactionLoaderHandler(dynamoDbMock, eventBridgeMock);
 
         return expect(transactionLoaderHandler.processEvent(detail)).to.eventually.be.fulfilled;
     });
@@ -89,7 +129,7 @@ describe('TransactionLoaderHandler unit tests', () => {
                 type: "GSD",
                 balance: "4000",
                 balanceType: "Debit",
-                categoryId: "NO_CATEGORY",
+                categoryId: "04",
                 keyword: "Transaction1"
             },
             {
@@ -101,7 +141,7 @@ describe('TransactionLoaderHandler unit tests', () => {
                 type: "POS",
                 balance: "1000",
                 balanceType: "Debit",
-                categoryId: "NO_CATEGORY",
+                categoryId: "06",
                 keyword: "Transaction2"
             }]
         };
@@ -116,7 +156,28 @@ describe('TransactionLoaderHandler unit tests', () => {
             // TODO validate input
         };
 
-        const transactionLoaderHandler = new TransactionLoaderHandler(new DynamoDbMock(validateParams, expectedResult));
+        const dynamoDbMock = new DynamoDbMock(validateParams, expectedResult);
+
+        const expectedTransactions = [
+            {
+                accountId: "a03af6a8-e246-410a-8ca5-bfab980648cc",
+                walletId: "0001",
+                txDate: "2020-01-01",
+                value: "5.27",
+                categoryId: "04"
+            },
+            {
+                accountId: "a03af6a8-e246-410a-8ca5-bfab980648cc",
+                walletId: "0001",
+                txDate: "2020-01-01",
+                value: "15.32",
+                categoryId: "06"
+            }
+        ];
+
+        const eventBridgeMock = new EventBridgeMock(expectedTransactions);
+
+        const transactionLoaderHandler = new TransactionLoaderHandler(dynamoDbMock, eventBridgeMock);
 
         return expect(transactionLoaderHandler.processEvent(detail)).to.eventually.be.fulfilled;
     });

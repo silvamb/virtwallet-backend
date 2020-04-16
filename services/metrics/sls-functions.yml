@@ -1,13 +1,13 @@
 eventBridge-handler:
-  handler: src/transactionLoaderLambda.handle
+  handler: src/metricsUpdateLambda.handle
   events:
     - eventBridge:
         pattern:
           source:
             - virtwallet
           detail-type:
-            - transactions classified
-  iamRoleStatementsName: virtwallet-trasaction-loader-${self:provider.stage}-iam-role
+            - transactions created
+  iamRoleStatementsName: virtwallet-metrics-${self:provider.stage}-iam-role
 
   iamRoleStatements:
     - Effect: Allow
@@ -19,7 +19,3 @@ eventBridge-handler:
         - dynamodb:UpdateItem
         - dynamodb:DeleteItem
       Resource: "arn:aws:dynamodb:${opt:region, self:provider.region}:*:table/virtwallet"
-    - Effect: Allow
-      Action: 
-        - events:PutEvents
-      Resource: "*"

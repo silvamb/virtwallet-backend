@@ -177,7 +177,7 @@ describe('TransactionHandler unit tests', () => {
                 from: event.queryStringParameters ? event.queryStringParameters.from : null
             };
 
-            const expectedResult = {
+            const putItemResult = {
                 Attributes: [
                     {
                         PK: { "S": "ACCOUNT#4801b837-18c0-4277-98e9-ba57130edeb3" },
@@ -200,19 +200,22 @@ describe('TransactionHandler unit tests', () => {
                 ],
                 ConsumedCapacity: {
                     TableName: "virtwallet",
-                    CapacityUnits: 1.0,
-                    ReadCapacityUnits: 1.0,
-                    WriteCapacityUnits: 1.0
+                    CapacityUnits: 1
                 }
             };
 
             const validateParams = (params) => {
             };
 
-            const transactionHandler = new TransactionHandler(new DynamoDbMock(validateParams, expectedResult));
+            const transactionHandler = new TransactionHandler(new DynamoDbMock(validateParams, putItemResult));
             const promise = transactionHandler.create(parameters);
 
-            return expect(promise).to.eventually.deep.include(expectedResult);
+            const expectedResult = {
+                success: true,
+                data: putItemResult
+            };
+
+            return expect(promise).to.eventually.become(expectedResult);
         });
     });
 
