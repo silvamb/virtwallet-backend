@@ -60,6 +60,51 @@ function fromItem(item, obj) {
     return obj;
 }
 
+async function executeInChunks(dbClient, operation, paramsList) {
+    const totalItems = paramsList.length;
+    const itemsInParalel = totalItems >= BATCH_SIZE ? BATCH_SIZE : totalItems;
+    const queues = Array(itemsInParalel).fill(0).map((_val) => []);
+    const flatResult = Array(totalItems);
+
+    console.log(`Splitting ${totalItems} items into ${itemsInParalel} chunks`);
+    let workerId;
+    for (let i = 0; i < paramsList.length; i++) {
+        workerId = i % itemsInParalel;
+        console.log(`Item ${i} assigned to worker ${workerId}`);
+        queues[workerId].push(paramsList[i]);
+    }
+
+    console.log(`Workers distribution: ${queues.map(q => q.length)}`);
+
+    console.log(`Starting ${itemsInParalel} workers`);
+
+    const processQueue = async (opParamsList, worker) => {
+        console.log(`[${operation}-${worker}] - Starting work. Total items to process: [${opParamsList.length}]`);
+
+        let opParams, putItemResult, originalIndex;
+        for(let i = 0; i < opParamsList.length; i++) {
+            originalIndex = (itemsInParalel * i) + worker
+            console.log(`[${operation}-${worker}] - Executing item [${originalIndex}], [${i}] in this queue`);
+            opParams = opParamsList[i];
+            try {
+                putItemResult = await dbClient[operation](opParams).promise();
+                putItemResult = new PutItemResult(putItemResult);
+                console.log(`[${operation}-${worker}] - Item [${originalIndex}] processed with success`);
+            } catch(err) {
+                putItemResult = new PutItemResult(err, false);
+                console.log(`[${operation}-${worker}] - Item [${originalIndex}] processed with error`, err);
+            }
+
+            flatResult[originalIndex] = putItemResult;
+        }
+    }
+    const promises = queues.map(processQueue);
+
+    await Promise.all(promises);
+    console.log(`All ${itemsInParalel} chunks processed.`);
+
+    return flatResult;
+}
 
 class DynamoDb {
 
@@ -88,53 +133,30 @@ class DynamoDb {
             params.ConditionExpression = "attribute_not_exists(PK)";
         }
 
-        return this.dynamodb.putItem(params).promise();
+        const result = await this.dynamodb.putItem(params).promise();
+
+        return new PutItemResult(result);
     }
 
     async putItems(objArray, overwrite = true) {
-        const totalItems = objArray.length;
-        const itemsInParalel = totalItems >= BATCH_SIZE ? BATCH_SIZE : totalItems;
-        const queues = Array(itemsInParalel).fill(0).map((_val) => []);
-        const flatResult = Array(totalItems);
-
-        console.log(`Splitting ${totalItems} items into ${itemsInParalel} chunks`);
-        let workerId;
-        for (let i = 0; i < objArray.length; i++) {
-            workerId = i % itemsInParalel;
-            console.log(`Item ${i} assigned to worker ${workerId}`);
-            queues[workerId].push(objArray[i]);
-        }
+        const paramsList = objArray.map(obj => {
+            const item = toItem(obj);
     
-        console.log(`Workers distribution: ${queues.map(q => q.length)}`);
-
-        console.log(`Starting ${itemsInParalel} workers`);
-
-        const processQueue = async (objsToAdd, worker) => {
-            console.log(`[PutItem-${worker}] - Starting work. Total items to process: [${objsToAdd.length}]`);
-
-            let obj, putItemResult, originalIndex;
-            for(let i = 0; i < objsToAdd.length; i++) {
-                originalIndex = (itemsInParalel * i) + worker
-                console.log(`[PutItem-${worker}] - Executing item [${originalIndex}], [${i}] in this queue`);
-                obj = objsToAdd[i];
-                try {
-                    putItemResult = await this.putItem(obj, overwrite);
-                    putItemResult = new PutItemResult(putItemResult);
-                    console.log(`[PutItem-${worker}] - Item [${originalIndex}] processed with success`);
-                } catch(err) {
-                    putItemResult = new PutItemResult(err, false);
-                    console.log(`[PutItem-${worker}] - Item [${originalIndex}] processed with error`, err);
-                }
-
-                flatResult[(itemsInParalel * i) + worker] = putItemResult;
+            const params = {
+                Item: item,
+                ReturnConsumedCapacity: "TOTAL",
+                TableName: TABLE_NAME,
+                ReturnValues: "ALL_OLD"
+            };
+    
+            if(!overwrite) {
+                params.ConditionExpression = "attribute_not_exists(PK)";
             }
-        }
-        const promises = queues.map(processQueue);
 
-        await Promise.all(promises);
-        console.log(`All ${itemsInParalel} chunks processed.`);
+            return params;
+        });
 
-        return flatResult;
+        return await executeInChunks(this.dynamodb, "putItem", paramsList);
     }
 
     /**
@@ -177,8 +199,7 @@ class DynamoDb {
     }
 
     async deleteAll(items) {
-        console.log("Executing delete all for items:")
-        console.log(items);
+        console.log("Executing delete all for items:", items);
 
         const chunks = Math.ceil(items.length/BATCH_SIZE);
 
@@ -215,6 +236,49 @@ class DynamoDb {
         const data = await this.query(query);
 
         return data.Count + 1;
+    }
+
+    async getItem(obj, attributes = new Set()) {
+        console.log(`Getting item with keys [${obj.getHash()}, ${obj.getRange()}] from database`);
+
+        const params = {
+            Key: getKey(obj),
+            TableName: TABLE_NAME
+        };
+
+        if(attributes.length > 0) {
+            attributes.add("PK");
+            attributes.add("SK");
+            params.ProjectionExpression = Array.from(attributes).join();
+        }
+
+        const result = await this.dynamodb.getItem(params).promise();
+
+        console.log("Item retrieved:", result);
+
+        return result.Item;
+    }
+
+    async load(obj, attributes = new Set()) {
+        const item = await this.getItem(obj, attributes);
+
+        if(item) {
+            console.log(`Loading attributes into object [${obj.getHash()}, ${obj.getRange()}]`);
+            fromItem(item, obj);
+        }
+
+        return item !== undefined;
+    }
+
+    async updateItems(paramsList) {
+        console.log("Executing putItem for items:", paramsList);
+
+        if(paramsList.length == 1) {
+            const putItemResult = await this.dynamodb.putItem(paramsList[0]).promise();
+            return new PutItemResult(putItemResult);
+        }
+
+        return await executeInChunks(this.dynamodb, "updateItem", paramsList);
     }
 }
 
@@ -387,6 +451,54 @@ class ExpressionBuilder {
     }
 }
 
+class UpdateExpressionBuilder {
+    constructor(itemToUpdate) {
+        this.itemToUpdate = itemToUpdate;
+        this.addExpressions = [];
+        this.setExpressions = [];
+        this.exprAttributes = new Map();
+    }
+
+    addTo(attribute, value) {
+        this.exprAttributes.set(attribute, value);
+
+        this.addExpressions.push(`#${attribute} :${attribute}`);
+        
+        return this;
+    }
+
+    set(attribute, value) {
+        this.exprAttributes.set(`#${attribute}`, value);
+
+        this.setExpressions.push(`#${attribute} = :${attribute}`);
+        
+        return this;
+    }
+
+    build() {
+        const attrNames = {};
+        const attrValues = {};
+
+        const attrTypeMap = this.itemToUpdate.getAttrTypeMap();
+        for (let [attribute, value] of this.exprAttributes) {
+            attrNames[`#${attribute}`] = attribute;
+            attrValues[`:${attribute}`] = attrTypeMap.get(attribute).toAttribute(value);
+        }
+
+        const addExpression = this.addExpressions.length > 0 ? `ADD ${this.addExpressions.join()}` : "";
+        const setExpression = this.setExpressions.length > 0 ? `SET ${this.setExpressions.join()}` : ""
+
+        return {
+            ExpressionAttributeNames: attrNames,
+            ExpressionAttributeValues: attrValues,
+            Key: getKey(this.itemToUpdate),
+            ReturnValues: "ALL_NEW", 
+            TableName: TABLE_NAME, 
+            UpdateExpression: `${addExpression} ${setExpression}`
+        }
+    }
+}
+
 class PutItemResult {
 
     constructor(result, success = true) {
@@ -399,6 +511,7 @@ class PutItemResult {
 exports.DynamoDb = DynamoDb;
 exports.QueryBuilder = QueryBuilder;
 exports.ExpressionBuilder = ExpressionBuilder;
+exports.UpdateExpressionBuilder = UpdateExpressionBuilder;
 exports.toItem = toItem;
 exports.fromItem = fromItem;
 exports.AttributeValue = AttributeValue;
