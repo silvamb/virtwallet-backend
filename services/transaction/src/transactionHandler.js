@@ -119,8 +119,9 @@ class TransactionHandler {
     async update(parameters) {
         const oldAttributes = parameters.transactions.old;
         const updatedAttributes = parameters.transactions.new;
+        const txDate = parameters.txDate;
 
-        if(!oldAttributes || !updatedAttributes) {
+        if(!oldAttributes || !updatedAttributes || !txDate) {
             throw new Error("Event body invalid for Transaction update");
         }
 
@@ -145,7 +146,7 @@ class TransactionHandler {
 
         transactionToUpdate.accountId = parameters.accountId;
         transactionToUpdate.walletId = parameters.walletId;
-        transactionToUpdate.txDate = parameters.txDate;
+        transactionToUpdate.txDate = txDate;
         transactionToUpdate.txId = parameters.txId;
 
         const updateResult = await updateTransaction(this.dbClient, transactionToUpdate, updatedAttributes);

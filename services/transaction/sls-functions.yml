@@ -93,3 +93,7 @@ apigw-event-handler:
         - dynamodb:DeleteItem
         - dynamodb:BatchWriteItem
       Resource: "arn:aws:dynamodb:${opt:region, self:provider.region}:*:table/virtwallet"
+    - Effect: Allow
+      Action: 
+        - events:PutEvents
+      Resource: "*"    

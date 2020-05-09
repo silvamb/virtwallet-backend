@@ -25,13 +25,15 @@ exports.handle = async event => {
 function parseEvent(event) {
     console.log("Parsing event:", event);
 
+    const transactions = event.body ? JSON.parse(event.body) : undefined;
+
     return {
         clientId: event.requestContext.authorizer.claims.client_id,
         accountId: event.pathParameters.accountId,
         walletId: event.pathParameters.walletId,
-        txDate: event.pathParameters.txDate,
-        txId: event.pathParameters.txId,
-        transactions: event.body ? JSON.parse(event.body) : undefined,
+        txDate: transactions !== undefined ? transactions.txDate : undefined,
+        txId: event.pathParameters.transactionId,
+        transactions: transactions,
         generateId: event.queryStringParameters && event.queryStringParameters.generateId,
         to: event.queryStringParameters ? event.queryStringParameters.to : null,
         from: event.queryStringParameters ? event.queryStringParameters.from : null,
