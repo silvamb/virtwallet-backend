@@ -1,5 +1,6 @@
 const transaction = require('libs/transaction');
 const Transaction = transaction.Transaction;
+const isChangeNotifiable = transaction.isChangeNotifiable;
 const updateTransaction = transaction.update;
 const dynamodb = require('libs/dynamodb');
 const DynamoDb = dynamodb.DynamoDb;
@@ -12,9 +13,10 @@ const getSK = transaction.getSK;
 const getSKAttr = transaction.getSKAttr;
 
 class TransactionHandler {
-    constructor(dbClient) {
+    constructor(dbClient, eventbridge) {
         console.log("Creating Transaction Handler");
         this.dbClient = new DynamoDb(dbClient);
+        this.eventbridge = eventbridge;
     }
 
     async handle(operation, parameters) {
@@ -146,7 +148,13 @@ class TransactionHandler {
         transactionToUpdate.txDate = parameters.txDate;
         transactionToUpdate.txId = parameters.txId;
 
-        return updateTransaction(this.dbClient, transactionToUpdate, updatedAttributes);
+        const updateResult = await updateTransaction(this.dbClient, transactionToUpdate, updatedAttributes);
+
+        if(updateResult.success && isChangeNotifiable(updatedAttributes)) {
+            await publishUpdatedTransaction(this.eventbridge, parameters);
+        }
+
+        return updateResult;
     }
 
     async delete(_parameters) {
@@ -184,6 +192,24 @@ function transformPutItemsResult(result) {
     }
 
     return transformedResult;
+}
+
+async function publishUpdatedTransaction(eventbridge, parameters) {
+    const params = {
+        Entries: [
+            {
+                Source: "virtwallet",
+                DetailType: "transaction updated", // TODO add Event types in a file in libs
+                Time: new Date(),
+                Detail: JSON.stringify(parameters),
+            },
+        ],
+    };
+
+    console.log("Publishing [transaction updated] event", params);
+
+    const putEventResult = await eventbridge.putEvents(params).promise();
+    console.log("Publishing [transaction updated] event result", putEventResult);
 }
 
 exports.TransactionHandler = TransactionHandler;

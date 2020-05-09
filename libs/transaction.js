@@ -1,6 +1,4 @@
 const dynamoDbLib = require("./dynamodb");
-const DynamoDb = dynamoDbLib.DynamoDb;
-const UpdateExpressionBuilder = dynamoDbLib.UpdateExpressionBuilder;
 
 const DEBIT_BALANCE_TYPE = 'Debit';
 const CREDIT_BALANCE_TYPE = 'Credit';
@@ -42,6 +40,11 @@ const updatableAttrs = new Set([
     "balance",
     "categoryId",
     "keyword"
+]);
+
+const notifiableAttrs = new Set([
+    "value",
+    "categoryId"
 ]);
 
 const getPK = (accountId) => `ACCOUNT#${accountId}`;
@@ -153,6 +156,16 @@ exports.update = async (dbClient, transactionToUpdate, attrsToUpdate) => {
     return dbClient.updateItem(transactionToUpdate, attrsToUpdate);
 }
 
+exports.isChangeNotifiable = updatedAttributes => {
+    for(let attr in updatedAttributes) {
+        if(notifiableAttrs.has(attr)) {
+            return true;
+        }
+    }
+
+    return false;
+}
+
 exports.Transaction = Transaction;
 exports.DEBIT_BALANCE_TYPE = DEBIT_BALANCE_TYPE;
 exports.CREDIT_BALANCE_TYPE = CREDIT_BALANCE_TYPE;
@@ -161,4 +174,4 @@ exports.MANUAL_INPUT = MANUAL_INPUT;
 exports.getPK = getPK;
 exports.getSK = getSK;
 exports.getSKAttr = getSKAttr;
-exports.getFieldAttrType = (fieldName) => attrTypeMap.get(fieldName);
+exports.getFieldAttrType = fieldName => attrTypeMap.get(fieldName);
