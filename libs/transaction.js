@@ -1,4 +1,5 @@
 const dynamoDbLib = require("./dynamodb");
+const DynamoDb = dynamoDbLib.DynamoDb;
 const UpdateExpressionBuilder = dynamoDbLib.UpdateExpressionBuilder;
 
 const DEBIT_BALANCE_TYPE = 'Debit';
@@ -32,6 +33,15 @@ const attrsToCompare = new Set([
     "balance",
     "balanceType",
     "category"
+]);
+
+const updatableAttrs = new Set([
+    "value",
+    "description",
+    "type",
+    "balance",
+    "categoryId",
+    "keyword"
 ]);
 
 const getPK = (accountId) => `ACCOUNT#${accountId}`;
@@ -114,6 +124,13 @@ class Transaction {
     }
 }
 
+/**
+ * Updates a transaction.
+ * 
+ * @param {DynamoDb} dbClient Dynamo DB client
+ * @param {Transaction} transactionToUpdate transaction object to update
+ * @param {*} attrsToUpdate attributes to be updated.
+ */
 exports.update = async (dbClient, transactionToUpdate, attrsToUpdate) => {
     if(!dbClient || !transactionToUpdate || !attrsToUpdate) {
         throw new Error("Missing mandatory parameters");
@@ -126,6 +143,10 @@ exports.update = async (dbClient, transactionToUpdate, attrsToUpdate) => {
     for(let attribute in attrsToUpdate) {
         if(!transactionToUpdate.hasOwnProperty(attribute)) {
             throw new Error(`'${attribute}' is not a valid Transaction attribute`);
+        }
+
+        if(!updatableAttrs.has(attribute)) {
+            throw new Error(`Transaction attribute '${attribute}' is not updatable`);
         }
     }
 

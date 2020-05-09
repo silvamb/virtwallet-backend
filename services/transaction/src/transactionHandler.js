@@ -122,7 +122,7 @@ class TransactionHandler {
             throw new Error("Event body invalid for Transaction update");
         }
 
-        console.log(`Updating transaction ${parameters.txId} with attributes:`, updatedAttributes);
+        console.log(`Updating transaction [${parameters.txId}] attributes from`, oldAttributes, "to", updatedAttributes);
         const transactionToUpdate = new Transaction();
 
         for(let attribute in oldAttributes) {

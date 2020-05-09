@@ -412,5 +412,29 @@ describe('TransactionHandler unit tests', () => {
             const promise = transactionHandler.update(parameters);
             return expect(promise).to.eventually.be.rejectedWith(Error, "Old attribute 'nonsense' is not a valid Transaction attribute");
         });
+
+        it('should fail when trying to update a transaction read-only attribute', () => {
+            const parameters = {
+                clientId: "10v21l6b17g3t27sfbe38b0i8n",
+                accountId: "4801b837-18c0-4277-98e9-ba57130edeb3",
+                walletId: "0001",
+                txDate: "2020-02-04",
+                txId: "202002040001",
+                transactions: {
+                    old: {
+                        "categoryId": "NO_CATEGORY",
+                        "accountId": "4801b837-18c0-4277-98e9-ba57130edeb3"
+                    },
+                    new: {
+                        "categoryId": "01",
+                        "accountId": "1"
+                    }
+                }
+            };
+
+            const transactionHandler = new TransactionHandler();
+            const promise = transactionHandler.update(parameters);
+            return expect(promise).to.eventually.be.rejectedWith(Error, "Transaction attribute 'accountId' is not updatable");
+        });
     });
 });
