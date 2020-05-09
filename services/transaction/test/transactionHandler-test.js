@@ -300,4 +300,117 @@ describe('TransactionHandler unit tests', () => {
             return expect(promise).to.eventually.be.fulfilled;
         });
     });
+
+    describe('UpdateTransactionTests', () => {
+        it('should update a transaction with success', () => {
+            const parameters = {
+                clientId: "10v21l6b17g3t27sfbe38b0i8n",
+                accountId: "4801b837-18c0-4277-98e9-ba57130edeb3",
+                walletId: "0001",
+                txDate: "2020-02-04",
+                txId: "202002040001",
+                transactions: {
+                    old: {
+                        "categoryId": "NO_CATEGORY",
+                        "description": "No Desc"
+                    },
+                    new: {
+                        "categoryId": "01",
+                        "description": "Some Desc"
+                    }
+                }
+            };
+
+            const expectedUpdateResult = {
+                "Attributes": {
+                    "categoryId": {
+                        "S": "01"
+                    },
+                    "description": {
+                        "S": "Some Desc"
+                    },
+                    "PK": {
+                        "S": "ACCOUNT#4801b837-18c0-4277-98e9-ba57130edeb3"
+                    },
+                    "SK": {
+                      "S": "TX#0001#2020-02-04#202002040001"
+                    }
+                }
+            };
+
+            const validateParams = params => {
+                expect(params.Key.PK.S).to.equals("ACCOUNT#4801b837-18c0-4277-98e9-ba57130edeb3");
+                expect(params.Key.SK.S).to.equals("TX#0001#2020-02-04#202002040001");
+                expect(params.ExpressionAttributeNames["#categoryId"]).to.be.equals("categoryId");
+                expect(params.ExpressionAttributeNames["#description"]).to.be.equals("description");
+                expect(params.ExpressionAttributeValues[":categoryId"].S).to.be.equals("01");
+                expect(params.ExpressionAttributeValues[":description"].S).to.be.equals("Some Desc");
+                expect(params.ExpressionAttributeValues[":old_categoryId"].S).to.be.equals("NO_CATEGORY");
+                expect(params.ExpressionAttributeValues[":old_description"].S).to.be.equals("No Desc");
+                expect(params.UpdateExpression).to.be.equals(" SET #categoryId = :categoryId,#description = :description");
+                expect(params.ConditionExpression).to.be.equals("#categoryId = :old_categoryId AND #description = :old_description");
+            }
+
+            const dynamoDbMock = {
+                updateItem: (params) => {
+                    validateParams(params);
+
+                    return {
+                        promise: () => Promise.resolve(expectedUpdateResult)
+                    };
+                }
+            }
+
+            const transactionHandler = new TransactionHandler(dynamoDbMock);
+            const promise = transactionHandler.update(parameters);
+            return expect(promise).to.eventually.become({data: expectedUpdateResult, success: true});
+        });
+
+        it('should fail when trying to update a transaction with missing old attributes', () => {
+            const parameters = {
+                clientId: "10v21l6b17g3t27sfbe38b0i8n",
+                accountId: "4801b837-18c0-4277-98e9-ba57130edeb3",
+                walletId: "0001",
+                txDate: "2020-02-04",
+                txId: "202002040001",
+                transactions: {
+                    old: {
+                        "categoryId": "NO_CATEGORY"
+                    },
+                    new: {
+                        "categoryId": "01",
+                        "description": "Some Desc"
+                    }
+                }
+            };
+
+            const transactionHandler = new TransactionHandler();
+            const promise = transactionHandler.update(parameters);
+            return expect(promise).to.eventually.be.rejectedWith(Error, "Missing old value for attribute 'description'");
+        });
+
+        it('should fail when trying to update a transaction with invalid attributes', () => {
+            const parameters = {
+                clientId: "10v21l6b17g3t27sfbe38b0i8n",
+                accountId: "4801b837-18c0-4277-98e9-ba57130edeb3",
+                walletId: "0001",
+                txDate: "2020-02-04",
+                txId: "202002040001",
+                transactions: {
+                    old: {
+                        "categoryId": "NO_CATEGORY",
+                        "nonsense": "this is not a transaction attr"
+                    },
+                    new: {
+                        "categoryId": "01",
+                        "nonsense": "this is not a transaction attr"
+                    }
+                }
+            };
+
+            const transactionHandler = new TransactionHandler();
+            const promise = transactionHandler.update(parameters);
+            return expect(promise).to.eventually.be.rejectedWith(Error, "Old attribute 'nonsense' is not a valid Transaction attribute");
+        });
+    });
 });

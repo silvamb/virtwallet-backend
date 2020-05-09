@@ -29,6 +29,7 @@ function parseEvent(event) {
         clientId: event.requestContext.authorizer.claims.client_id,
         accountId: event.pathParameters.accountId,
         walletId: event.pathParameters.walletId,
+        txDate: event.pathParameters.txDate,
         txId: event.pathParameters.txId,
         transactions: event.body ? JSON.parse(event.body) : undefined,
         generateId: event.queryStringParameters && event.queryStringParameters.generateId,

@@ -1,5 +1,6 @@
 const transaction = require('libs/transaction');
 const Transaction = transaction.Transaction;
+const updateTransaction = transaction.update;
 const dynamodb = require('libs/dynamodb');
 const DynamoDb = dynamodb.DynamoDb;
 const QueryBuilder = dynamodb.QueryBuilder;
@@ -113,8 +114,39 @@ class TransactionHandler {
         throw new Error("Operation TransactionHandler.get not implemented yet");
     }
 
-    async update(_parameters) {
-        throw new Error("Operation TransactionHandler.update not implemented yet");
+    async update(parameters) {
+        const oldAttributes = parameters.transactions.old;
+        const updatedAttributes = parameters.transactions.new;
+
+        if(!oldAttributes || !updatedAttributes) {
+            throw new Error("Event body invalid for Transaction update");
+        }
+
+        console.log(`Updating transaction ${parameters.txId} with attributes:`, updatedAttributes);
+        const transactionToUpdate = new Transaction();
+
+        for(let attribute in oldAttributes) {
+            if(transactionToUpdate.hasOwnProperty(attribute)
+                && typeof(transactionToUpdate[attribute]) == typeof(oldAttributes[attribute])) {
+                transactionToUpdate[attribute] = oldAttributes[attribute];
+            } else {
+                throw new Error(`Old attribute '${attribute}' is not a valid Transaction attribute`);
+            }
+        }
+
+        // Check if some update attribute doesn't have the old value
+        for(let updatedAttribute in updatedAttributes) {
+            if(!oldAttributes.hasOwnProperty(updatedAttribute)) {
+                throw new Error(`Missing old value for attribute '${updatedAttribute}'`);
+            }
+        }
+
+        transactionToUpdate.accountId = parameters.accountId;
+        transactionToUpdate.walletId = parameters.walletId;
+        transactionToUpdate.txDate = parameters.txDate;
+        transactionToUpdate.txId = parameters.txId;
+
+        return updateTransaction(this.dbClient, transactionToUpdate, updatedAttributes);
     }
 
     async delete(_parameters) {

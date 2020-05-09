@@ -81,21 +81,21 @@ async function executeInChunks(dbClient, operation, paramsList) {
     const processQueue = async (opParamsList, worker) => {
         console.log(`[${operation}-${worker}] - Starting work. Total items to process: [${opParamsList.length}]`);
 
-        let opParams, putItemResult, originalIndex;
+        let opParams, opResult, originalIndex;
         for(let i = 0; i < opParamsList.length; i++) {
             originalIndex = (itemsInParalel * i) + worker
             console.log(`[${operation}-${worker}] - Executing item [${originalIndex}], [${i}] in this queue`);
             opParams = opParamsList[i];
             try {
-                putItemResult = await dbClient[operation](opParams).promise();
-                putItemResult = new PutItemResult(putItemResult);
+                opResult = await dbClient[operation](opParams).promise();
+                opResult = new Result(opResult);
                 console.log(`[${operation}-${worker}] - Item [${originalIndex}] processed with success`);
             } catch(err) {
-                putItemResult = new PutItemResult(err, false);
+                opResult = new Result(err, false);
                 console.log(`[${operation}-${worker}] - Item [${originalIndex}] processed with error`, err);
             }
 
-            flatResult[originalIndex] = putItemResult;
+            flatResult[originalIndex] = opResult;
         }
     }
     const promises = queues.map(processQueue);
@@ -135,7 +135,7 @@ class DynamoDb {
 
         const result = await this.dynamodb.putItem(params).promise();
 
-        return new PutItemResult(result);
+        return new Result(result);
     }
 
     async putItems(objArray, overwrite = true) {
@@ -271,14 +271,28 @@ class DynamoDb {
     }
 
     async updateItems(paramsList) {
-        console.log("Executing putItem for items:", paramsList);
+        console.log("Executing updateItem for items:", paramsList);
 
         if(paramsList.length == 1) {
-            const putItemResult = await this.dynamodb.putItem(paramsList[0]).promise();
-            return new PutItemResult(putItemResult);
+            let updateItemResult;
+            try {
+                updateItemResult = await this.dynamodb.updateItem(paramsList[0]).promise();
+                return new Result(updateItemResult);
+            } catch(err) {
+                updateItemResult = new Result(err, false);
+            }
+
+            console.log("Update Item processed", updateItemResult);
+            return updateItemResult;
         }
 
         return await executeInChunks(this.dynamodb, "updateItem", paramsList);
+    }
+
+    async updateItem(updatedObj, updatedAttr) {
+        const updateParams = new UpdateExpressionBuilder(updatedObj).updateTo(updatedAttr).build();
+
+        return this.updateItems([updateParams]);
     }
 }
 
@@ -456,50 +470,69 @@ class UpdateExpressionBuilder {
         this.itemToUpdate = itemToUpdate;
         this.addExpressions = [];
         this.setExpressions = [];
-        this.exprAttributes = new Map();
+        this.exprAttributeNames = {};
+        this.exprAttributeValues = {};
+        this.conditionExpressions = [];
     }
 
     addTo(attribute, value) {
-        this.exprAttributes.set(attribute, value);
+        const attrTypeMap = this.itemToUpdate.getAttrTypeMap();
+        this.exprAttributeValues[`:${attribute}`] = attrTypeMap.get(attribute).toAttribute(value);
+        this.exprAttributeNames[`#${attribute}`] = attribute;
 
         this.addExpressions.push(`#${attribute} :${attribute}`);
-        
+
         return this;
     }
 
     set(attribute, value) {
-        this.exprAttributes.set(`#${attribute}`, value);
+        const attrTypeMap = this.itemToUpdate.getAttrTypeMap();
+        this.exprAttributeValues[`:${attribute}`] = attrTypeMap.get(attribute).toAttribute(value);
+        this.exprAttributeNames[`#${attribute}`] = attribute;
 
         this.setExpressions.push(`#${attribute} = :${attribute}`);
-        
+
+        return this;
+    }
+
+    updateTo(attrsToUpdate) {
+        const attrTypeMap = this.itemToUpdate.getAttrTypeMap();
+        let oldValue;
+        for(let attribute in attrsToUpdate) {
+            if(this.itemToUpdate.hasOwnProperty(attribute)) {
+                this.set(attribute, attrsToUpdate[attribute]);
+
+                oldValue = this.itemToUpdate[attribute];
+                this.exprAttributeValues[`:old_${attribute}`] = attrTypeMap.get(attribute).toAttribute(oldValue);
+                this.conditionExpressions.push(`#${attribute} = :old_${attribute}`);
+            }
+        }
+
         return this;
     }
 
     build() {
-        const attrNames = {};
-        const attrValues = {};
-
-        const attrTypeMap = this.itemToUpdate.getAttrTypeMap();
-        for (let [attribute, value] of this.exprAttributes) {
-            attrNames[`#${attribute}`] = attribute;
-            attrValues[`:${attribute}`] = attrTypeMap.get(attribute).toAttribute(value);
-        }
-
         const addExpression = this.addExpressions.length > 0 ? `ADD ${this.addExpressions.join()}` : "";
         const setExpression = this.setExpressions.length > 0 ? `SET ${this.setExpressions.join()}` : ""
 
-        return {
-            ExpressionAttributeNames: attrNames,
-            ExpressionAttributeValues: attrValues,
+        const updateExpression = {
+            ExpressionAttributeNames: this.exprAttributeNames,
+            ExpressionAttributeValues: this.exprAttributeValues,
             Key: getKey(this.itemToUpdate),
             ReturnValues: "ALL_NEW", 
             TableName: TABLE_NAME, 
             UpdateExpression: `${addExpression} ${setExpression}`
         }
+
+        if(this.conditionExpressions.length > 0) {
+            updateExpression.ConditionExpression = this.conditionExpressions.join(" AND ");
+        }
+
+        return updateExpression;
     }
 }
 
-class PutItemResult {
+class Result {
 
     constructor(result, success = true) {
         this.data = result;

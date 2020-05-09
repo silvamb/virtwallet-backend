@@ -1,4 +1,5 @@
-const dynamodb = require("./dynamodb");
+const dynamoDbLib = require("./dynamodb");
+const UpdateExpressionBuilder = dynamoDbLib.UpdateExpressionBuilder;
 
 const DEBIT_BALANCE_TYPE = 'Debit';
 const CREDIT_BALANCE_TYPE = 'Credit';
@@ -6,22 +7,22 @@ const AUTO_INPUT = 'A';
 const MANUAL_INPUT = 'M';
 
 const attrTypeMap = new Map([
-    ["accountId", dynamodb.StringAttributeType],
-    ["walletId", dynamodb.StringAttributeType],
-    ["txDate", dynamodb.StringAttributeType],
-    ["txId", dynamodb.StringAttributeType],
-    ["dt", dynamodb.StringAttributeType],
-    ["value", dynamodb.NumberAttributeType],
-    ["description", dynamodb.StringAttributeType],
-    ["type", dynamodb.StringAttributeType],
-    ["balance", dynamodb.NumberAttributeType],
-    ["balanceType", dynamodb.StringAttributeType],
-    ["includedBy", dynamodb.StringAttributeType],
-    ["version", dynamodb.NumberAttributeType],
-    ["categoryId", dynamodb.StringAttributeType],
-    ["keyword", dynamodb.StringAttributeType],
-    ["source", dynamodb.StringAttributeType],
-    ["sourceType", dynamodb.StringAttributeType],
+    ["accountId", dynamoDbLib.StringAttributeType],
+    ["walletId", dynamoDbLib.StringAttributeType],
+    ["txDate", dynamoDbLib.StringAttributeType],
+    ["txId", dynamoDbLib.StringAttributeType],
+    ["dt", dynamoDbLib.StringAttributeType],
+    ["value", dynamoDbLib.NumberAttributeType],
+    ["description", dynamoDbLib.StringAttributeType],
+    ["type", dynamoDbLib.StringAttributeType],
+    ["balance", dynamoDbLib.NumberAttributeType],
+    ["balanceType", dynamoDbLib.StringAttributeType],
+    ["includedBy", dynamoDbLib.StringAttributeType],
+    ["version", dynamoDbLib.NumberAttributeType],
+    ["categoryId", dynamoDbLib.StringAttributeType],
+    ["keyword", dynamoDbLib.StringAttributeType],
+    ["source", dynamoDbLib.StringAttributeType],
+    ["sourceType", dynamoDbLib.StringAttributeType],
 ]);
 
 const attrsToCompare = new Set([
@@ -50,7 +51,7 @@ const getSK = (walletId, txDate, txId) => {
 
 const getSKAttr = (walletId, txDate, txId) => {
     const sk = getSK(walletId, txDate, txId);
-    return dynamodb.StringAttributeType.toAttribute(sk);
+    return dynamoDbLib.StringAttributeType.toAttribute(sk);
 }
 
 class TransactionChangeSet {
@@ -111,6 +112,24 @@ class Transaction {
 
         return changeSet;
     }
+}
+
+exports.update = async (dbClient, transactionToUpdate, attrsToUpdate) => {
+    if(!dbClient || !transactionToUpdate || !attrsToUpdate) {
+        throw new Error("Missing mandatory parameters");
+    }
+
+    if(!transactionToUpdate instanceof Transaction) {
+        throw new Error("'transactionToUpdate' must be a Transaction"); 
+    }
+
+    for(let attribute in attrsToUpdate) {
+        if(!transactionToUpdate.hasOwnProperty(attribute)) {
+            throw new Error(`'${attribute}' is not a valid Transaction attribute`);
+        }
+    }
+
+    return dbClient.updateItem(transactionToUpdate, attrsToUpdate);
 }
 
 exports.Transaction = Transaction;
