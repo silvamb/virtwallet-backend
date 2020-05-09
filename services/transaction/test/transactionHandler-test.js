@@ -409,6 +409,9 @@ describe('TransactionHandler unit tests', () => {
 
             const expectedUpdateResult = {
                 "Attributes": {
+                    "categoryId": {
+                        "S": "01"
+                    },
                     "value": {
                         "N": "2.9"
                     },
@@ -440,7 +443,21 @@ describe('TransactionHandler unit tests', () => {
                     };
                 }
             };
-            const eventBridgeMock = new EventBridgeMock(parameters);
+
+            const expectedEvent = {
+                accountId: "4801b837-18c0-4277-98e9-ba57130edeb3",
+                walletId: "0001",
+                txDate: "2020-02-03",
+                txId: "202002030001",
+                old: {
+                    categoryId: "01",
+                    value: 1.5,
+                },
+                new: {
+                    value: 2.9
+                }
+            };
+            const eventBridgeMock = new EventBridgeMock(expectedEvent);
 
             const transactionHandler = new TransactionHandler(dynamoDbMock, eventBridgeMock);
             const promise = transactionHandler.update(parameters);

@@ -151,7 +151,7 @@ class TransactionHandler {
         const updateResult = await updateTransaction(this.dbClient, transactionToUpdate, updatedAttributes);
 
         if(updateResult.success && isChangeNotifiable(updatedAttributes)) {
-            await publishUpdatedTransaction(this.eventbridge, parameters);
+            await publishUpdatedTransaction(this.eventbridge, parameters, updateResult.data.Attributes);
         }
 
         return updateResult;
@@ -194,14 +194,29 @@ function transformPutItemsResult(result) {
     return transformedResult;
 }
 
-async function publishUpdatedTransaction(eventbridge, parameters) {
+async function publishUpdatedTransaction(eventbridge, parameters, oldAttributes) {
+    const oldTransaction = fromItem(oldAttributes, new Transaction());
+    const old = {
+        value: oldTransaction.value,
+        categoryId: oldTransaction.categoryId,
+    };
+
+    const transactionChanges = {
+        accountId: parameters.accountId,
+        walletId: parameters.walletId,
+        txDate: parameters.txDate,
+        txId: parameters.txId,
+        old: Object.assign(old, parameters.transactions.old),
+        new: parameters.transactions.new,
+    };
+
     const params = {
         Entries: [
             {
                 Source: "virtwallet",
                 DetailType: "transaction updated", // TODO add Event types in a file in libs
                 Time: new Date(),
-                Detail: JSON.stringify(parameters),
+                Detail: JSON.stringify(transactionChanges),
             },
         ],
     };
