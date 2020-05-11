@@ -1,0 +1,2 @@
+accountId,walletId,txDate,txId,dt,value,description,type,balance,balanceType,includedBy,version,categoryId,keyword,source,sourceType
+4801b837-18c0-4277-98e9-ba57130edeb3,0001,2020-03-01,202003010001,2020-03-01T00:00:00.000Z,19.9,"Transaction, Test",POS,1234.56,Debit,10v21l6b17g3t27sfbe38b0i8n,1,Category Name,Transaction,JOHNDOE12345678-20200107.csv,A
