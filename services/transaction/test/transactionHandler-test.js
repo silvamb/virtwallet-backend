@@ -3,6 +3,7 @@ const chaiAsPromised = require("chai-as-promised");
 chai.use(chaiAsPromised);
 const expect = chai.expect;
 const fs = require('fs');
+const testValues = require('./testValues');
 
 const TransactionHandler = require('../src/transactionHandler').TransactionHandler;
 
@@ -64,13 +65,7 @@ describe('TransactionHandler unit tests', () => {
     describe('list transactions tests', () => {
         it('should list transactions in a period with success', () => {
 
-            const parameters = {
-                clientId: "10v21l6b17g3t27sfbe38b0i8n",
-                accountId: "4801b837-18c0-4277-98e9-ba57130edeb3",
-                walletId: "0001",
-                from: "2020-01-01",
-                to: "2020-01-18"
-            }
+            const parameters = testValues.listTransactionsParams;
 
             const validateParams = (params) => {
                 expect(params.ExpressionAttributeValues[":pk"].S).to.be.equal("ACCOUNT#4801b837-18c0-4277-98e9-ba57130edeb3");
@@ -79,58 +74,56 @@ describe('TransactionHandler unit tests', () => {
                 expect(params.KeyConditionExpression).to.be.equal("PK = :pk AND SK BETWEEN :SK_start AND :SK_end");
             };
 
-            // TODO Add this to a JSON file
-            const expectedResult = {
-                Count: 1,
-                Items: [
-                    {
-                        PK: { "S": "ACCOUNT#4801b837-18c0-4277-98e9-ba57130edeb3" },
-                        SK: { "S": "TX#0001#2020-01-01#202001010001" },
-                        accountId: { "S": "4801b837-18c0-4277-98e9-ba57130edeb3" },
-                        walletId: { "S": "0001" },
-                        txDate: { "S": "2020-01-01" },
-                        txId: { "S": "202001010001" },
-                        dt: { "S": "2020-01-01T00:00:00.000Z" },
-                        value: { "N": "19.9" },
-                        description: { "S": "Transaction Test" },
-                        type: { "S": "POS" },
-                        balance: { "N": "1234.56" },
-                        balanceType: { "S": "Debit" },
-                        includedBy: { "S": "10v21l6b17g3t27sfbe38b0i8n"},
-                        version: { "N": 1 },
-                        categoryId: { "S": "NO_CATEGORY"},
-                        keyword: { "S": "Transaction"},
-                        source: { "S": "JOHNDOE12345678-20200107.csv"},
-                        sourceType: {"S": "A"}
-                    }
-                ],
-                ScannedCount: 1
-            };
+            const expectedResult = testValues.listTestDbResponse;
 
             const transactionHandler = new TransactionHandler(new DynamoDbMock(validateParams, expectedResult));
             const promise = transactionHandler.list(parameters);
 
-            // TODO Add this to a JSON file
-            const expectedList = {
-                accountId: "4801b837-18c0-4277-98e9-ba57130edeb3",
-                walletId: "0001",
-                txDate: "2020-01-01",
-                txId: "202001010001",
-                dt: "2020-01-01T00:00:00.000Z",
-                value: "19.9",
-                description: "Transaction Test",
-                type: "POS",
-                balance: "1234.56",
-                balanceType: "Debit",
-                includedBy: "10v21l6b17g3t27sfbe38b0i8n",
-                version: 1,
-                categoryId: "NO_CATEGORY",
-                keyword: "Transaction",
-                source: "JOHNDOE12345678-20200107.csv",
-                sourceType: "A"
+            const expectedList = testValues.listTestExpectedList;
+
+            return expect(promise).to.eventually.become(expectedList);
+        });
+
+        it('should list transactions in a period in an asc ordering', () => {
+
+            const parameters = testValues.orderTestAscParams;
+
+            const validateParams = (params) => {
+                expect(params.ExpressionAttributeValues[":pk"].S).to.be.equal("ACCOUNT#4801b837-18c0-4277-98e9-ba57130edeb3");
+                expect(params.ExpressionAttributeValues[":SK_start"].S).to.be.equal("TX#0001#2020-01-01");
+                expect(params.ExpressionAttributeValues[":SK_end"].S).to.be.equal("TX#0001#2020-01-18");
+                expect(params.KeyConditionExpression).to.be.equal("PK = :pk AND SK BETWEEN :SK_start AND :SK_end");
             };
 
-            return expect(promise).to.eventually.deep.include(expectedList);
+            const expectedResult = testValues.orderTestDbResponse;
+
+            const transactionHandler = new TransactionHandler(new DynamoDbMock(validateParams, expectedResult));
+            const promise = transactionHandler.list(parameters);
+
+            const expectedList = testValues.orderTestExpectedList;
+
+            return expect(promise).to.eventually.become(expectedList);
+        });
+
+        it('should list transactions in a period in a desc ordering', () => {
+
+            const parameters = testValues.orderTestDescParams
+
+            const validateParams = (params) => {
+                expect(params.ExpressionAttributeValues[":pk"].S).to.be.equal("ACCOUNT#4801b837-18c0-4277-98e9-ba57130edeb3");
+                expect(params.ExpressionAttributeValues[":SK_start"].S).to.be.equal("TX#0001#2020-01-01");
+                expect(params.ExpressionAttributeValues[":SK_end"].S).to.be.equal("TX#0001#2020-01-18");
+                expect(params.KeyConditionExpression).to.be.equal("PK = :pk AND SK BETWEEN :SK_start AND :SK_end");
+            };
+
+            const expectedResult = testValues.orderTestDbResponse;
+
+            const transactionHandler = new TransactionHandler(new DynamoDbMock(validateParams, expectedResult));
+            const promise = transactionHandler.list(parameters);
+
+            const expectedList = testValues.orderTestExpectedList.reverse();
+
+            return expect(promise).to.eventually.deep.equals(expectedList);
         });
     });
 

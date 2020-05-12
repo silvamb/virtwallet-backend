@@ -109,6 +109,19 @@ class TransactionHandler {
     
         console.log(transactions);
 
+        if(parameters.order == "ASC" || parameters.order == "DESC") {
+            transactions.sort((first, second) => {
+                const firstTx = first.dt + first.txId;
+                const secondTx = second.dt + second.txId;
+
+                if(parameters.order == "ASC") {
+                    return firstTx.localeCompare(secondTx);
+                } else {
+                    return secondTx.localeCompare(firstTx);
+                }
+            });
+        }
+
         return transactions;
     }
 
@@ -226,6 +239,13 @@ async function publishUpdatedTransaction(eventbridge, parameters, oldAttributes)
 
     const putEventResult = await eventbridge.putEvents(params).promise();
     console.log("Publishing [transaction updated] event result", putEventResult);
+}
+
+function order(first, second) {
+    const firstTx = first.dt + first.description;
+    const secondTx = second.dt + second.description;
+
+    return firstTx.localeCompare(secondTx);
 }
 
 exports.TransactionHandler = TransactionHandler;

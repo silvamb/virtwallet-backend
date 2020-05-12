@@ -17,6 +17,7 @@ apigw-handler:
             from: true
             to: true
             delimiter: false
+            order: false
   environment:
     ACCOUNT_FILES_BUCKET: ${self:custom.userFilesBucket}
   iamRoleStatements:

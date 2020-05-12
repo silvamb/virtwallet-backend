@@ -37,6 +37,7 @@ function parseEvent(event) {
         generateId: event.queryStringParameters && event.queryStringParameters.generateId,
         to: event.queryStringParameters ? event.queryStringParameters.to : null,
         from: event.queryStringParameters ? event.queryStringParameters.from : null,
+        order: event.queryStringParameters ? event.queryStringParameters.order : null,
     };
 }
 

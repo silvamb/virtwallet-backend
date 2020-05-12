@@ -26,12 +26,13 @@ exports.handle = async (event, dynamoDb, s3) => {
     const from = event.queryStringParameters.from;
     const to = event.queryStringParameters.to;
     const delimiter = event.queryStringParameters.delimiter || ",";
+    const order = event.queryStringParameters.order;
 
     const requestTime = event.requestContext.requestTimeEpoch;
 
     const dbClient = new DynamoDb(dynamoDb);
 
-    const transactions = await loadTransactions(dbClient, accountId, walletId, from, to);
+    const transactions = await loadTransactions(dbClient, accountId, walletId, from, to, order);
 
     await setCategoryNames(dynamoDb, accountId, transactions);
 
@@ -42,7 +43,7 @@ exports.handle = async (event, dynamoDb, s3) => {
     return url;
 };
 
-async function loadTransactions(dbClient, accountId, walletId, from, to) {
+async function loadTransactions(dbClient, accountId, walletId, from, to, order) {
     const pk = getPK(accountId);
 
     const fromAttr = getSKAttr(walletId, from);
@@ -55,6 +56,19 @@ async function loadTransactions(dbClient, accountId, walletId, from, to) {
     const transactions = queryData.Items.map((item) => {
         return fromItem(item, new Transaction());
     });
+
+    if(order == "ASC" || order == "DESC") {
+        transactions.sort((first, second) => {
+            const firstTx = first.dt + first.txId;
+            const secondTx = second.dt + second.txId;
+
+            if(order == "ASC") {
+                return firstTx.localeCompare(secondTx);
+            } else {
+                return secondTx.localeCompare(firstTx);
+            }
+        });
+    }
 
     return transactions;
 }
