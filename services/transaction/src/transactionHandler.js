@@ -1,5 +1,6 @@
 const transaction = require('libs/transaction');
 const Transaction = transaction.Transaction;
+const TransactionFilter = transaction.TransactionFilter;
 const isChangeNotifiable = transaction.isChangeNotifiable;
 const createTransactions = transaction.create;
 const listTransactions = transaction.list;
@@ -7,9 +8,7 @@ const updateTransaction = transaction.update;
 const dynamodb = require('libs/dynamodb');
 const DynamoDb = dynamodb.DynamoDb;
 const QueryBuilder = dynamodb.QueryBuilder;
-const ExpressionBuilder = dynamodb.ExpressionBuilder;
 const fromItem = dynamodb.fromItem;
-const SK = dynamodb.SK;
 const getPK = transaction.getPK;
 const getSK = transaction.getSK;
 const getSKAttr = transaction.getSKAttr;
@@ -48,11 +47,13 @@ class TransactionHandler {
 
         const accountId = parameters.accountId;
         const walletId = parameters.walletId;
-        const to = parameters.to;
         const from = parameters.from;
+        const to = parameters.to;
         const order = parameters.order;
 
-        return await listTransactions(this.dbClient, accountId, walletId, from, to, order)
+        const transactionFilter = new TransactionFilter().between(from, to);
+
+        return await listTransactions(this.dbClient, accountId, walletId, transactionFilter, order)
     }
 
     async get(_parameters) {

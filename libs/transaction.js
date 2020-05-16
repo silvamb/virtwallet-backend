@@ -127,6 +127,39 @@ class Transaction {
     }
 }
 
+class TransactionFilter {
+    
+    constructor() {
+        this.expressionBuilder = new dynamoDbLib.ExpressionBuilder();
+        this.from = "9999-99-99";
+        this.to = "0000-00-00";
+    }
+
+    get expression() {
+        return this.expressionBuilder.build();
+    }
+
+    between(from = "9999-99-99", to = "0000-00-00") {
+        this.from = from;
+        this.to = to;
+
+        return this;
+    }
+
+    onlyAutomaticallyInserted() {
+        expressionBuilder.equals("source", AUTO_INPUT);
+
+        return this;
+    }
+
+    onlyManuallyInserted() {
+        expressionBuilder.equals("source", MANUAL_INPUT);
+
+        return this;
+    }
+
+}
+
 /**
  * Create transactions.
  * 
@@ -187,19 +220,24 @@ exports.create = async (dbClient, clientId, accountId, walletId, transactionsToA
  * @param {DynamoDb} dbClient Dynamo DB client.
  * @param {string} accountId The account ID.
  * @param {string} walletId The wallet ID.
- * @param {string} from Initial date (inclusive) to retrieve the transactions.
- * @param {string} to End date (inclusive) to retrieve the transactions.
+ * @param {TransactionFilter} filter Filters to apply when querying the transactions.
  * @param {string} order Ordering to retrieve the transactions. Either ASC or DESC.
  */
-exports.list = async (dbClient, accountId, walletId, from = "9999-99-99", to = "0000-00-00", order) => {
+exports.list = async (dbClient, accountId, walletId, filter = new TransactionFilter(), order) => {
     const pk = getPK(accountId);
 
     const fromWalletId = walletId || "0000";
     const toWalletId = walletId || "9999";
-    const fromAttr = getSKAttr(fromWalletId, from);
-    const toAttr = getSKAttr(toWalletId, to);
+    const fromAttr = getSKAttr(fromWalletId, filter.from);
+    const toAttr = getSKAttr(toWalletId, filter.to);
     const skExpression = new dynamoDbLib.ExpressionBuilder().between(dynamoDbLib.SK, fromAttr, toAttr).build();
     const queryBuilder = new dynamoDbLib.QueryBuilder(pk).withSkExpression(skExpression);
+    
+    const filterExpression = filter.expression;
+
+    if(filterExpression.length > 0) {
+        queryBuilder.withFilterExpression(filterExpression);
+    }
 
     const queryData = await dbClient.query(queryBuilder.build());
 
@@ -264,6 +302,7 @@ exports.isChangeNotifiable = updatedAttributes => {
 }
 
 exports.Transaction = Transaction;
+exports.TransactionFilter = TransactionFilter;
 exports.DEBIT_BALANCE_TYPE = DEBIT_BALANCE_TYPE;
 exports.CREDIT_BALANCE_TYPE = CREDIT_BALANCE_TYPE;
 exports.AUTO_INPUT = AUTO_INPUT
