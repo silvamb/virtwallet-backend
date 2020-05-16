@@ -172,7 +172,7 @@ describe('TransactionHandler unit tests', () => {
             const validateParams = (params) => {
             };
 
-            const expectedResult = Array(15).fill({success: true});
+            const expectedResult = Array(15).fill({success: true, data: expectedItem});
 
             const transactionHandler = new TransactionHandler(new DynamoDbMock(validateParams, expectedItem));
             const promise = transactionHandler.create(parameters);

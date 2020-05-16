@@ -1,6 +1,8 @@
 const transaction = require('libs/transaction');
 const Transaction = transaction.Transaction;
 const isChangeNotifiable = transaction.isChangeNotifiable;
+const createTransactions = transaction.create;
+const listTransactions = transaction.list;
 const updateTransaction = transaction.update;
 const dynamodb = require('libs/dynamodb');
 const DynamoDb = dynamodb.DynamoDb;
@@ -30,6 +32,7 @@ class TransactionHandler {
     }
 
     async create(parameters) {
+        // TODO validate if user is a member of this account
         const clientId = parameters.clientId;
         const accountId = parameters.accountId;
         const walletId = parameters.walletId;
@@ -37,51 +40,7 @@ class TransactionHandler {
         const overwrite = !('overwrite' in parameters) || parameters.overwrite;
         const generateId = parameters.generateId;
 
-        // TODO validate if user is a member of this account
-        // TODO validate transaction details
-
-        console.log(`Creating transactions for user ${clientId} and wallet ${walletId}.`);
-    
-        const transactions = transactionsToAdd.map((transactionDetails) => {
-            const transaction = new Transaction();
-            transaction.txId = transactionDetails.txId;
-            transaction.txDate = transactionDetails.txDate;
-            transaction.accountId = accountId;
-            transaction.walletId = walletId;
-            transaction.dt = transactionDetails.dt;
-            transaction.value = transactionDetails.value;
-            transaction.description = transactionDetails.description;
-            transaction.balance = transactionDetails.balance;
-            transaction.balanceType = transactionDetails.balanceType;
-            transaction.includedBy = clientId;
-            transaction.categoryId = transactionDetails.categoryId;
-            transaction.keyword = transactionDetails.keyword || transactionDetails.description.trim();
-            transaction.source = transactionsToAdd.source;
-            transaction.sourceType = transactionsToAdd.sourceType;
-
-            // Generate the Tx ID if it is not specified.
-            if(!transaction.txId && generateId) {
-                transaction.txId = String(new Date().getTime());
-            }
-
-            return transaction;
-        });
-
-        let retVal;
-
-        if(transactions.length == 1) {
-            console.log(`Persisting single transaction in DynamoDb: [${JSON.stringify(transactions[0])}]`);
-            const item = await this.dbClient.putItem(transactions[0], overwrite);
-
-            console.log("Put item returned", item);
-
-            retVal = item;
-        } else {
-            retVal = await this.dbClient.putItems(transactions, overwrite);
-            retVal = retVal.map(transformPutItemsResult);
-        }
-
-        return retVal;
+        return await createTransactions(this.dbClient, clientId, accountId, walletId, transactionsToAdd, overwrite, generateId);
     }
 
     async list(parameters) {
@@ -89,40 +48,11 @@ class TransactionHandler {
 
         const accountId = parameters.accountId;
         const walletId = parameters.walletId;
+        const to = parameters.to;
+        const from = parameters.from;
+        const order = parameters.order;
 
-        const pk = getPK(accountId);
-
-        const to = parameters.to || "0000-00-00";
-        const from = parameters.from || "9999-99-99";
-        const fromWalletId = walletId || "0000";
-        const toWalletId = walletId || "9999";
-        const fromAttr = getSKAttr(fromWalletId, from);
-        const toAttr = getSKAttr(toWalletId, to);
-        const skExpression = new ExpressionBuilder().between(SK, fromAttr, toAttr).build();
-        const queryBuilder = new QueryBuilder(pk).withSkExpression(skExpression);
-
-        const queryData = await this.dbClient.query(queryBuilder.build());
-    
-        const transactions = queryData.Items.map((item) => {
-            return fromItem(item, new Transaction());
-        });
-    
-        console.log(transactions);
-
-        if(parameters.order == "ASC" || parameters.order == "DESC") {
-            transactions.sort((first, second) => {
-                const firstTx = first.dt + first.txId;
-                const secondTx = second.dt + second.txId;
-
-                if(parameters.order == "ASC") {
-                    return firstTx.localeCompare(secondTx);
-                } else {
-                    return secondTx.localeCompare(firstTx);
-                }
-            });
-        }
-
-        return transactions;
+        return await listTransactions(this.dbClient, accountId, walletId, from, to, order)
     }
 
     async get(_parameters) {

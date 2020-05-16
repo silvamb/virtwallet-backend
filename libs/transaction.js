@@ -128,6 +128,103 @@ class Transaction {
 }
 
 /**
+ * Create transactions.
+ * 
+ * @param {DynamoDb} dbClient Dynamo DB client
+ * @param {string} clientId ID of the user that is inserting this transaction
+ * @param {string} accountId Transaction object to update
+ * @param {string} walletId Transaction object to update
+ * @param {Array<any>} transactionsToAdd attributes to be updated.
+ * @param {boolean} overwrite Indicates if the transaction with the same identifiers should be overwritten
+ * @param {boolean} generateId Indicates if the transaction id should be generated, if not present
+ */
+exports.create = async (dbClient, clientId, accountId, walletId, transactionsToAdd, overwrite = false, generateId = false) => {
+    // TODO validate if user is a member of this account
+    // TODO validate transaction details
+
+    if(!dbClient || !accountId || !walletId || !transactionsToAdd) {
+        throw new Error("Missing mandatory parameters");
+    }
+
+    console.log(`Creating [${transactionsToAdd.length}] transactions for account [${accountId}] and wallet [${walletId}].`);
+
+    const transactions = transactionsToAdd.map(transactionDetails => {
+        const transaction = new Transaction();
+        transaction.txId = transactionDetails.txId;
+        transaction.txDate = transactionDetails.txDate;
+        transaction.accountId = accountId;
+        transaction.walletId = walletId;
+        transaction.dt = transactionDetails.dt;
+        transaction.value = transactionDetails.value;
+        transaction.description = transactionDetails.description;
+        transaction.balance = transactionDetails.balance;
+        transaction.balanceType = transactionDetails.balanceType;
+        transaction.includedBy = clientId;
+        transaction.categoryId = transactionDetails.categoryId;
+        transaction.keyword = transactionDetails.keyword || transactionDetails.description.trim();
+        transaction.source = transactionsToAdd.source;
+        transaction.sourceType = transactionsToAdd.sourceType;
+
+        // Generate the Tx ID if it is not specified.
+        if(!transaction.txId && generateId) {
+            transaction.txId = String(new Date().getTime());
+        }
+
+        return transaction;
+    });
+
+    if(transactions.length == 1) {
+        console.log(`Persisting single transaction in DynamoDb: [${JSON.stringify(transactions[0])}]`);
+        return dbClient.putItem(transactions[0], overwrite);
+    } else {
+        return dbClient.putItems(transactions, overwrite);
+    }
+}
+
+/**
+ * List transactions.
+ * 
+ * @param {DynamoDb} dbClient Dynamo DB client.
+ * @param {string} accountId The account ID.
+ * @param {string} walletId The wallet ID.
+ * @param {string} from Initial date (inclusive) to retrieve the transactions.
+ * @param {string} to End date (inclusive) to retrieve the transactions.
+ * @param {string} order Ordering to retrieve the transactions. Either ASC or DESC.
+ */
+exports.list = async (dbClient, accountId, walletId, from = "9999-99-99", to = "0000-00-00", order) => {
+    const pk = getPK(accountId);
+
+    const fromWalletId = walletId || "0000";
+    const toWalletId = walletId || "9999";
+    const fromAttr = getSKAttr(fromWalletId, from);
+    const toAttr = getSKAttr(toWalletId, to);
+    const skExpression = new dynamoDbLib.ExpressionBuilder().between(dynamoDbLib.SK, fromAttr, toAttr).build();
+    const queryBuilder = new dynamoDbLib.QueryBuilder(pk).withSkExpression(skExpression);
+
+    const queryData = await dbClient.query(queryBuilder.build());
+
+    const transactions = queryData.Items.map((item) => {
+        return dynamoDbLib.fromItem(item, new Transaction());
+    });
+
+    if(order == "ASC" || order == "DESC") {
+        console.log(`Ordering transactions, [${order}] order`);
+        transactions.sort((first, second) => {
+            const firstTx = first.dt + first.txId;
+            const secondTx = second.dt + second.txId;
+
+            if(order == "ASC") {
+                return firstTx.localeCompare(secondTx);
+            } else {
+                return secondTx.localeCompare(firstTx);
+            }
+        });
+    }
+
+    return transactions;
+}
+
+/**
  * Updates a transaction.
  * 
  * @param {DynamoDb} dbClient Dynamo DB client
