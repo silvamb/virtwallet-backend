@@ -125,7 +125,7 @@ exports.list = async(dynamodb, accountId) => {
     const pk = getPK(accountId);
     const sk = getSK();
 
-    const queryBuilder = new QueryBuilder(pk).withSkStartingWith(sk);
+    const queryBuilder = new QueryBuilder(pk).sk.beginsWith(sk);
     const queryData = await dbClient.query(queryBuilder.build());
 
     const categories = queryData.Items.map((item) => {

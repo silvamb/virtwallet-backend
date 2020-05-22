@@ -95,6 +95,8 @@ class TransactionHandler {
 
         const updateResult = await updateTransaction(this.dbClient, transactionToUpdate, updatedAttributes);
 
+        console.log("Transaction updated, result:", updateResult);
+
         if(updateResult.success && isChangeNotifiable(updatedAttributes)) {
             await publishUpdatedTransaction(this.eventbridge, parameters, updateResult.data.Attributes);
         }
@@ -114,7 +116,7 @@ class TransactionHandler {
 
         const pk = getPK(accountId);
         const sk = getSK(walletId);
-        const query = new QueryBuilder(pk).withSkStartingWith(sk).returnKeys().build();
+        const query = new QueryBuilder(pk).sk.beginsWith(sk).returnKeys().build();
 
         const queryData = await this.dbClient.query(query);
 
@@ -124,19 +126,6 @@ class TransactionHandler {
 
         return deleteAllResult;
     }
-}
-
-function transformPutItemsResult(result) {
-    const transformedResult = {
-        success: result.success
-    };
-
-    if(!result.success) {
-        transformedResult.code = result.data.code;
-        transformedResult.message = result.data.message;
-    }
-
-    return transformedResult;
 }
 
 async function publishUpdatedTransaction(eventbridge, parameters, oldAttributes) {

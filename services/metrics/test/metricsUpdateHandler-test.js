@@ -242,5 +242,77 @@ describe('MetricsUpdateHandler unit tests', () => {
 
             return expect(promise).to.eventually.be.fulfilled;
         });
+
+        it('should update metrics after multiple transactions categoryId has been updated', () => {
+
+            const event = {
+                'detail-type': 'transactions updated',
+                detail: {
+                    accountId: "4801b837-18c0-4277-98e9-ba57130edeb3",
+                    walletId: "0001",
+                    changes: [
+                        {
+                            txDate: "2020-03-03",
+                            txId: "202003030001",
+                            old: {
+                                categoryId: "01",
+                                value: 2,
+                            },
+                            new: {
+                                categoryId: "02"
+                            }
+                        },
+                        {
+                            txDate: "2020-03-03",
+                            txId: "202003030002",
+                            old: {
+                                categoryId: "01",
+                                value: 3,
+                            },
+                            new: {
+                                categoryId: "02"
+                            }
+                        }
+                    ]
+                }
+            };
+
+            const dbRangeKeysCat01 = [
+                "METRIC#0001#Y#2020#01",
+                "METRIC#0001#M#2020-03#01",
+                "METRIC#0001#D#2020-03-03#01"
+            ];
+
+            const dbRangeKeysCat02 = [
+                "METRIC#0001#Y#2020#02",
+                "METRIC#0001#M#2020-03#02",
+                "METRIC#0001#D#2020-03-03#02"
+            ];
+
+            const validateParams = params => {
+                expect(params.ExpressionAttributeNames["#count"]).to.be.equals("count");
+                expect(params.ExpressionAttributeNames["#sum"]).to.be.equals("sum");
+
+                if(params.Key.SK.S.endsWith("#01")) {
+                    expect(params.Key.SK.S).to.be.oneOf(dbRangeKeysCat01)
+                    expect(params.ExpressionAttributeValues[":sum"].N).to.be.equals("-5");
+                    expect(params.ExpressionAttributeValues[":count"].N).to.be.equals("-2");
+                    expect(params.UpdateExpression).to.be.equals("ADD #count :count,#sum :sum ");
+                }
+
+                if(params.Key.SK.S.endsWith("#02")) {
+                    expect(params.Key.SK.S).to.be.oneOf(dbRangeKeysCat02)
+                    expect(params.ExpressionAttributeValues[":sum"].N).to.be.equals("5");
+                    expect(params.ExpressionAttributeValues[":count"].N).to.be.equals("2");
+                    expect(params.UpdateExpression).to.be.equals("ADD #count :count,#sum :sum ");
+                }
+            }
+
+            const dynamoDbMock = new DynamoDbMock(validateParams);
+
+            const promise = updateMetrics(dynamoDbMock, event);
+
+            return expect(promise).to.eventually.be.fulfilled;
+        });
     });
 });

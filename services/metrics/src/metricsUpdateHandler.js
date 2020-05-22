@@ -14,7 +14,8 @@ exports.updateMetrics = async (dynamodb, event) => {
 
 const operationMap = new Map([
     ["transactions created", processTransactionsCreated],
-    ["transaction updated", processTransactionUpdated]
+    ["transaction updated", processTransactionUpdated],
+    ["transactions updated", processTransactionsUpdated]
 ]);
 
 async function processTransactionsCreated(dynamodb, details) {
@@ -91,4 +92,39 @@ function addMetricsFromUpdatedTx(details, datePart, metricsToUpdate) {
         newCategoryMetrics.add(newValue);
         metricsToUpdate.push(newCategoryMetrics);
     }
+}
+
+async function processTransactionsUpdated(dbClient, details) {
+    console.log("Calculating metrics to update after transactions update");
+    let metricsToUpdate = [];
+
+    details.changes.forEach(change => {
+        const yearKey = change.txDate.substring(0,4);
+        const monthKey = change.txDate.substring(0,7);
+        const dayKey = change.txDate;
+        const updatedDetails = Object.assign({accountId: details.accountId, walletId: details.walletId}, change);
+
+        addMetricsFromUpdatedTx(updatedDetails, yearKey, metricsToUpdate);
+        addMetricsFromUpdatedTx(updatedDetails, monthKey, metricsToUpdate);
+        addMetricsFromUpdatedTx(updatedDetails, dayKey, metricsToUpdate);
+    });
+    
+    console.log("Aggregating similar categories (if any)");
+    const aggregatedMetrics = metricsToUpdate.reduce(updatedTransactionsReducer, new Map());
+
+    await metrics.update(dbClient, Array.from(aggregatedMetrics.values()));
+
+    console.log("Metrics updated");
+}
+
+function updatedTransactionsReducer(metricsMap, metric) {
+    const key = metric.getRange();
+
+    if(metricsMap.has(key)) {
+        metricsMap.get(key).add(metric.sum);
+    } else {
+        metricsMap.set(key, metric);
+    }
+
+    return metricsMap;
 }

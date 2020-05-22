@@ -69,9 +69,9 @@ describe('TransactionHandler unit tests', () => {
 
             const validateParams = (params) => {
                 expect(params.ExpressionAttributeValues[":pk"].S).to.be.equal("ACCOUNT#4801b837-18c0-4277-98e9-ba57130edeb3");
-                expect(params.ExpressionAttributeValues[":SK_start"].S).to.be.equal("TX#0001#2020-01-01");
-                expect(params.ExpressionAttributeValues[":SK_end"].S).to.be.equal("TX#0001#2020-01-18");
-                expect(params.KeyConditionExpression).to.be.equal("PK = :pk AND SK BETWEEN :SK_start AND :SK_end");
+                expect(params.ExpressionAttributeValues[":sk_start"].S).to.be.equal("TX#0001#2020-01-01");
+                expect(params.ExpressionAttributeValues[":sk_end"].S).to.be.equal("TX#0001#2020-01-18");
+                expect(params.KeyConditionExpression).to.be.equal("PK = :pk AND SK BETWEEN :sk_start AND :sk_end");
             };
 
             const expectedResult = testValues.listTestDbResponse;
@@ -90,9 +90,9 @@ describe('TransactionHandler unit tests', () => {
 
             const validateParams = (params) => {
                 expect(params.ExpressionAttributeValues[":pk"].S).to.be.equal("ACCOUNT#4801b837-18c0-4277-98e9-ba57130edeb3");
-                expect(params.ExpressionAttributeValues[":SK_start"].S).to.be.equal("TX#0001#2020-01-01");
-                expect(params.ExpressionAttributeValues[":SK_end"].S).to.be.equal("TX#0001#2020-01-18");
-                expect(params.KeyConditionExpression).to.be.equal("PK = :pk AND SK BETWEEN :SK_start AND :SK_end");
+                expect(params.ExpressionAttributeValues[":sk_start"].S).to.be.equal("TX#0001#2020-01-01");
+                expect(params.ExpressionAttributeValues[":sk_end"].S).to.be.equal("TX#0001#2020-01-18");
+                expect(params.KeyConditionExpression).to.be.equal("PK = :pk AND SK BETWEEN :sk_start AND :sk_end");
             };
 
             const expectedResult = testValues.orderTestDbResponse;
@@ -111,9 +111,9 @@ describe('TransactionHandler unit tests', () => {
 
             const validateParams = (params) => {
                 expect(params.ExpressionAttributeValues[":pk"].S).to.be.equal("ACCOUNT#4801b837-18c0-4277-98e9-ba57130edeb3");
-                expect(params.ExpressionAttributeValues[":SK_start"].S).to.be.equal("TX#0001#2020-01-01");
-                expect(params.ExpressionAttributeValues[":SK_end"].S).to.be.equal("TX#0001#2020-01-18");
-                expect(params.KeyConditionExpression).to.be.equal("PK = :pk AND SK BETWEEN :SK_start AND :SK_end");
+                expect(params.ExpressionAttributeValues[":sk_start"].S).to.be.equal("TX#0001#2020-01-01");
+                expect(params.ExpressionAttributeValues[":sk_end"].S).to.be.equal("TX#0001#2020-01-18");
+                expect(params.KeyConditionExpression).to.be.equal("PK = :pk AND SK BETWEEN :sk_start AND :sk_end");
             };
 
             const expectedResult = testValues.orderTestDbResponse;

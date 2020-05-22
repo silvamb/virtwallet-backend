@@ -3,28 +3,31 @@ const chaiAsPromised = require("chai-as-promised");
 chai.use(chaiAsPromised);
 const expect = chai.expect;
 
+const testValues = require('./testValues');
+
 const TransactionClassifierHandler = require('../src/transactionClassifierHandler').TransactionClassifierHandler;
 
-class DynamoDbMock {
+// Refactor to a more fluent class
+class Mock {
 
-    constructor(validateFunction, returnValues = {ScannedItems: 1}) {
-        this.validateFunction = validateFunction;
-        this.returnValues = returnValues;
-        this.putItem = this.mock;
-        this.query = this.mock;
+    constructor(mockConfig) {
+        this.mockConfig = mockConfig;
+        this._setUp(mockConfig);
     }
 
-    mock(params) {
-        this.validateFunction(params);
-
-        return {
-            promise: () => {
-                return Promise.resolve(this.returnValues);
+    _setUp(mockConfig) {
+        for(let mockedFunction in mockConfig) {
+            this[mockedFunction] = (params) => {
+                const currentCall = mockConfig[mockedFunction].shift();
+                currentCall.validateFunction(params);
+                return {
+                    promise: () => {
+                        return Promise.resolve(currentCall.returnValues);
+                    }
+                }
             }
         }
     }
-
-
 };
 
 const validateParams = (params) => {
@@ -66,42 +69,7 @@ class EventBridgeMock {
     }
 }
 
-const expectedQueryResult = {
-    Count: 3,
-    Items: [
-        {
-            PK: {"S": "ACCOUNT#4801b837-18c0-4277-98e9-ba57130edeb3"},
-            SK: {"S": "RULE#KEYWORD#Transaction1"},
-            accountId: {"S": "4801b837-18c0-4277-98e9-ba57130edeb3"},
-            keyword:  {"S": "MyKeyword"},
-            categoryId:  {"S": "01"},
-            name: {"S": "Category Name"},
-        },
-        {
-            PK: {"S": "ACCOUNT#4801b837-18c0-4277-98e9-ba57130edeb3"},
-            SK: {"S": "RULE#EXPRESSION#01"},
-            accountId: {"S": "4801b837-18c0-4277-98e9-ba57130edeb3"},
-            ruleId:  {"S": "02"},
-            ruleType:  {"S": "contains"},
-            parameter:  {"S": "Transaction"},
-            name:  {"S": "Rule01"},
-            priority: {"N": "30"},
-            categoryId:  {"S": "02"}
-        },
-        {
-            PK: {"S": "ACCOUNT#4801b837-18c0-4277-98e9-ba57130edeb3"},
-            SK: {"S": "RULE#EXPRESSION#01"},
-            accountId: {"S": "4801b837-18c0-4277-98e9-ba57130edeb3"},
-            ruleId:  {"S": "01"},
-            ruleType:  {"S": "startsWith"},
-            parameter:  {"S": "Transaction"},
-            name:  {"S": "Rule01"},
-            priority: {"N": "10"},
-            categoryId:  {"S": "03"}
-        }
-    ],
-    ScannedCount: 3
-};
+const expectedQueryResult = testValues.categoryRulesItems;
 
 const fileInfo = {
     account: '4801b837-18c0-4277-98e9-ba57130edeb3',
@@ -115,7 +83,16 @@ const fileInfo = {
 describe('TransactionClassifierHandler unit tests', () => {
     describe('classify transaction tests', () => {
         it('should classify a transaction by its keyword', () => {
-            const dynamoDbMock = new DynamoDbMock(validateParams, expectedQueryResult);
+            const dynamoDbMockConfig = {
+                query: [
+                    {
+                        validateFunction: validateParams,
+                        returnValues: expectedQueryResult
+                    }
+                ]
+            };
+
+            const dynamoDbMock = new Mock(dynamoDbMockConfig);
             const eventBridgeMock = new EventBridgeMock("01");
 
             const transactionClassifierHandler = new TransactionClassifierHandler(dynamoDbMock, eventBridgeMock);
@@ -144,7 +121,16 @@ describe('TransactionClassifierHandler unit tests', () => {
         });
 
         it('should classify a transaction by expression rule', () => {
-            const dynamoDbMock = new DynamoDbMock(validateParams, expectedQueryResult);
+            const dynamoDbMockConfig = {
+                query: [
+                    {
+                        validateFunction: validateParams,
+                        returnValues: expectedQueryResult
+                    }
+                ]
+            };
+
+            const dynamoDbMock = new Mock(dynamoDbMockConfig);
 
             const eventBridgeMock = new EventBridgeMock("03");
 
@@ -174,7 +160,16 @@ describe('TransactionClassifierHandler unit tests', () => {
         });
 
         it('should classify a transaction with no category', () => {
-            const dynamoDbMock = new DynamoDbMock(validateParams, expectedQueryResult);
+            const dynamoDbMockConfig = {
+                query: [
+                    {
+                        validateFunction: validateParams,
+                        returnValues: expectedQueryResult
+                    }
+                ]
+            };
+
+            const dynamoDbMock = new Mock(dynamoDbMockConfig);
 
             const eventBridgeMock = new EventBridgeMock("NO_CATEGORY");
 
@@ -204,12 +199,20 @@ describe('TransactionClassifierHandler unit tests', () => {
         });
 
         it('should classify a transaction with no category when no rules are found', () => {
-            const emptyResult = {
-                Count: 0,
-                Items: [],
-                ScannedCount: 0
+            const dynamoDbMockConfig = {
+                query: [
+                    {
+                        validateFunction: validateParams,
+                        returnValues: {
+                            Count: 0,
+                            Items: [],
+                            ScannedCount: 0
+                        }
+                    }
+                ]
             };
-            const dynamoDbMock = new DynamoDbMock(validateParams, emptyResult);
+
+            const dynamoDbMock = new Mock(dynamoDbMockConfig);
 
             const eventBridgeMock = new EventBridgeMock("NO_CATEGORY");
 
@@ -236,6 +239,190 @@ describe('TransactionClassifierHandler unit tests', () => {
             const promise = transactionClassifierHandler.classifyAndPublishTransactions(detail);
 
             return expect(promise).to.eventually.be.fulfilled;
+        });
+    });
+
+    describe('reclassify transaction tests', () => {
+        it('should reclassify the transactions', () => {
+            const validateTransactionQuery = params => {
+                expect(params.ExpressionAttributeValues[":pk"].S).to.be.equal("ACCOUNT#4801b837-18c0-4277-98e9-ba57130edeb3");
+                expect(params.ExpressionAttributeValues[":sk_start"].S).to.be.equal("TX#0001#2020-03-01");
+                expect(params.ExpressionAttributeValues[":sk_end"].S).to.be.equal("TX#0001#2020-03-02");
+                expect(params.KeyConditionExpression).to.be.equal("PK = :pk AND SK BETWEEN :sk_start AND :sk_end");
+            };
+
+            const validateUpdateItem = params => {
+                expect(params.Key.PK.S).to.equals("ACCOUNT#4801b837-18c0-4277-98e9-ba57130edeb3");
+                expect(params.Key.SK.S).to.equals("TX#0001#2020-03-01#202003010001");
+                expect(params.ExpressionAttributeNames["#categoryId"]).to.be.equals("categoryId");
+                expect(params.ExpressionAttributeValues[":categoryId"].S).to.be.equals("01");
+                expect(params.ExpressionAttributeValues[":old_categoryId"].S).to.be.equals("10");
+                expect(params.UpdateExpression).to.be.equals(" SET #categoryId = :categoryId");
+                expect(params.ConditionExpression).to.be.equals("#categoryId = :old_categoryId");
+            }
+
+            const dynamoDbMockConfig = {
+                query: [
+                    {
+                        validateFunction: validateTransactionQuery,
+                        returnValues: testValues.transactionItems
+                    },
+                    {
+                        validateFunction: validateParams,
+                        returnValues: testValues.categoryRulesItems
+                    }
+                ],
+                updateItem: [
+                    {
+                        validateFunction: validateUpdateItem,
+                        returnValues: testValues.updateTransactionResult
+                    }
+                ]
+            };
+            const validateEvent = params => {
+                expect(params.Entries[0].Source).to.be.equal("virtwallet");
+                expect(params.Entries[0].DetailType).to.be.equal("transactions updated");
+                const detail = JSON.parse(params.Entries[0].Detail);
+                expect(detail.accountId).to.be.equal("4801b837-18c0-4277-98e9-ba57130edeb3");
+                expect(detail.walletId).to.be.equal("0001");
+                expect(detail.changes[0].txDate).to.be.equal("2020-03-01");
+                expect(detail.changes[0].txId).to.be.equal("202003010001");
+                expect(detail.changes[0].old.categoryId).to.be.equal("10");
+                expect(detail.changes[0].new.categoryId).to.be.equal("01");
+            };
+
+            const eventBridgeMockConfig = {
+                putEvents: [
+                    {
+                        validateFunction: validateEvent,
+                        returnValues: expectedPutEventResult
+                    }
+                ]
+            };
+
+            const dynamoDbMock = new Mock(dynamoDbMockConfig);
+            const eventBridgeMock = new Mock(eventBridgeMockConfig);
+            const transactionClassifierHandler = new TransactionClassifierHandler(dynamoDbMock, eventBridgeMock);
+
+            const promise = transactionClassifierHandler.reclassifyTransactions(testValues.reclassifyTxEvent);
+
+            const expectedResult = [{
+                txId: "202003010001",
+                txDate: "2020-03-01",
+                oldCategoryId: "10",
+                newCategoryId: "01",
+                error: null
+            }];
+
+            return expect(promise).to.eventually.be.deep.equals(expectedResult);
+        });
+
+        it('should reclassify the transactions with no changes', () => {
+            const validateTransactionQuery = params => {
+                expect(params.ExpressionAttributeValues[":pk"].S).to.be.equal("ACCOUNT#4801b837-18c0-4277-98e9-ba57130edeb3");
+                expect(params.ExpressionAttributeValues[":sk_start"].S).to.be.equal("TX#0001#2020-03-01");
+                expect(params.ExpressionAttributeValues[":sk_end"].S).to.be.equal("TX#0001#2020-03-02");
+                expect(params.KeyConditionExpression).to.be.equal("PK = :pk AND SK BETWEEN :sk_start AND :sk_end");
+            };
+
+            const dynamoDbMockConfig = {
+                query: [
+                    {
+                        validateFunction: validateTransactionQuery,
+                        returnValues: testValues.transactionItems
+                    },
+                    {
+                        validateFunction: validateParams,
+                        returnValues: testValues.categoryRulesSingleItem
+                    }
+                ]
+            };
+
+            const dynamoDbMock = new Mock(dynamoDbMockConfig);
+            const transactionClassifierHandler = new TransactionClassifierHandler(dynamoDbMock);
+
+            const promise = transactionClassifierHandler.reclassifyTransactions(testValues.reclassifyTxEvent);
+
+            return expect(promise).to.eventually.be.deep.equals([]);
+        });
+
+        it('should reclassify only automatically inserted transactions', () => {
+            const validateTransactionQuery = params => {
+                expect(params.ExpressionAttributeValues[":pk"].S).to.be.equal("ACCOUNT#4801b837-18c0-4277-98e9-ba57130edeb3");
+                expect(params.ExpressionAttributeValues[":sk_start"].S).to.be.equal("TX#0001#2020-03-01");
+                expect(params.ExpressionAttributeValues[":sk_end"].S).to.be.equal("TX#0001#2020-03-02");
+                expect(params.KeyConditionExpression).to.be.equal("PK = :pk AND SK BETWEEN :sk_start AND :sk_end");
+                expect(params.FilterExpression).to.be.equal("#sourceType = :sourceType");
+                expect(params.ExpressionAttributeValues[":sourceType"].S).to.be.equal("A");
+                expect(params.ExpressionAttributeNames["#sourceType"]).to.be.equal("sourceType");
+            };
+
+            const validateUpdateItem = params => {
+                expect(params.Key.PK.S).to.equals("ACCOUNT#4801b837-18c0-4277-98e9-ba57130edeb3");
+                expect(params.Key.SK.S).to.equals("TX#0001#2020-03-01#202003010001");
+                expect(params.ExpressionAttributeNames["#categoryId"]).to.be.equals("categoryId");
+                expect(params.ExpressionAttributeValues[":categoryId"].S).to.be.equals("01");
+                expect(params.ExpressionAttributeValues[":old_categoryId"].S).to.be.equals("10");
+                expect(params.UpdateExpression).to.be.equals(" SET #categoryId = :categoryId");
+                expect(params.ConditionExpression).to.be.equals("#categoryId = :old_categoryId");
+            }
+
+            const dynamoDbMockConfig = {
+                query: [
+                    {
+                        validateFunction: validateTransactionQuery,
+                        returnValues: testValues.transactionItems
+                    },
+                    {
+                        validateFunction: validateParams,
+                        returnValues: testValues.categoryRulesItems
+                    }
+                ],
+                updateItem: [
+                    {
+                        validateFunction: validateUpdateItem,
+                        returnValues: testValues.updateTransactionResult
+                    }
+                ]
+            };
+            const validateEvent = params => {
+                expect(params.Entries[0].Source).to.be.equal("virtwallet");
+                expect(params.Entries[0].DetailType).to.be.equal("transactions updated");
+                const detail = JSON.parse(params.Entries[0].Detail);
+                expect(detail.accountId).to.be.equal("4801b837-18c0-4277-98e9-ba57130edeb3");
+                expect(detail.walletId).to.be.equal("0001");
+                expect(detail.changes[0].txDate).to.be.equal("2020-03-01");
+                expect(detail.changes[0].txId).to.be.equal("202003010001");
+                expect(detail.changes[0].old.categoryId).to.be.equal("10");
+                expect(detail.changes[0].new.categoryId).to.be.equal("01");
+            };
+
+            const eventBridgeMockConfig = {
+                putEvents: [
+                    {
+                        validateFunction: validateEvent,
+                        returnValues: expectedPutEventResult
+                    }
+                ]
+            };
+
+            const dynamoDbMock = new Mock(dynamoDbMockConfig);
+            const eventBridgeMock = new Mock(eventBridgeMockConfig);
+            const transactionClassifierHandler = new TransactionClassifierHandler(dynamoDbMock, eventBridgeMock);
+
+            const event = Object.assign({}, testValues.reclassifyTxEvent);
+            event.queryStringParameters.filters = "auto";
+            const promise = transactionClassifierHandler.reclassifyTransactions(event);
+
+            const expectedResult = [{
+                txId: "202003010001",
+                txDate: "2020-03-01",
+                oldCategoryId: "10",
+                newCategoryId: "01",
+                error: null
+            }];
+
+            return expect(promise).to.eventually.be.deep.equals(expectedResult);
         });
     });
 });

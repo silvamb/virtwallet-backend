@@ -62,16 +62,10 @@ const getSK = (walletId, txDate, txId) => {
     return sk;
 }
 
-const getSKAttr = (walletId, txDate, txId) => {
-    const sk = getSK(walletId, txDate, txId);
-    return dynamoDbLib.StringAttributeType.toAttribute(sk);
-}
-
 class TransactionChangeSet {
-    constructor(attrName, oldValue, newValue) {
-        this.attributeName = attrName;
-        this.oldValue = oldValue;
-        this.newValue = newValue;
+    constructor(transaction, updatedAttributes) {
+        this.transaction = transaction;
+        this.updatedAttributes = updatedAttributes;
     }
 }
 
@@ -110,21 +104,6 @@ class Transaction {
     getAttrTypeMap() {
         return attrTypeMap;
     }
-
-    getChanges(anotherTransaction) {
-        const changeSet = new Set();
-
-        let currentValue, newValue;
-        attrsToCompare.forEach((attrName) => {
-            currentValue = this[attrName];
-            newValue = anotherTransaction[attrName];
-            if(currentValue !== newValue) {
-                changeSet.add(new TransactionChangeSet(attrName, currentValue, newValue));
-            }
-        });
-
-        return changeSet;
-    }
 }
 
 class TransactionFilter {
@@ -147,13 +126,15 @@ class TransactionFilter {
     }
 
     onlyAutomaticallyInserted() {
-        expressionBuilder.equals("source", AUTO_INPUT);
+        const itemValue = attrTypeMap.get("sourceType").toAttribute(AUTO_INPUT);
+        this.expressionBuilder.equals("sourceType", itemValue);
 
         return this;
     }
 
     onlyManuallyInserted() {
-        expressionBuilder.equals("source", MANUAL_INPUT);
+        const itemValue = attrTypeMap.get("sourceType").toAttribute(MANUAL_INPUT);
+        this.expressionBuilder.equals("sourceType", itemValue);
 
         return this;
     }
@@ -228,14 +209,14 @@ exports.list = async (dbClient, accountId, walletId, filter = new TransactionFil
 
     const fromWalletId = walletId || "0000";
     const toWalletId = walletId || "9999";
-    const fromAttr = getSKAttr(fromWalletId, filter.from);
-    const toAttr = getSKAttr(toWalletId, filter.to);
-    const skExpression = new dynamoDbLib.ExpressionBuilder().between(dynamoDbLib.SK, fromAttr, toAttr).build();
-    const queryBuilder = new dynamoDbLib.QueryBuilder(pk).withSkExpression(skExpression);
+    const from = getSK(fromWalletId, filter.from);
+    const to = getSK(toWalletId, filter.to);
+    const queryBuilder = new dynamoDbLib.QueryBuilder(pk).sk.between(from, to);
     
     const filterExpression = filter.expression;
 
-    if(filterExpression.length > 0) {
+    if(filterExpression.expression.length > 0) {
+        console.log("Filters:", filterExpression);
         queryBuilder.withFilterExpression(filterExpression);
     }
 
@@ -274,6 +255,29 @@ exports.update = async (dbClient, transactionToUpdate, attrsToUpdate) => {
         throw new Error("Missing mandatory parameters");
     }
 
+    validateUpdateParams(transactionToUpdate, attrsToUpdate);
+
+    return dbClient.updateItem(transactionToUpdate, attrsToUpdate);
+}
+
+exports.updateAll = async (dbClient, transactionChanges = []) => {
+
+    transactionChanges.forEach((transactionChange, i) => {
+        try {
+            validateUpdateParams(transactionChange.transaction, transactionChange.updatedAttributes);
+        } catch(error) {
+            throw new Error(`Item ${i} is invalid: "${error.message}"`);
+        }
+    });
+
+    const updateParamsList = transactionChanges.map(transactionChange => {
+        return new dynamoDbLib.UpdateExpressionBuilder(transactionChange.transaction).updateTo(transactionChange.updatedAttributes).build();
+    });
+
+    return dbClient.updateItems(updateParamsList);
+}
+
+function validateUpdateParams(transactionToUpdate, attrsToUpdate) {
     if(!transactionToUpdate instanceof Transaction) {
         throw new Error("'transactionToUpdate' must be a Transaction"); 
     }
@@ -287,8 +291,6 @@ exports.update = async (dbClient, transactionToUpdate, attrsToUpdate) => {
             throw new Error(`Transaction attribute '${attribute}' is not updatable`);
         }
     }
-
-    return dbClient.updateItem(transactionToUpdate, attrsToUpdate);
 }
 
 exports.isChangeNotifiable = updatedAttributes => {
@@ -303,11 +305,10 @@ exports.isChangeNotifiable = updatedAttributes => {
 
 exports.Transaction = Transaction;
 exports.TransactionFilter = TransactionFilter;
+exports.TransactionChangeSet = TransactionChangeSet;
 exports.DEBIT_BALANCE_TYPE = DEBIT_BALANCE_TYPE;
 exports.CREDIT_BALANCE_TYPE = CREDIT_BALANCE_TYPE;
 exports.AUTO_INPUT = AUTO_INPUT
 exports.MANUAL_INPUT = MANUAL_INPUT;
 exports.getPK = getPK;
 exports.getSK = getSK;
-exports.getSKAttr = getSKAttr;
-exports.getFieldAttrType = fieldName => attrTypeMap.get(fieldName);

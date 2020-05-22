@@ -254,7 +254,7 @@ exports.list = async (dynamodb, accountId, ruleType = "NO_TYPE") => {
                 : getExpressionRuleSK();
     }
 
-    const queryBuilder = new QueryBuilder(pk).withSkStartingWith(sk);
+    const queryBuilder = new QueryBuilder(pk).sk.beginsWith(sk);
 
     const queryData = await dbClient.query(queryBuilder.build());
 

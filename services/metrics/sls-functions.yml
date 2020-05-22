@@ -8,6 +8,7 @@ eventBridge-handler:
           detail-type:
             - transactions created
             - transaction updated
+            - transactions updated
   iamRoleStatementsName: virtwallet-metrics-${self:provider.stage}-iam-role
 
   iamRoleStatements:

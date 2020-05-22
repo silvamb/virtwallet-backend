@@ -231,7 +231,7 @@ class DynamoDb {
     }
 
     async getNext(pk, sk) {
-        const query = new QueryBuilder(pk).withSkStartingWith(sk).count().build();
+        const query = new QueryBuilder(pk).sk.beginsWith(sk).count().build();
 
         const data = await this.query(query);
 
@@ -270,29 +270,80 @@ class DynamoDb {
         return item !== undefined;
     }
 
+    /**
+     * Update all items.
+     * 
+     * @param {*} paramsList list of Dynamo DB updateItem parameters
+     */
     async updateItems(paramsList) {
         console.log("Executing updateItem for items:", paramsList);
 
         if(paramsList.length == 1) {
-            let updateItemResult;
             try {
-                updateItemResult = await this.dynamodb.updateItem(paramsList[0]).promise();
-                return new Result(updateItemResult);
+                const updateItemResult = await this.dynamodb.updateItem(paramsList[0]).promise();
+                return [ new Result(updateItemResult) ];
             } catch(err) {
-                updateItemResult = new Result(err, false);
+                return [ new Result(err, false) ];
             }
-
-            console.log("Update Item processed", updateItemResult);
-            return updateItemResult;
         }
 
         return await executeInChunks(this.dynamodb, "updateItem", paramsList);
     }
 
+    /**
+     * Update a single object in the database.
+     * 
+     * @param {*} updatedObj the Object to update
+     * @param {*} updatedAttr the attributes to be updated
+     */
     async updateItem(updatedObj, updatedAttr) {
         const updateParams = new UpdateExpressionBuilder(updatedObj).updateTo(updatedAttr).build();
 
-        return this.updateItems([updateParams]);
+        const updateResult = await this.updateItems([updateParams]);
+
+        return updateResult[0];
+    }
+}
+
+function SkBuilder(expressionBuilder) {
+    return {
+        beginsWith: value => {
+            expressionBuilder.KeyConditionExpression += " AND begins_with(SK, :sk)";
+            expressionBuilder.ExpressionAttributeValues[":sk"] = StringAttributeType.toAttribute(value);
+            return expressionBuilder;
+        },
+
+        between: (value1, value2) => {
+            expressionBuilder.KeyConditionExpression += " AND SK BETWEEN :sk_start AND :sk_end";
+            expressionBuilder.ExpressionAttributeValues[":sk_start"] = StringAttributeType.toAttribute(value1);
+            expressionBuilder.ExpressionAttributeValues[":sk_end"] = StringAttributeType.toAttribute(value2);
+            return expressionBuilder;
+        },
+        equals: value => {
+            expressionBuilder.KeyConditionExpression += " AND SK = :sk";
+            expressionBuilder.ExpressionAttributeValues[":sk"] = StringAttributeType.toAttribute(value);
+            return expressionBuilder;
+        },
+        greaterThan: value => {
+            expressionBuilder.KeyConditionExpression += " AND SK > :sk";
+            expressionBuilder.ExpressionAttributeValues[":sk"] = StringAttributeType.toAttribute(value);
+            return expressionBuilder;
+        },
+        greaterThanOrEqual: value => {
+            expressionBuilder.KeyConditionExpression += " AND Sk >= :sk";
+            expressionBuilder.ExpressionAttributeValues[":sk"] = StringAttributeType.toAttribute(value);
+            return expressionBuilder;
+        },
+        lessThan: value => {
+            expressionBuilder.KeyConditionExpression += " AND SK < :sk";
+            expressionBuilder.ExpressionAttributeValues[":sk"] = StringAttributeType.toAttribute(value);
+            return expressionBuilder;
+        },
+        lessThanOrEqual: value => {
+            expressionBuilder.KeyConditionExpression += " AND SK <= :sk";
+            expressionBuilder.ExpressionAttributeValues[":sk"] = StringAttributeType.toAttribute(value);
+            return expressionBuilder;
+        }
     }
 }
 
@@ -304,34 +355,15 @@ class QueryBuilder {
         this.KeyConditionExpression = "PK = :pk";
     }
 
-    withSk(sk) {
-        this.ExpressionAttributeValues[":sk"] = StringAttributeType.toAttribute(sk);
-        this.KeyConditionExpression = this.KeyConditionExpression.concat(" AND SK = :sk");
-        return this;
-    }
-
-    withSkStartingWith(value) {
-        this.ExpressionAttributeValues[":sk"] = StringAttributeType.toAttribute(value);
-        this.KeyConditionExpression = this.KeyConditionExpression.concat(" AND begins_with(SK, :sk)");
-        return this;
-    }
-
-    withSkExpression(skExpression) {
-        this.KeyConditionExpression = this.KeyConditionExpression.concat(` AND ${skExpression.expression}`);
-
-        for(let [exprAttrName, exprAttrValue] of skExpression.exprAttributes) {
-            this.ExpressionAttributeValues[exprAttrName] = exprAttrValue;
-        }
-
-        return this;
+    get sk() {
+        return SkBuilder(this);
     }
 
     withFilterExpression(filterExpression) {
         this.FilterExpression = filterExpression.expression;
 
-        for(let [exprAttrName, exprAttrValue] of filterExpression.exprAttributes) {
-            this.ExpressionAttributeValues[exprAttrName] = exprAttrValue;
-        }
+        this.ExpressionAttributeValues = Object.assign(this.ExpressionAttributeValues || {}, filterExpression.exprAttributeValues);
+        this.ExpressionAttributeNames = Object.assign(this.ExpressionAttributeNames || {}, filterExpression.exprAttributeNames);
 
         return this;
     }
@@ -362,6 +394,7 @@ class QueryBuilder {
     build() {
         return {
             ExpressionAttributeValues: this.ExpressionAttributeValues,
+            ExpressionAttributeNames: this.ExpressionAttributeNames,
             KeyConditionExpression: this.KeyConditionExpression,
             FilterExpression: this.FilterExpression,
             ProjectionExpression: this.ProjectionExpression,
@@ -374,26 +407,16 @@ class ExpressionBuilder {
 
     constructor() {
         this.expressionParts = [];
-        this.exprAttributes = new Map();
-    }
-
-    addExpression(expression, exprAttrToAdd = new Map()) {
-        console.log(`Adding expression [${expression}] with values ${exprAttrToAdd}`);
-        this.expressionParts.push(expression);
-
-        for (let [exprAttrName, exprAttrValue] of exprAttrToAdd) {
-            this.exprAttributes.set(exprAttrName, exprAttrValue);
-        }
-
-        return this;
+        this.exprAttributeNames = {};
+        this.exprAttributeValues = {};
     }
 
     equals(name, value) {
-        const attrName = `:${name}`;
-        const expression = `${name} = ${attrName}`;
-        const exprAttrToAdd = new Map([[attrName, value]]);
+        this.expressionParts.push(`#${name} = :${name}`);
+        this.exprAttributeNames[`#${name}`] = name;
+        this.exprAttributeValues[`:${name}`] = value;
 
-        return this.addExpression(expression, exprAttrToAdd);
+        return this;
     }
 
     /**
@@ -405,31 +428,25 @@ class ExpressionBuilder {
     between(attrName, from, to) {
         console.log(`Adding filter to attribute [${attrName}]: BETWEEN [${JSON.stringify(from)} AND ${JSON.stringify(to)}]`);
 
-        const startAttr = `:${attrName}_start`;
-        const endAttr = `:${attrName}_end`;
-        const exprAttrToAdd = new Map([
-            [startAttr, from],
-            [endAttr, to]
-        ]);
-        const expression = `${attrName} BETWEEN ${startAttr} AND ${endAttr}`;
+        this.expressionParts.push(`#${attrName} BETWEEN :${attrName}_start AND :${attrName}_end`);
+        this.exprAttributeNames[`#${attrName}`] = attrName;
+        this.exprAttributeValues[`:${attrName}_start`] = from;
+        this.exprAttributeValues[`:${attrName}_end`] = to;
 
-        return this.addExpression(expression, exprAttrToAdd);
+        return this;
     }
 
     /**
      *
      * @param {string} attrName 
-     * @param {AttributeValue} from 
      * @param {AttributeValue} to 
      */
     lessThanOrEqual(attrName, to) {
-        const toAttr = `:${attrName}`;
-        const exprAttrToAdd = new Map([
-            [toAttr, to]
-        ]);
-        const expression = `${attrName} <= ${toAttr}`;
+        this.expressionParts.push(`#${attrName} <= :${attrName}`);
+        this.exprAttributeNames[`#${attrName}`] = attrName;
+        this.exprAttributeValues[`:${attrName}`] = to;
 
-        return this.addExpression(expression, exprAttrToAdd);
+        return this;
     }
 
     /**
@@ -438,29 +455,28 @@ class ExpressionBuilder {
      * @param {AttributeValue} from 
      */
     greaterThanOrEqual(attrName, from) {
-        const fromAttr = `:${attrName}`;
-        const exprAttrToAdd = new Map([
-            [fromAttr, from]
-        ]);
-        const expression = `${attrName} >= ${fromAttr}`;
+        this.expressionParts.push(`#${attrName} >= :${attrName}`);
+        this.exprAttributeNames[`#${attrName}`] = attrName;
+        this.exprAttributeValues[`:${attrName}`] = from;
 
-        return this.addExpression(expression, exprAttrToAdd);
+        return this;
     }
 
     get or() {
-        this.addExpression("OR");
+        this.expressionParts.push("OR");
         return this;
     }
 
     get and() {
-        this.addExpression("AND");
+        this.expressionParts.push("AND");
         return this;
     }
 
     build() {
         return {
             expression: this.expressionParts.join(" "),
-            exprAttributes: this.exprAttributes
+            exprAttributeNames: this.exprAttributeNames,
+            exprAttributeValues: this.exprAttributeValues,
         }
     }
 }
