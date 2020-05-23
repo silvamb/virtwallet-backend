@@ -96,15 +96,17 @@ describe('TransactionLoaderHandler unit tests', () => {
 
         const dynamoDbMock = new DynamoDbMock(validateParams, expectedResult);
 
-        const expectedTransactions = [
-            {
-                accountId: "a03af6a8-e246-410a-8ca5-bfab980648cc",
-                walletId: "0001",
-                txDate: "2020-01-01",
-                value: "5.27",
-                categoryId: "04"
-            }
-        ];
+        const expectedTransactions = {
+            transactions: [
+                {
+                    accountId: "a03af6a8-e246-410a-8ca5-bfab980648cc",
+                    walletId: "0001",
+                    txDate: "2020-01-01",
+                    value: "5.27",
+                    categoryId: "04"
+                }
+            ]
+        };
         const eventBridgeMock = new EventBridgeMock(expectedTransactions);
 
         const transactionLoaderHandler = new TransactionLoaderHandler(dynamoDbMock, eventBridgeMock);
@@ -158,22 +160,24 @@ describe('TransactionLoaderHandler unit tests', () => {
 
         const dynamoDbMock = new DynamoDbMock(validateParams, expectedResult);
 
-        const expectedTransactions = [
-            {
-                accountId: "a03af6a8-e246-410a-8ca5-bfab980648cc",
-                walletId: "0001",
-                txDate: "2020-01-01",
-                value: "5.27",
-                categoryId: "04"
-            },
-            {
-                accountId: "a03af6a8-e246-410a-8ca5-bfab980648cc",
-                walletId: "0001",
-                txDate: "2020-01-01",
-                value: "15.32",
-                categoryId: "06"
-            }
-        ];
+        const expectedTransactions = {
+            transactions: [
+                {
+                    accountId: "a03af6a8-e246-410a-8ca5-bfab980648cc",
+                    walletId: "0001",
+                    txDate: "2020-01-01",
+                    value: "5.27",
+                    categoryId: "04"
+                },
+                {
+                    accountId: "a03af6a8-e246-410a-8ca5-bfab980648cc",
+                    walletId: "0001",
+                    txDate: "2020-01-01",
+                    value: "15.32",
+                    categoryId: "06"
+                }
+            ]
+        };
 
         const eventBridgeMock = new EventBridgeMock(expectedTransactions);
 

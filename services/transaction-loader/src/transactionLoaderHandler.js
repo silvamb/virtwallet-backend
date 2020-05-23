@@ -51,6 +51,7 @@ class TransactionLoaderHandler {
             transaction.dt = transactionDetails.dt;
             transaction.value = transactionDetails.value;
             transaction.description = transactionDetails.description;
+            transaction.type = transactionDetails.type;
             transaction.balance = transactionDetails.balance;
             transaction.balanceType = transactionDetails.balanceType;
             transaction.includedBy = clientId;
