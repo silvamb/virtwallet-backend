@@ -17,11 +17,11 @@ apigw-event-handler:
           querystrings:
             fileName: true
   environment:
-    ACCOUNT_FILES_BUCKET: virtwallet-user-files
+    ACCOUNT_FILES_BUCKET: ${self:custom.userFilesBucket}
   iamRoleStatementsName: virtwallet-request-file-upload-${self:provider.stage}-iam-role
   iamRoleStatements:
     - Effect: Allow
       Action: 
         - s3:PutObject
         - s3:GetObject
-      Resource: "arn:aws:s3:::virtwallet-user-files/account-files*"
+      Resource: "arn:aws:s3:::${self:custom.userFilesBucket}/account-files*"
