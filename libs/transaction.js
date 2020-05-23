@@ -82,7 +82,7 @@ class Transaction {
         this.dt = "";
         this.value = 0.00;
         this.description = "New transaction";
-        this.type = "POS";
+        this.type = "";
         this.balance = 0.00;
         this.balanceType = DEBIT_BALANCE_TYPE;
         this.includedBy = "";
@@ -171,6 +171,7 @@ exports.create = async (dbClient, clientId, accountId, walletId, transactionsToA
         transaction.dt = transactionDetails.dt;
         transaction.value = transactionDetails.value;
         transaction.description = transactionDetails.description;
+        transaction.type = transactionDetails.type;
         transaction.balance = transactionDetails.balance;
         transaction.balanceType = transactionDetails.balanceType;
         transaction.includedBy = clientId;
