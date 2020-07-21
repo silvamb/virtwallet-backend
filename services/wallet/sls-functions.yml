@@ -10,6 +10,7 @@ apigw-event-handler:
         parameters:
           paths:
             accountId: true
+        cors: ${self:custom.enableCors}
     - http:
         path: account/{accountId}/wallet
         method: POST
@@ -19,6 +20,7 @@ apigw-event-handler:
         parameters:
           paths:
             accountId: true
+        cors: ${self:custom.enableCors}
     - http:
         path: account/{accountId}/wallet/{walletId}
         method: GET
@@ -29,6 +31,7 @@ apigw-event-handler:
           paths:
             accountId: true
             walletId: true
+        cors: ${self:custom.enableCors}
     - http:
         path: account/{accountId}/wallet/{walletId}
         method: PUT
@@ -39,6 +42,7 @@ apigw-event-handler:
           paths:
             accountId: true
             walletId: true
+        cors: ${self:custom.enableCors}
     - http:
         path: account/{accountId}/wallet/{walletId}
         method: DELETE
@@ -49,6 +53,9 @@ apigw-event-handler:
           paths:
             accountId: true
             walletId: true
+        cors: ${self:custom.enableCors}
+  environment:
+    CORS_ENABLED: ${self:custom.enableCors}
   iamRoleStatements:
     - Effect: Allow
       Action:
