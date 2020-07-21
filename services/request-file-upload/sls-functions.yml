@@ -16,8 +16,10 @@ apigw-event-handler:
             parserId: true
           querystrings:
             fileName: true
+        cors: ${self:custom.enableCors}
   environment:
     ACCOUNT_FILES_BUCKET: ${self:custom.userFilesBucket}
+    CORS_ENABLED: ${self:custom.enableCors}
   iamRoleStatementsName: virtwallet-request-file-upload-${self:provider.stage}-iam-role
   iamRoleStatements:
     - Effect: Allow

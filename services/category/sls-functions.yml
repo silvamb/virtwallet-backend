@@ -12,6 +12,7 @@ apigw-event-handler:
         parameters:
           paths:
             accountId: true
+        cors: ${self:custom.enableCors}
     - http:
         path: account/{accountId}/category
         method: POST
@@ -23,6 +24,7 @@ apigw-event-handler:
         parameters:
           paths:
             accountId: true
+        cors: ${self:custom.enableCors}
     - http:
         path: account/{accountId}/category/{categoryId}
         method: GET
@@ -35,6 +37,7 @@ apigw-event-handler:
           paths:
             accountId: true
             categoryId: true
+        cors: ${self:custom.enableCors}
     - http:
         path: account/{accountId}/category/{categoryId}
         method: PUT
@@ -47,6 +50,7 @@ apigw-event-handler:
           paths:
             accountId: true
             categoryId: true
+        cors: ${self:custom.enableCors}
     - http:
         path: account/{accountId}/category/{categoryId}
         method: DELETE
@@ -59,6 +63,9 @@ apigw-event-handler:
           paths:
             accountId: true
             categoryId: true
+        cors: ${self:custom.enableCors}
+  environment:
+    CORS_ENABLED: ${self:custom.enableCors}
   iamRoleStatements:
     - Effect: Allow
       Action:

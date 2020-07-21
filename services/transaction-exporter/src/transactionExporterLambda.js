@@ -18,5 +18,12 @@ class Response {
     constructor(data, statusCode = 200){
         this.statusCode = statusCode;
         this.body = JSON.stringify(data);
+
+        if(process.env.CORS_ENABLED) {
+            this.headers = {
+                'Access-Control-Allow-Origin': '*',
+                'Access-Control-Allow-Credentials': true,
+            };
+        }
     }
 }

@@ -21,6 +21,7 @@ provider:
 
 custom:
   restApiAuthorizerId: '${cf:virtwallet-resources-${self:provider.stage}.VirtwalletRestApiAuthorizerId}'
+  enableCors: '${file(../../config.${self:provider.stage}.yml):enableCors, false}'
 
 package:
   excludeDevDependencies: true
