@@ -17,7 +17,7 @@ class AccountHandler {
     }
 
     async create(event) {
-        const clientId = event.requestContext.authorizer.claims.client_id;
+        const clientId = event.requestContext.authorizer.claims.aud;
         const accountDetails = JSON.parse(event.body);
         
         console.log(`Creating new account for user ${clientId}.`);
@@ -39,7 +39,7 @@ class AccountHandler {
     }
 
     async list(event) {
-        const clientId = event.requestContext.authorizer.claims.client_id;
+        const clientId = event.requestContext.authorizer.claims.aud;
         console.log(`Listing accounts for user [${clientId}]`);
         
         const pk = Account.getPK(clientId);
@@ -58,7 +58,7 @@ class AccountHandler {
     }
 
     async get(event) {
-        const ownerId = event.requestContext.authorizer.claims.client_id;
+        const ownerId = event.requestContext.authorizer.claims.aud;
         const accountId = event.pathParameters.accountId;
         const pk = Account.getPK(ownerId);
         const sk = Account.getSK(ownerId, accountId);

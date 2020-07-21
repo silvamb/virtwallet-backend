@@ -7,8 +7,6 @@ apigw-event-handler:
         authorizer:
           type: COGNITO_USER_POOLS
           authorizerId: ${self:custom.restApiAuthorizerId}
-          scopes:
-            - email
         parameters:
           paths:
             accountId: true
@@ -18,8 +16,6 @@ apigw-event-handler:
         authorizer:
           type: COGNITO_USER_POOLS
           authorizerId: ${self:custom.restApiAuthorizerId}
-          scopes:
-            - email
         parameters:
           paths:
             accountId: true
@@ -29,8 +25,6 @@ apigw-event-handler:
         authorizer:
           type: COGNITO_USER_POOLS
           authorizerId: ${self:custom.restApiAuthorizerId}
-          scopes:
-            - email
         parameters:
           paths:
             accountId: true
@@ -41,8 +35,6 @@ apigw-event-handler:
         authorizer:
           type: COGNITO_USER_POOLS
           authorizerId: ${self:custom.restApiAuthorizerId}
-          scopes:
-            - email
         parameters:
           paths:
             accountId: true
@@ -53,8 +45,6 @@ apigw-event-handler:
         authorizer:
           type: COGNITO_USER_POOLS
           authorizerId: ${self:custom.restApiAuthorizerId}
-          scopes:
-            - email
         parameters:
           paths:
             accountId: true

@@ -51,7 +51,7 @@ describe('AccountHandler unit tests', () => {
                 requestContext: {
                     authorizer: {
                         claims: {
-                            client_id: "10v21l6b17g3t27sfbe38b0i8n"
+                            aud: "10v21l6b17g3t27sfbe38b0i8n"
                         }
                     }
                 },
@@ -83,7 +83,7 @@ describe('AccountHandler unit tests', () => {
                 requestContext: {
                     authorizer: {
                         claims: {
-                            client_id: "10v21l6b17g3t27sfbe38b0i8n"
+                            aud: "10v21l6b17g3t27sfbe38b0i8n"
                         }
                     }
                 }
@@ -136,7 +136,7 @@ describe('AccountHandler unit tests', () => {
             requestContext: {
                 authorizer: {
                     claims: {
-                        client_id: "10v21l6b17g3t27sfbe38b0i8n"
+                        aud: "10v21l6b17g3t27sfbe38b0i8n"
                     }
                 }
             }

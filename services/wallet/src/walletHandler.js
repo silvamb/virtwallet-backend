@@ -23,7 +23,7 @@ class WalletHandler {
     }
 
     async create(event) {
-        const clientId = event.requestContext.authorizer.claims.client_id;
+        const clientId = event.requestContext.authorizer.claims.aud;
         const accountId = event.pathParameters.accountId;
 
         const walletDetails = JSON.parse(event.body);
@@ -56,7 +56,7 @@ class WalletHandler {
     }
 
     async list(event) {
-        const clientId = event.requestContext.authorizer.claims.client_id;
+        const clientId = event.requestContext.authorizer.claims.aud;
         // TODO validate if user is a member of this account
 
         const accountId = event.pathParameters.accountId;
@@ -77,7 +77,7 @@ class WalletHandler {
     }
 
     async get(event) {
-        const ownerId = event.requestContext.authorizer.claims.client_id;
+        const ownerId = event.requestContext.authorizer.claims.aud;
         // TODO validate if user is a member of this account
 
         const accountId = event.pathParameters.accountId;

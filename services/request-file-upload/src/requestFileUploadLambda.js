@@ -11,7 +11,7 @@ exports.handle = async event => {
     // TODO validate parameters
     
     const params = new CreateFileUrlParameters();
-    params.clientId = event.requestContext.authorizer.claims.client_id;
+    params.clientId = event.requestContext.authorizer.claims.aud;
     params.bucket = process.env.ACCOUNT_FILES_BUCKET;
     params.accountId = event.pathParameters.accountId;
     params.walletId = event.pathParameters.walletId;

@@ -28,7 +28,7 @@ function parseEvent(event) {
     const transactions = event.body ? JSON.parse(event.body) : undefined;
 
     return {
-        clientId: event.requestContext.authorizer.claims.client_id,
+        clientId: event.requestContext.authorizer.claims.aud,
         accountId: event.pathParameters.accountId,
         walletId: event.pathParameters.walletId,
         txDate: transactions !== undefined ? transactions.txDate : undefined,

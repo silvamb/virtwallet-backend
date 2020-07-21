@@ -50,7 +50,7 @@ describe("CategoryHandler unit tests", () => {
                 requestContext: {
                     authorizer: {
                         claims: {
-                            client_id: clientId,
+                            aud: clientId,
                         },
                     },
                 },
@@ -116,7 +116,7 @@ describe("CategoryHandler unit tests", () => {
                 requestContext: {
                     authorizer: {
                         claims: {
-                            client_id: clientId,
+                            aud: clientId,
                         },
                     },
                 },
@@ -172,7 +172,7 @@ describe("CategoryHandler unit tests", () => {
                 requestContext: {
                     authorizer: {
                         claims: {
-                            client_id: clientId,
+                            aud: clientId,
                         },
                     },
                 },
@@ -245,7 +245,7 @@ describe("CategoryHandler unit tests", () => {
                 requestContext: {
                     authorizer: {
                         claims: {
-                            client_id: clientId,
+                            aud: clientId,
                         },
                     },
                 },
@@ -314,7 +314,7 @@ describe("CategoryHandler unit tests", () => {
                 requestContext: {
                     authorizer: {
                         claims: {
-                            client_id: clientId,
+                            aud: clientId,
                         },
                     },
                 },

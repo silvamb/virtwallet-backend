@@ -133,7 +133,7 @@ describe('TransactionHandler unit tests', () => {
             const event = JSON.parse(eventJson);
 
             const parameters = {
-                clientId: event.requestContext.authorizer.claims.client_id,
+                clientId: event.requestContext.authorizer.claims.aud,
                 accountId: event.pathParameters.accountId,
                 walletId: event.pathParameters.walletId,
                 txId: event.pathParameters.txId,
@@ -185,7 +185,7 @@ describe('TransactionHandler unit tests', () => {
             const event = JSON.parse(eventJson);
             
             const parameters = {
-                clientId: event.requestContext.authorizer.claims.client_id,
+                clientId: event.requestContext.authorizer.claims.aud,
                 accountId: event.pathParameters.accountId,
                 walletId: event.pathParameters.walletId,
                 txId: event.pathParameters.txId,

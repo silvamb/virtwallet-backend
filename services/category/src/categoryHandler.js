@@ -16,14 +16,14 @@ exports.handle = async (event, dynamodb) => {
 };
 
 const listCategories = (event, dynamodb) => {
-    //const clientId = event.requestContext.authorizer.claims.client_id;
+    //const clientId = event.requestContext.authorizer.claims.aud;
     const accountId = event.pathParameters.accountId;
 
     return category.list(dynamodb, accountId);
 }
 
 const createCategory = (event, dynamodb) => {
-    //const clientId = event.requestContext.authorizer.claims.client_id;
+    //const clientId = event.requestContext.authorizer.claims.aud;
     const accountId = event.pathParameters.accountId;
     const categoriesToAdd = JSON.parse(event.body);
 
