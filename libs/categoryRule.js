@@ -24,6 +24,20 @@ const exprRuleAttrTypeMap = new Map([
     ["categoryId", dynamodb.StringAttributeType],
 ]);
 
+const updatableExpressionRuleAttrs = new Set([
+    "ruleType",
+    "parameter",
+    "name",
+    "priority",
+    "categoryId"
+]);
+
+const updatableKeywordRuleAttrs = new Set([
+    "keyword",
+    "priority",
+    "categoryId"
+]);
+
 const getPK = (accountId) => `ACCOUNT#${accountId}`;
 const getSK = () => {
     return "RULE#";
@@ -280,6 +294,60 @@ exports.list = async (dynamodb, accountId, ruleType = "NO_TYPE") => {
 
     return new CategoryRulesList(categoryRules);
 };
+
+/**
+ * Updates a transaction.
+ * 
+ * @param {DynamoDb} dynamoDB Dynamo DB client
+ * @param {Transaction} ruleToUpdate Category Rule object to update
+ * @param {*} attrsToUpdate attributes to be updated.
+ */
+exports.update = async (dynamoDbClient, ruleToUpdate, attrsToUpdate) => {
+    if(!dynamoDbClient || !ruleToUpdate || !attrsToUpdate) {
+        throw new Error("Missing mandatory parameters");
+    }
+
+    const dbClient = new DynamoDb(dynamoDbClient);
+
+    if(!ruleToUpdate instanceof CategoryRule) {
+        throw new Error("Invalid format, expecting a CategoryRule"); 
+    }
+
+    const updatableAttrs = ruleToUpdate.ruleType === 'keyword' ? updatableKeywordRuleAttrs : updatableExpressionRuleAttrs;
+
+    for(let attribute in attrsToUpdate) {
+        if(!ruleToUpdate.hasOwnProperty(attribute)) {
+            throw new Error(`'${attribute}' is not a valid CategoryRule attribute`);
+        }
+
+        if(!updatableAttrs.has(attribute)) {
+            throw new Error(`CategoryRule attribute '${attribute}' is not updatable`);
+        }
+    }
+ 
+    // TODO apply different logic for keyword and expressions
+    if(ruleToUpdate.ruleType === KEYWORD_RULE_TYPE) {
+        throw new Error('Updating keywords are not supported');
+    }
+
+    return dbClient.updateItem(ruleToUpdate, attrsToUpdate);
+}
+
+/**
+ * Creates an instance of CategoryRule.
+ * 
+ * @param {string} accountId the acccount ID
+ * @param {string} ruleType the rule type, 'keyword' or 'expression'
+ * @param {string} ruleId the rule ID
+ * @param {*} ruleDetails rule attributes
+ */
+exports.createRule = (accountId, ruleType, ruleId, ruleDetails) => {
+    if(ruleType === KEYWORD_RULE_TYPE) {
+        return createKeywords(ruleDetails, accountId);
+    }
+
+    return createExpressionRules(ruleDetails, accountId, ruleId);
+}
 
 exports.KeywordCategoryRule = KeywordCategoryRule;
 exports.ExpressionCategoryRule = ExpressionCategoryRule;

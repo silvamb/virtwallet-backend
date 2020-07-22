@@ -22,7 +22,7 @@ apigw-event-handler:
             accountId: true
         cors: ${self:custom.enableCors}
     - http:
-        path: account/{accountId}/categoryRule/{categoryRuleId}
+        path: account/{accountId}/categoryRule/{ruleType}/{ruleId}
         method: PUT
         authorizer:
           type: COGNITO_USER_POOLS
@@ -30,18 +30,8 @@ apigw-event-handler:
         parameters:
           paths:
             accountId: true
-            categoryRuleId: true
-        cors: ${self:custom.enableCors}
-    - http:
-        path: account/{accountId}/categoryRule/{categoryRuleId}
-        method: DELETE
-        authorizer:
-          type: COGNITO_USER_POOLS
-          authorizerId: ${self:custom.restApiAuthorizerId}
-        parameters:
-          paths:
-            accountId: true
-            categoryRuleId: true
+            ruleType: true
+            ruleId: true
         cors: ${self:custom.enableCors}
   environment:
     CORS_ENABLED: ${self:custom.enableCors}
