@@ -198,6 +198,22 @@ class DynamoDb {
         return data;
     }
 
+    async deleteItem(obj) {
+        const item = toItem(obj);
+
+        const params = {
+            Key: {
+                PK: item.PK,
+                SK: item.SK,
+            },
+            TableName: TABLE_NAME
+        };
+
+        const result = await this.dynamodb.deleteItem(params).promise();
+
+        return new Result(result);
+    }
+
     async deleteAll(items) {
         console.log("Executing delete all for items:", items);
 

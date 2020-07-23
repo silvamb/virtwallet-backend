@@ -4,7 +4,8 @@ exports.handle = async (event, dynamodb) => {
     const operationMap = new Map([
         ['GET', listCategoryRules ],
         ['POST', createCategoryRule ],
-        ['PUT', updateCategoryRule]
+        ['PUT', updateCategoryRule],
+        ['DELETE', deleteCategoryRule],
     ]);
 
     const operationHandler = operationMap.get(event.httpMethod);
@@ -70,4 +71,20 @@ function updateCategoryRule(event, dynamodb) {
     }
 
     return categoryRule.update(dynamodb, ruleToUpdate, updatedAttributes);
+}
+
+function deleteCategoryRule(event, dynamodb) {
+    //const clientId = event.requestContext.authorizer.claims.aud;
+    const accountId = event.pathParameters.accountId;
+    const ruleType = event.pathParameters.ruleType;
+    const ruleId = event.pathParameters.ruleId;
+
+    if(!accountId || !ruleType || !ruleId) {
+        throw new Error("Missing path parameters");
+    }
+
+    const rule = categoryRule.createRule(accountId, ruleType, ruleId);
+
+    console.log("Deleting Category Rule", rule);
+    return categoryRule.delete(dynamodb, rule);
 }

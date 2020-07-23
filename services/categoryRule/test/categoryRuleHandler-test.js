@@ -125,4 +125,20 @@ describe('CategoryRuleHandler unit tests', () => {
             return expect(promise).to.eventually.be.fulfilled;
         });
     });
+
+    describe('delete category rule test', () => {
+        it('should delete a category rule', () => {
+            const event = testValues.deleteExpressionRuleEvent;
+
+            const validateParams = params => {
+                expect(params).to.be.deep.equals(testValues.deleteExpressionRuleParams);
+            }
+
+            const dynamoDbMock = new DynamoDbMock().setMock('deleteItem', validateParams, testValues.deleteExpressionRuleResult);
+
+            const promise = categoryRuleHandler.handle(event, dynamoDbMock);
+
+            return expect(promise).to.eventually.be.fulfilled;
+        });
+    });
 });

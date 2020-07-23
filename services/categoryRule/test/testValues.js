@@ -185,3 +185,37 @@ exports.updateExpressionRuleParams = {
 exports.expressionRuleUpdateResult = {
     "Attributes": exports.categoryRules.Items[1]
 };
+
+exports.deleteExpressionRuleEvent = {
+  resource: "/account/{accountId}/categoryRule/{ruleType}/{ruleId}",
+  httpMethod: "DELETE",
+  pathParameters: {
+      accountId: exports.accountId,
+      ruleType: "expression",
+      ruleId: "05"
+  },
+  requestContext: {
+      authorizer: {
+      claims: {
+          aud: exports.clientId,
+      },
+      },
+  },
+}
+
+exports.deleteExpressionRuleParams = {
+  Key: {
+      PK: {
+          S: `ACCOUNT#${exports.accountId}`
+      },
+      SK: {
+          S: "RULE#EXPRESSION#05"
+      }
+  },
+  TableName: "virtwallet"
+}
+
+exports.deleteExpressionRuleResult = {
+  "Count": 1,
+  "ScannedCount": 1
+}

@@ -33,6 +33,18 @@ apigw-event-handler:
             ruleType: true
             ruleId: true
         cors: ${self:custom.enableCors}
+    - http:
+        path: account/{accountId}/categoryRule/{ruleType}/{ruleId}
+        method: DELETE
+        authorizer:
+          type: COGNITO_USER_POOLS
+          authorizerId: ${self:custom.restApiAuthorizerId}
+        parameters:
+          paths:
+            accountId: true
+            ruleType: true
+            ruleId: true
+        cors: ${self:custom.enableCors}
   environment:
     CORS_ENABLED: ${self:custom.enableCors}
   iamRoleStatements:

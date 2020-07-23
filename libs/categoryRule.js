@@ -191,7 +191,7 @@ exports.create = async (dynamodb, accountId, categoryRulesToAdd) => {
 
     const keywordRules = categoryRulesToAdd
         .filter(KEYWORD_FILTER)
-        .map((ruleDetails) => createKeywords(ruleDetails, accountId));
+        .map((ruleDetails) => createKeywords(accountId, ruleDetails));
     let expressionRules = [];
 
     if (hasExpressionRules) {
@@ -205,9 +205,9 @@ exports.create = async (dynamodb, accountId, categoryRulesToAdd) => {
             .filter(EXPRESSION_RULE_FILTER)
             .map((ruleDetails, index) =>
                 createExpressionRules(
-                    ruleDetails,
                     accountId,
-                    nextRuleId + index
+                    nextRuleId + index,
+                    ruleDetails
                 )
             );
     }
@@ -229,7 +229,7 @@ exports.create = async (dynamodb, accountId, categoryRulesToAdd) => {
     return retVal;
 };
 
-function createKeywords(keywordDetails, accountId) {
+function createKeywords(accountId, keywordDetails = {}) {
     const keyword = new KeywordCategoryRule();
     keyword.accountId = accountId;
     keyword.keyword = keywordDetails.keyword;
@@ -238,7 +238,7 @@ function createKeywords(keywordDetails, accountId) {
     return keyword;
 }
 
-function createExpressionRules(expressionDetails, accountId, ruleId) {
+function createExpressionRules(accountId, ruleId, expressionDetails = {}) {
     const rule = new ExpressionCategoryRule(expressionDetails.ruleType);
     rule.accountId = accountId;
     rule.ruleId = String(ruleId).padStart(2, "0");
@@ -343,10 +343,20 @@ exports.update = async (dynamoDbClient, ruleToUpdate, attrsToUpdate) => {
  */
 exports.createRule = (accountId, ruleType, ruleId, ruleDetails) => {
     if(ruleType === KEYWORD_RULE_TYPE) {
-        return createKeywords(ruleDetails, accountId);
+        return createKeywords(accountId, ruleDetails);
     }
 
-    return createExpressionRules(ruleDetails, accountId, ruleId);
+    return createExpressionRules(accountId, ruleId, ruleDetails);
+}
+
+exports.delete = async (dynamoDbClient, rule)=> {
+    const dbClient = new DynamoDb(dynamoDbClient);
+
+    if(!rule instanceof CategoryRule) {
+        throw new Error("Invalid format, expecting a CategoryRule"); 
+    }
+
+    await dbClient.deleteItem(rule);
 }
 
 exports.KeywordCategoryRule = KeywordCategoryRule;
