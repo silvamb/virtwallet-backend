@@ -52,7 +52,7 @@ function updateCategoryRule(event, dynamodb) {
     }
 
     console.log("Updating category rule [", ruleId, "] attributes from", oldAttributes, "to", updatedAttributes);
-    const ruleToUpdate = categoryRule.createRule(accountId, ruleType, ruleId, oldAttributes);
+    const ruleToUpdate = categoryRule.toCategoryRule(accountId, ruleType, ruleId, oldAttributes);
 
     for(let attribute in oldAttributes) {
         if(ruleToUpdate.hasOwnProperty(attribute)
@@ -77,14 +77,14 @@ function deleteCategoryRule(event, dynamodb) {
     //const clientId = event.requestContext.authorizer.claims.aud;
     const accountId = event.pathParameters.accountId;
     const ruleType = event.pathParameters.ruleType;
-    const ruleId = event.pathParameters.ruleId;
+    const ruleId =  decodeURIComponent(event.pathParameters.ruleId);
 
     if(!accountId || !ruleType || !ruleId) {
         throw new Error("Missing path parameters");
     }
 
-    const rule = categoryRule.createRule(accountId, ruleType, ruleId);
+    const rule = categoryRule.toCategoryRule(accountId, ruleType, ruleId);
 
     console.log("Deleting Category Rule", rule);
-    return categoryRule.delete(dynamodb, rule);
+    return categoryRule.remove(dynamodb, rule);
 }

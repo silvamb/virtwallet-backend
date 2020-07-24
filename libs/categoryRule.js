@@ -191,7 +191,7 @@ exports.create = async (dynamodb, accountId, categoryRulesToAdd) => {
 
     const keywordRules = categoryRulesToAdd
         .filter(KEYWORD_FILTER)
-        .map((ruleDetails) => createKeywords(accountId, ruleDetails));
+        .map((ruleDetails) => createKeywords(accountId, ruleDetails.keyword, ruleDetails));
     let expressionRules = [];
 
     if (hasExpressionRules) {
@@ -229,10 +229,10 @@ exports.create = async (dynamodb, accountId, categoryRulesToAdd) => {
     return retVal;
 };
 
-function createKeywords(accountId, keywordDetails = {}) {
+function createKeywords(accountId, ruleId, keywordDetails = {}) {
     const keyword = new KeywordCategoryRule();
     keyword.accountId = accountId;
-    keyword.keyword = keywordDetails.keyword;
+    keyword.keyword = ruleId;
     keyword.categoryId = keywordDetails.categoryId;
 
     return keyword;
@@ -341,15 +341,15 @@ exports.update = async (dynamoDbClient, ruleToUpdate, attrsToUpdate) => {
  * @param {string} ruleId the rule ID
  * @param {*} ruleDetails rule attributes
  */
-exports.createRule = (accountId, ruleType, ruleId, ruleDetails) => {
+exports.toCategoryRule = (accountId, ruleType, ruleId, ruleDetails) => {
     if(ruleType === KEYWORD_RULE_TYPE) {
-        return createKeywords(accountId, ruleDetails);
+        return createKeywords(accountId, ruleId, ruleDetails);
     }
 
     return createExpressionRules(accountId, ruleId, ruleDetails);
 }
 
-exports.delete = async (dynamoDbClient, rule)=> {
+exports.remove = async (dynamoDbClient, rule)=> {
     const dbClient = new DynamoDb(dynamoDbClient);
 
     if(!rule instanceof CategoryRule) {

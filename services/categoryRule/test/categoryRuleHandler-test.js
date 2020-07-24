@@ -127,14 +127,28 @@ describe('CategoryRuleHandler unit tests', () => {
     });
 
     describe('delete category rule test', () => {
-        it('should delete a category rule', () => {
+        it('should delete an expression category rule', () => {
             const event = testValues.deleteExpressionRuleEvent;
 
             const validateParams = params => {
                 expect(params).to.be.deep.equals(testValues.deleteExpressionRuleParams);
             }
 
-            const dynamoDbMock = new DynamoDbMock().setMock('deleteItem', validateParams, testValues.deleteExpressionRuleResult);
+            const dynamoDbMock = new DynamoDbMock().setMock('deleteItem', validateParams, testValues.deleteRuleResult);
+
+            const promise = categoryRuleHandler.handle(event, dynamoDbMock);
+
+            return expect(promise).to.eventually.be.fulfilled;
+        });
+
+        it('should delete a keyword category rule', () => {
+            const event = testValues.deleteKeywordRuleEvent;
+
+            const validateParams = params => {
+                expect(params).to.be.deep.equals(testValues.deleteKeywordRuleParams);
+            }
+
+            const dynamoDbMock = new DynamoDbMock().setMock('deleteItem', validateParams, testValues.deleteRuleResult);
 
             const promise = categoryRuleHandler.handle(event, dynamoDbMock);
 
