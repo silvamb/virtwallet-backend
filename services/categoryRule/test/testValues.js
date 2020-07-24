@@ -168,7 +168,7 @@ exports.updateExpressionRuleParams = {
         }
     },
     ExpressionAttributeNames: {
-        "#value": "value",
+        "#value": "parameter",
     },
     ExpressionAttributeValues: {
         ":value": {
@@ -184,6 +184,90 @@ exports.updateExpressionRuleParams = {
 
 exports.expressionRuleUpdateResult = {
     "Attributes": exports.categoryRules.Items[1]
+};
+
+const validKeywordRuleToUpdate = {
+  old: {
+      "categoryId": "01"
+  },
+  new: {
+      "categoryId": "03"
+  }
+};
+
+exports.updateKeywordRuleEvent = {
+  resource: "/account/{accountId}/categoryRule/{ruleType}/{ruleId}",
+  httpMethod: "PUT",
+  pathParameters: {
+      accountId: exports.accountId,
+      ruleType: "keyword",
+      ruleId: "MyKeyword"
+  },
+  body: JSON.stringify(validKeywordRuleToUpdate),
+  requestContext: {
+      authorizer: {
+      claims: {
+          aud: exports.clientId,
+      },
+      },
+  },
+};
+
+exports.updateKeywordRuleParams = {
+  Key: {
+      PK: {
+          S: `ACCOUNT#${exports.accountId}`
+      },
+      SK: {
+          S: "RULE#KEYWORD#MyKeyword"
+      }
+  },
+  ExpressionAttributeNames: {
+      "#value": "categoryId",
+  },
+  ExpressionAttributeValues: {
+      ":value": {
+          S: "01"
+      },
+      ":old_value": {
+          S: "03"
+      },
+  },
+  UpdateExpression: " SET #value = :value",
+  ConditionExpression: "#value = :old_value",
+}
+
+exports.keywordRuleUpdateResult = {
+  "Attributes": exports.categoryRules.Items[0]
+};
+
+const invalidKeywordRuleToUpdate = {
+  old: {
+      "keyword": "MyKeyword",
+      "categoryId": "01"
+  },
+  new: {
+      "keyword": "AnotherKeyword",
+      "categoryId": "03"
+  }
+};
+
+exports.invalidUpdateKeywordRuleEvent = {
+  resource: "/account/{accountId}/categoryRule/{ruleType}/{ruleId}",
+  httpMethod: "PUT",
+  pathParameters: {
+      accountId: exports.accountId,
+      ruleType: "keyword",
+      ruleId: "MyKeyword"
+  },
+  body: JSON.stringify(invalidKeywordRuleToUpdate),
+  requestContext: {
+      authorizer: {
+      claims: {
+          aud: exports.clientId,
+      },
+      },
+  },
 };
 
 exports.deleteExpressionRuleEvent = {

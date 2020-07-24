@@ -124,6 +124,28 @@ describe('CategoryRuleHandler unit tests', () => {
 
             return expect(promise).to.eventually.be.fulfilled;
         });
+
+        it('should update a keyword category rule', () => {
+            const event = testValues.updateExpressionRuleEvent;
+
+            const validateParams = params => {
+                expect(params).to.be.deep.equals(testValues.updateKeywordRuleEvent);
+            }
+
+            const dynamoDbMock = new DynamoDbMock().setMock('updateItem', validateParams, testValues.keywordRuleUpdateResult);
+
+            const promise = categoryRuleHandler.handle(event, dynamoDbMock);
+
+            return expect(promise).to.eventually.be.fulfilled;
+        });
+
+        it('should fail when trying to update a keyword category rule', () => {
+            const event = testValues.invalidUpdateKeywordRuleEvent;
+
+            const promise = categoryRuleHandler.handle(event, new DynamoDbMock());
+
+            return expect(promise).to.eventually.be.rejectedWith(Error, "CategoryRule attribute 'keyword' is not updatable");
+        });
     });
 
     describe('delete category rule test', () => {

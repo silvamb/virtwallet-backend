@@ -33,7 +33,6 @@ const updatableExpressionRuleAttrs = new Set([
 ]);
 
 const updatableKeywordRuleAttrs = new Set([
-    "keyword",
     "priority",
     "categoryId"
 ]);
@@ -230,6 +229,10 @@ exports.create = async (dynamodb, accountId, categoryRulesToAdd) => {
 };
 
 function createKeywords(accountId, ruleId, keywordDetails = {}) {
+    if(!ruleId || ruleId === "") {
+        throw new Error("Keyword cannot be empty");
+    }
+
     const keyword = new KeywordCategoryRule();
     keyword.accountId = accountId;
     keyword.keyword = ruleId;
@@ -323,11 +326,6 @@ exports.update = async (dynamoDbClient, ruleToUpdate, attrsToUpdate) => {
         if(!updatableAttrs.has(attribute)) {
             throw new Error(`CategoryRule attribute '${attribute}' is not updatable`);
         }
-    }
- 
-    // TODO apply different logic for keyword and expressions
-    if(ruleToUpdate.ruleType === KEYWORD_RULE_TYPE) {
-        throw new Error('Updating keywords are not supported');
     }
 
     return dbClient.updateItem(ruleToUpdate, attrsToUpdate);

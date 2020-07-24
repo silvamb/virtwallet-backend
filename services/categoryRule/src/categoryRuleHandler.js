@@ -30,6 +30,10 @@ function createCategoryRule(event, dynamodb) {
     const accountId = event.pathParameters.accountId;
     const categoryRulesToAdd = JSON.parse(event.body);
 
+    if(!accountId) {
+        throw new Error("Missing accountId");
+    }
+
     return categoryRule.create(dynamodb, accountId, categoryRulesToAdd);
 }
 
@@ -37,10 +41,14 @@ function updateCategoryRule(event, dynamodb) {
     //const clientId = event.requestContext.authorizer.claims.aud;
     const accountId = event.pathParameters.accountId;
     const ruleType = event.pathParameters.ruleType;
-    const ruleId = event.pathParameters.ruleId;
+    const ruleId =  decodeURIComponent(event.pathParameters.ruleId);
 
     if(!accountId || !ruleType || !ruleId) {
         throw new Error("Missing path parameters");
+    }
+
+    if(ruleId === "") {
+        throw new Error("Rule ID cannot be empty");
     }
 
     const changeSet = JSON.parse(event.body);
