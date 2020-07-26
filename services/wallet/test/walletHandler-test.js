@@ -107,7 +107,8 @@ describe('WalletHandler unit tests', () => {
 
             const validateParams = (params) => {
                 expect(params.ExpressionAttributeValues[":pk"].S).to.be.equal("ACCOUNT#4801b837-18c0-4277-98e9-ba57130edeb3");
-                expect(params.KeyConditionExpression).to.be.equal("PK = :pk");
+                expect(params.ExpressionAttributeValues[":sk"].S).to.be.equal("WALLET#4801b837-18c0-4277-98e9-ba57130edeb3");
+                expect(params.KeyConditionExpression).to.be.equal("PK = :pk AND begins_with(SK, :sk)");
             };
 
             // TODO Add this to a JSON file

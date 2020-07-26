@@ -1,6 +1,7 @@
 const wallet = require('libs/wallet');
 const Wallet = wallet.Wallet;
 const DynamoDb = require('libs/dynamodb').DynamoDb;
+const QueryBuilder = require('libs/dynamodb').QueryBuilder;
 const fromItem = require('libs/dynamodb').fromItem;
 const getPK = wallet.getPK;
 const getSK = wallet.getSK;
@@ -63,8 +64,10 @@ class WalletHandler {
         console.log(`Listing wallets for account [${accountId}]`);
         
         const pk = getPK(accountId);
+        const sk = getSK(accountId);
 
-        const queryData = await this.dynamodb.queryAll(pk);
+        const queryBuilder = new QueryBuilder(pk).sk.beginsWith(sk);
+        const queryData = await this.dynamodb.query(queryBuilder.build());
 
         const wallets = queryData.Items.map((item) => {
             return fromItem(item, new Wallet());
