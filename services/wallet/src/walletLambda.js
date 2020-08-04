@@ -39,9 +39,9 @@ class Response {
         this.statusCode = statusCode;
         this.body = JSON.stringify(data);
 
-        if(process.env.CORS_ENABLED) {
+        if(process.env.CORS_ALLOWED_ORIGIN) {
             this.headers = {
-                'Access-Control-Allow-Origin': '*',
+                'Access-Control-Allow-Origin': process.env.CORS_ALLOWED_ORIGIN,
                 'Access-Control-Allow-Credentials': true,
             };
         }

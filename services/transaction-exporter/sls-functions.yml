@@ -16,10 +16,10 @@ apigw-handler:
             to: true
             delimiter: false
             order: false
-        cors: ${self:custom.enableCors}
+        cors: ${self:custom.cors}
   environment:
     ACCOUNT_FILES_BUCKET: ${self:custom.userFilesBucket}
-    CORS_ENABLED: ${self:custom.enableCors}
+    CORS_ALLOWED_ORIGIN: ${self:custom.cors.origin, None}
   iamRoleStatements:
     - Effect: Allow
       Action:

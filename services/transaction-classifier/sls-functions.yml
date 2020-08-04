@@ -38,9 +38,9 @@ apigw-handler:
             from: true
             to: true
             filters: false
-        cors: ${self:custom.enableCors}
+        cors: ${self:custom.cors}
   environment:
-    CORS_ENABLED: ${self:custom.enableCors}
+    CORS_ALLOWED_ORIGIN: ${self:custom.cors.origin, None}
   iamRoleStatementsName: virtwallet-transaction-reclassify-${self:provider.stage}-iam-role
   iamRoleStatements:
     - Effect: Allow

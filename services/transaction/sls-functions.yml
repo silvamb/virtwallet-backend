@@ -78,7 +78,7 @@ apigw-event-handler:
             transactionId: true
         cors: true
   environment:
-    CORS_ENABLED: ${self:custom.enableCors}
+    CORS_ALLOWED_ORIGIN: ${self:custom.cors.origin, None}
   iamRoleStatements:
     - Effect: Allow
       Action:
