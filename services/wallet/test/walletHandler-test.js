@@ -28,14 +28,12 @@ describe('WalletHandler unit tests', () => {
     describe('create wallet tests', () => {
         it('should create wallet with success', () => {
 
-            // TODO Add this to a JSON file
             const eventBody = {
                 name: "Wallet Name",
                 description: "Wallet Description",
                 type: "checking_account"
             };
 
-            // TODO Add this to a JSON file
             const event = {
                 httpMethod: 'POST',
                 requestContext: {
@@ -90,8 +88,7 @@ describe('WalletHandler unit tests', () => {
     describe('list wallet test', () => {
         it('should list wallets from an user', () => {
 
-            // TODO Add this to a JSON file
-            const event = {
+
                 httpMethod: 'GET',
                 requestContext: {
                     authorizer: {
@@ -111,9 +108,7 @@ describe('WalletHandler unit tests', () => {
                 expect(params.KeyConditionExpression).to.be.equal("PK = :pk AND begins_with(SK, :sk)");
             };
 
-            // TODO Add this to a JSON file
-            const expectedResult = {
-                Count: 1,
+
                 Items: [
                     {
                         PK: {"S": "ACCOUNT#4801b837-18c0-4277-98e9-ba57130edeb3"},
@@ -134,7 +129,6 @@ describe('WalletHandler unit tests', () => {
             const walletHandler = new WalletHandler(dynamoDbMock);
             const promise = walletHandler.list(event);
 
-            // TODO Add this to a JSON file
             const expectedList = {
                 accountId: "4801b837-18c0-4277-98e9-ba57130edeb3",
                 walletId: "ad7d4de0-184a-4d3d-a4c8-68d5ba87b87f",
@@ -150,7 +144,6 @@ describe('WalletHandler unit tests', () => {
 
     it('should get an wallet from an user', () => {
 
-        // TODO Add this to a JSON file
         const event = {
             httpMethod: 'GET',
             requestContext: {
@@ -172,7 +165,6 @@ describe('WalletHandler unit tests', () => {
             expect(params.KeyConditionExpression).to.be.equal("PK = :pk AND SK =:sk");
         };
 
-        // TODO Add this to a JSON file
         const expectedResult = {
             Count: 1,
             Items: [
@@ -195,7 +187,6 @@ describe('WalletHandler unit tests', () => {
         const walletHandler = new WalletHandler(dynamoDbMock);
         const promise = walletHandler.get(event);
 
-        // TODO Add this to a JSON file
         const expectedWallet = {
             accountId: "4801b837-18c0-4277-98e9-ba57130edeb3",
             walletId: "ad7d4de0-184a-4d3d-a4c8-68d5ba87b87f",

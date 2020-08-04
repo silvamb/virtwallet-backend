@@ -6,12 +6,12 @@ function parseEvent(detail) {
     console.log("Parsing event detail", detail);
 
     return {
-        clientId: "NOT_DEFINED", // TODO Load from DynamoDB
+        clientId: "NOT_DEFINED",
         accountId: detail.account,
         walletId: detail.wallet,
         transactions: {
             source: detail.fileName,
-            sourceType: "A", // TODO use transaction API constants
+            sourceType: "A",
             transactions: detail.transactions,
         },
         overwrite: false
@@ -36,9 +36,6 @@ class TransactionLoaderHandler {
         const transactionsToAdd = parameters.transactions;
         const overwrite = !('overwrite' in parameters) || parameters.overwrite;
         const generateId = parameters.generateId;
-    
-        // TODO validate if user is a member of this account
-        // TODO validate transaction details
     
         console.log(`Creating transactions for user ${clientId} and wallet ${walletId}.`);
     
@@ -125,7 +122,7 @@ async function publishEvent(eventbridge, results, transactions) {
             Entries: [
                 {
                     Source: "virtwallet",
-                    DetailType: "transactions created", // TODO add Event types in a file in libs
+                    DetailType: "transactions created",
                     Time: new Date(),
                     Detail: JSON.stringify(eventDetail),
                 },

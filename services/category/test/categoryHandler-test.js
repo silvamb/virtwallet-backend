@@ -263,7 +263,6 @@ describe("CategoryHandler unit tests", () => {
                 );
             };
 
-            // TODO Add this to a JSON file
             const expectedResult = {
                 Count: 1,
                 Items: [
@@ -287,7 +286,6 @@ describe("CategoryHandler unit tests", () => {
 
             const promise = categoryHandler.handle(event, dynamoDbMock);
 
-            // TODO Add this to a JSON file
             const expectedCategory = {
                 accountId: accountId,
                 categoryId: categoryId,
@@ -332,7 +330,6 @@ describe("CategoryHandler unit tests", () => {
                 );
             };
 
-            // TODO Add this to a JSON file
             const expectedResult = {
                 Count: 0,
                 Items: [],

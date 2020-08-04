@@ -1,4 +1,3 @@
-// TODO extract UUID and place in AccountHandler
 const uuidv4 = require("uuid/v4");
 const dynamodb = require("./dynamodb");
 
@@ -30,7 +29,6 @@ class Account {
         return attrTypeMap;
     }
 
-    // TODO Extract to exports
     static getPK(ownerId) {
         return `USER#${ownerId}`;
     }

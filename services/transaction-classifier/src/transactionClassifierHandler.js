@@ -12,9 +12,6 @@ class TransactionClassifierHandler {
     async classifyAndPublishTransactions(detail) {
         console.log(`Start classifying transactions from file [${detail.fileName}]`);
 
-        // TODO validate if user is a member of this account
-        // TODO validate transaction details
-
         console.log(`Classifying transactions for account ${detail.account} and wallet ${detail.wallet}.`);
 
         const categoryRulesList = await categoryRules.list(this.dynamodb, detail.account);
@@ -135,7 +132,7 @@ function publishEvent(eventbridge, details) {
         Entries: [
             {
                 Source: "virtwallet",
-                DetailType: "transactions classified", // TODO add Event types in a file in libs
+                DetailType: "transactions classified",
                 Time: new Date(),
                 Detail: JSON.stringify(details),
             },
@@ -172,7 +169,7 @@ async function publishUpdatedTransactions(eventbridge, accountId, walletId, chan
         Entries: [
             {
                 Source: "virtwallet",
-                DetailType: "transactions updated", // TODO add Event types in a file in libs
+                DetailType: "transactions updated",
                 Time: new Date(),
                 Detail: JSON.stringify(transactionChanges),
             },

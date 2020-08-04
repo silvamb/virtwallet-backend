@@ -118,7 +118,6 @@ exports.create = async(dynamodb, accountId, categoriesToAdd) =>  {
  * @returns {Array<Category>} a list with the categories
  */
 exports.list = async(dynamodb, accountId) => {
-    // TODO validate if user is a member of this account
     console.log(`Listing categories for account [${accountId}]`);
 
     const dbClient = new DynamoDb(dynamodb);

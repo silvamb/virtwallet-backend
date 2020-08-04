@@ -28,7 +28,7 @@ async function publishEvent(eventbridge, transactions, fileInfo) {
     const params = {
         Entries: [{
             Source: 'virtwallet',
-            DetailType: 'transactions parsed',  // TODO add Event types in a file in libs
+            DetailType: 'transactions parsed', 
             Time: new Date(),
             Detail: JSON.stringify(details)
         }]

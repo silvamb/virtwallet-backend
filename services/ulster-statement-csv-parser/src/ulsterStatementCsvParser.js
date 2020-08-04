@@ -121,7 +121,6 @@ function transformPosTx(transaction) {
         return;
     }
 
-    // TODO add card to the transaction metadata
     const card = transaction.description.substring(0,4);
     console.log(`Card used in POS: [${card}]`);
 

@@ -39,13 +39,11 @@ describe('AccountHandler unit tests', () => {
     describe('create account tests', () => {
         it('should create account with success', () => {
 
-            // TODO Add this to a JSON file
             const eventBody = {
                 name: "Account Name",
                 description: "Account Description"
             };
 
-            // TODO Add this to a JSON file
             const event = {
                 httpMethod: 'POST',
                 requestContext: {
@@ -77,7 +75,6 @@ describe('AccountHandler unit tests', () => {
     describe('list account test', () => {
         it('should list accounts from an user', () => {
 
-            // TODO Add this to a JSON file
             const event = {
                 httpMethod: 'GET',
                 requestContext: {
@@ -94,7 +91,6 @@ describe('AccountHandler unit tests', () => {
                 expect(params.KeyConditionExpression).to.be.equal("PK = :pk");
             };
 
-            // TODO Add this to a JSON file
             const expectedResult = {
                 Count: 1,
                 Items: [
@@ -113,7 +109,6 @@ describe('AccountHandler unit tests', () => {
             const accountHandler = new AccountHandler(new DynamoDbMock(validateParams, expectedResult));
             const promise = accountHandler.list(event);
 
-            // TODO Add this to a JSON file
             const expectedList = {
                 accountId: "ad7d4de0-184a-4d3d-a4c8-68d5ba87b87f",
                 ownerId: "10v21l6b17g3t27sfbe38b0i8n",
@@ -127,7 +122,6 @@ describe('AccountHandler unit tests', () => {
 
     it('should get an account from an user', () => {
 
-        // TODO Add this to a JSON file
         const event = {
             httpMethod: 'GET',
             pathParameters: {
@@ -148,7 +142,6 @@ describe('AccountHandler unit tests', () => {
             expect(params.KeyConditionExpression).to.be.equal("PK = :pk AND SK =:sk");
         };
 
-        // TODO Add this to a JSON file
         const expectedResult = {
             Count: 1,
             Items: [
@@ -167,7 +160,6 @@ describe('AccountHandler unit tests', () => {
         const accountHandler = new AccountHandler(new DynamoDbMock(validateParams, expectedResult));
         const promise = accountHandler.get(event);
 
-        // TODO Add this to a JSON file
         const expectedAccount = {
             accountId: "ad7d4de0-184a-4d3d-a4c8-68d5ba87b87f",
             ownerId: "10v21l6b17g3t27sfbe38b0i8n",

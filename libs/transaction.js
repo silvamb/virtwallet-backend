@@ -153,9 +153,6 @@ class TransactionFilter {
  * @param {boolean} generateId Indicates if the transaction id should be generated, if not present
  */
 exports.create = async (dbClient, clientId, accountId, walletId, transactionsToAdd, overwrite = false, generateId = false) => {
-    // TODO validate if user is a member of this account
-    // TODO validate transaction details
-
     if(!dbClient || !accountId || !walletId || !transactionsToAdd) {
         throw new Error("Missing mandatory parameters");
     }

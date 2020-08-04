@@ -238,7 +238,6 @@ describe('TransactionHandler unit tests', () => {
 
     describe('DeleteAllTransactionTests', () => {
         it('should delete all transactions from a wallet', () => {
-            // TODO Add this to a JSON file
             const parameters = {
                 clientId: "10v21l6b17g3t27sfbe38b0i8n",
                 accountId: "4801b837-18c0-4277-98e9-ba57130edeb3",

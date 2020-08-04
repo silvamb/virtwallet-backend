@@ -33,7 +33,6 @@ const walletOperationMap = new Map([
     ['DELETE', 'delete' ]
 ]);
 
-// TODO Extract to a utility function
 class Response {
     constructor(data, statusCode = 200){
         this.statusCode = statusCode;

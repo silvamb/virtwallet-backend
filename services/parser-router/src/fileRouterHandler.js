@@ -14,7 +14,7 @@ class FileRouter {
         const params = {
             Entries: [{
                 Source: 'virtwallet',
-                DetailType: 'file ready to parse', // TODO add Event types in a file in libs
+                DetailType: 'file ready to parse',
                 Time: new Date(),
                 Detail: JSON.stringify(fileInfo)
             }]
@@ -23,7 +23,6 @@ class FileRouter {
         const result = await this.eventbridge.putEvents(params).promise();
 
         console.log("Event Result", result);
-        // TODO handle errors and update the file record in dynamodb
 
         return result;
     }

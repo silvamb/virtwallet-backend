@@ -31,7 +31,6 @@ class TransactionHandler {
     }
 
     async create(parameters) {
-        // TODO validate if user is a member of this account
         const clientId = parameters.clientId;
         const accountId = parameters.accountId;
         const walletId = parameters.walletId;
@@ -43,8 +42,6 @@ class TransactionHandler {
     }
 
     async list(parameters) {
-        // TODO validate if the client has permissions to access the wallet.
-
         const accountId = parameters.accountId;
         const walletId = parameters.walletId;
         const from = parameters.from;
@@ -109,8 +106,6 @@ class TransactionHandler {
     }
 
     async deleteAll(parameters) {
-        // TODO validate if the client has permissions to access the wallet.
-
         const accountId = parameters.accountId;
         const walletId = parameters.walletId;
 
@@ -148,7 +143,7 @@ async function publishUpdatedTransaction(eventbridge, parameters, oldAttributes)
         Entries: [
             {
                 Source: "virtwallet",
-                DetailType: "transaction updated", // TODO add Event types in a file in libs
+                DetailType: "transaction updated",
                 Time: new Date(),
                 Detail: JSON.stringify(transactionChanges),
             },

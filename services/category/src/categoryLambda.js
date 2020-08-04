@@ -13,7 +13,6 @@ exports.handle = async event => {
     }
 };
 
-// TODO Extract to a utility function
 class Response {
     constructor(data, statusCode = 200){
         this.statusCode = statusCode;

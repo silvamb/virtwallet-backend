@@ -8,8 +8,6 @@ exports.handle = async event => {
     
     console.log(event);
 
-    // TODO validate parameters
-    
     const params = new CreateFileUrlParameters();
     params.clientId = event.requestContext.authorizer.claims.aud;
     params.bucket = process.env.ACCOUNT_FILES_BUCKET;
@@ -23,7 +21,6 @@ exports.handle = async event => {
     return new Response(url);
 }
 
-// TODO Extract to a utility function
 class Response {
     constructor(data, statusCode = 200){
         this.statusCode = statusCode;

@@ -28,8 +28,6 @@ class WalletHandler {
         const accountId = event.pathParameters.accountId;
 
         const walletDetails = JSON.parse(event.body);
-    
-        // TODO validate if user is a member of this account
 
         const pk = getPK(accountId);
         const skPrefix = getSK(accountId);
@@ -58,7 +56,6 @@ class WalletHandler {
 
     async list(event) {
         const clientId = event.requestContext.authorizer.claims.aud;
-        // TODO validate if user is a member of this account
 
         const accountId = event.pathParameters.accountId;
         console.log(`Listing wallets for account [${accountId}]`);
@@ -81,7 +78,6 @@ class WalletHandler {
 
     async get(event) {
         const ownerId = event.requestContext.authorizer.claims.aud;
-        // TODO validate if user is a member of this account
 
         const accountId = event.pathParameters.accountId;
         const walletId = event.pathParameters.walletId;

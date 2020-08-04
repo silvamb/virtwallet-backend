@@ -254,7 +254,6 @@ function createExpressionRules(accountId, ruleId, expressionDetails = {}) {
 }
 
 exports.list = async (dynamodb, accountId, ruleType = "NO_TYPE") => {
-    // TODO validate if user is a member of this account
     console.log(`Listing category rules for account [${accountId}]`);
 
     const dbClient = new DynamoDb(dynamodb);
