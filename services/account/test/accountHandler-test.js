@@ -3,7 +3,7 @@ const chaiAsPromised = require("chai-as-promised");
 chai.use(chaiAsPromised);
 const expect = chai.expect;
 
-const AccountHandler = require('../src/accountHandler').AccountHandler;
+const accountHandler = require('../src/accountHandler');
 
 class DynamoDbMock  {
 
@@ -62,8 +62,8 @@ describe('AccountHandler unit tests', () => {
                 expect(params.Item.description.S).to.be.equal("Account Description");
             };
 
-            const accountHandler = new AccountHandler(new DynamoDbMock(validateParams));
-            const promise = accountHandler.create(event);
+            const promise = accountHandler.handle(event, new DynamoDbMock(validateParams));
+
             return Promise.all([
                 expect(promise).to.eventually.has.property("ownerId", "10v21l6b17g3t27sfbe38b0i8n"),
                 expect(promise).to.eventually.has.property("name", "Account Name"),
@@ -106,8 +106,7 @@ describe('AccountHandler unit tests', () => {
                 ScannedCount: 2
             };
 
-            const accountHandler = new AccountHandler(new DynamoDbMock(validateParams, expectedResult));
-            const promise = accountHandler.list(event);
+            const promise = accountHandler.handle(event, new DynamoDbMock(validateParams, expectedResult));
 
             const expectedList = {
                 accountId: "ad7d4de0-184a-4d3d-a4c8-68d5ba87b87f",
@@ -157,8 +156,7 @@ describe('AccountHandler unit tests', () => {
             ScannedCount: 1
         };
 
-        const accountHandler = new AccountHandler(new DynamoDbMock(validateParams, expectedResult));
-        const promise = accountHandler.get(event);
+        const promise = accountHandler.handle(event, new DynamoDbMock(validateParams, expectedResult));
 
         const expectedAccount = {
             accountId: "ad7d4de0-184a-4d3d-a4c8-68d5ba87b87f",

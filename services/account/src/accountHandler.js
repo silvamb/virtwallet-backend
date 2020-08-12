@@ -1,81 +1,43 @@
 const account = require('libs/account');
-const Account = account.Account;
-const DynamoDb = require('libs/dynamodb').DynamoDb;
-const fromItem = require('libs/dynamodb').fromItem;
 
-class AccountHandler {
+const topLevelOperationMap = new Map([
+    ['GET', listAccounts ],
+    ['POST', createAccount ]
+]);
 
-    constructor(dynamodb) {
-        console.log("Creating Account Handler");
-        this.dynamodb = new DynamoDb(dynamodb);
+const accountOperationMap = new Map([
+    ['GET', getAccount ]
+]);
+
+
+exports.handle = async (event, dynamodb) => {
+    const accountId = event.pathParameters? event.pathParameters.accountId : undefined;
+    const operationMap = accountId ? accountOperationMap : topLevelOperationMap;
+    const operationHandler = operationMap.get(event.httpMethod);
+
+    if(!operationHandler) {
+        throw new Error(`Method ${event.httpMethod} for resource ${event.resource} not implemented yet`);
     }
 
-    async handle(operation, event) {
-        console.log(`Invoking operation AccountHandler.${operation}`);
-
-        return await this[operation](event);
-    }
-
-    async create(event) {
-        const clientId = event.requestContext.authorizer.claims.aud;
-        const accountDetails = JSON.parse(event.body);
-        
-        console.log(`Creating new account for user ${clientId}.`);
-    
-        const account = new Account();
-        account.ownerId = clientId;
-        account.name = accountDetails.name;
-        account.description = accountDetails.description;
-        
-        console.log(`New account created: ${JSON.stringify(account)}`);
-    
-        console.log(`Persisting new account ${account.accountId} in DynamoDb`);
-
-        const item = await this.dynamodb.putItem(account);
-    
-        console.log(item);
-    
-        return account;
-    }
-
-    async list(event) {
-        const clientId = event.requestContext.authorizer.claims.aud;
-        console.log(`Listing accounts for user [${clientId}]`);
-        
-        const pk = Account.getPK(clientId);
-
-        const queryData = await this.dynamodb.queryAll(pk);
-
-        const accounts = queryData.Items.map((item) => {
-            return fromItem(item, new Account());
-        });
-
-        console.log(`Accounts retrieved for user [${clientId}]: ${accounts.length}`);
-
-        console.log(accounts);
-
-        return accounts;
-    }
-
-    async get(event) {
-        const ownerId = event.requestContext.authorizer.claims.aud;
-        const accountId = event.pathParameters.accountId;
-        const pk = Account.getPK(ownerId);
-        const sk = Account.getSK(ownerId, accountId);
-
-        const queryData = await this.dynamodb.queryAll(pk, sk);
-        const account = fromItem(queryData.Items[0], new Account()); 
-
-        return account;
-    }
-
-    async put() {
-        throw new Error("Not implemented yet.");
-    }
-
-    async delete() {
-        throw new Error("Not implemented yet.");
-    }
+    return operationHandler(event, dynamodb);
 }
 
-exports.AccountHandler = AccountHandler;
+function createAccount(event, dynamodb) {
+    const clientId = event.requestContext.authorizer.claims.aud;
+    const accountDetails = JSON.parse(event.body);
+    
+    return account.create(dynamodb, clientId, accountDetails)
+}
+
+function listAccounts(event, dynamodb) {
+    const clientId = event.requestContext.authorizer.claims.aud;
+    
+    return account.list(dynamodb, clientId)
+}
+
+function getAccount(event, dynamodb) {
+    const clientId = event.requestContext.authorizer.claims.aud;
+    const accountId = event.pathParameters.accountId;
+    
+    return account.retrieve(dynamodb, clientId, accountId)
+}
