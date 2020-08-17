@@ -9,17 +9,20 @@ class AttributeValue {
 }
 
 class AttributeType {
-    constructor(type, transformer = (value) => value) {
+    constructor(type, serialize, deserialize) {
         this.type = type;
-        this.transformer = transformer;
+        this.serialize = serialize;
+        this.deserialize = deserialize;
     }
 
     getAttribute(item) {
-        return item[this.type];
+        const deserialized = this.deserialize ? this.deserialize(item[this.type]) : item[this.type]
+        return deserialized;
     }
 
     toAttribute(value) {
-        return new AttributeValue(this.type, this.transformer(value));
+        const serialized = this.serialize ? this.serialize(value) : value
+        return new AttributeValue(this.type, serialized);
     }
 }
 
@@ -27,6 +30,7 @@ const StringAttributeType = new AttributeType("S");
 const NumberAttributeType = new AttributeType("N", String);
 const IntegerAttributeType = new AttributeType("N", String);
 const StringSetAttributeType = new AttributeType("SS", Array.from);
+const JSONAttributeType = new AttributeType("S", JSON.stringify, JSON.parse);
 
 function getKey(obj) {
     return {
@@ -584,5 +588,6 @@ exports.StringAttributeType = StringAttributeType;
 exports.NumberAttributeType = NumberAttributeType;
 exports.StringSetAttributeType = StringSetAttributeType;
 exports.IntegerAttributeType = IntegerAttributeType;
+exports.JSONAttributeType = JSONAttributeType;
 exports.PK = "PK";
 exports.SK = "SK";

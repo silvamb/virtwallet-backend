@@ -1,12 +1,14 @@
 
-const Transaction = require('libs/transaction').Transaction;
+const { Transaction, create } = require('libs/transaction');
+const { retrieve } = require('libs/account');
+const { MonthStartDateRule } = require('libs/dateUtils');
 const DynamoDb = require('libs/dynamodb').DynamoDb;
 
 function parseEvent(detail) {
     console.log("Parsing event detail", detail);
 
     return {
-        clientId: "NOT_DEFINED",
+        clientId: detail.clientId || "NOT_DEFINED",
         accountId: detail.account,
         walletId: detail.wallet,
         transactions: {
@@ -16,75 +18,6 @@ function parseEvent(detail) {
         },
         overwrite: false
     };
-}
-
-class TransactionLoaderHandler {
-
-    constructor(dynamodb, eventbridge) {
-        this.dbClient = new DynamoDb(dynamodb);
-        this.eventbridge = eventbridge;
-    }
-
-    async processEvent(detail) {
-        console.log(`Start processing transactions from file [${detail.fileName}]`);
-    
-        const parameters = parseEvent(detail);
-
-        const clientId = parameters.clientId;
-        const accountId = parameters.accountId;
-        const walletId = parameters.walletId;
-        const transactionsToAdd = parameters.transactions;
-        const overwrite = !('overwrite' in parameters) || parameters.overwrite;
-        const generateId = parameters.generateId;
-    
-        console.log(`Creating transactions for user ${clientId} and wallet ${walletId}.`);
-    
-        const transactions = transactionsToAdd.transactions.map((transactionDetails) => {
-            const transaction = new Transaction();
-            transaction.txId = transactionDetails.txId;
-            transaction.txDate = transactionDetails.txDate;
-            transaction.accountId = accountId;
-            transaction.walletId = walletId;
-            transaction.dt = transactionDetails.dt;
-            transaction.value = transactionDetails.value;
-            transaction.description = transactionDetails.description;
-            transaction.type = transactionDetails.type;
-            transaction.balance = transactionDetails.balance;
-            transaction.balanceType = transactionDetails.balanceType;
-            transaction.includedBy = clientId;
-            transaction.categoryId = transactionDetails.categoryId;
-            transaction.keyword = transactionDetails.keyword;
-            transaction.source = transactionsToAdd.source;
-            transaction.sourceType = transactionsToAdd.sourceType;
-    
-            // Generate the Tx ID if it is not specified.
-            if(!transaction.txId && generateId) {
-                transaction.txId = String(new Date().getTime());
-            }
-    
-            return transaction;
-        });
-    
-        let retVal;
-    
-        if(transactions.length == 1) {
-            console.log(`Persisting single transaction in DynamoDb: [${JSON.stringify(transactions[0])}]`);
-            retVal = await this.dbClient.putItem(transactions[0], overwrite);
-            retVal = [transformPutItemsResult(retVal)];
-        } else {
-            retVal = await this.dbClient.putItems(transactions, overwrite);
-            retVal = retVal.map(transformPutItemsResult);
-        }
-        
-        
-
-        console.log(`Finished processing transaction from file [${detail.fileName}]`);
-
-        await publishEvent(this.eventbridge, retVal, transactions);
-
-        return retVal;
-    }
-
 }
 
 function transformPutItemsResult(result) {
@@ -111,6 +44,7 @@ async function publishEvent(eventbridge, results, transactions) {
                 accountId: transactions[i].accountId,
                 walletId: transactions[i].walletId,
                 txDate: transactions[i].txDate,
+                referenceMonth: transactions[i].referenceMonth,
                 value: transactions[i].value,
                 categoryId: transactions[i].categoryId
             });
@@ -136,4 +70,55 @@ async function publishEvent(eventbridge, results, transactions) {
     }
 }
 
-exports.TransactionLoaderHandler = TransactionLoaderHandler;
+exports.processEvent = async (dynamodb, eventbridge, detail) => {
+    console.log(`Start processing transactions from file [${detail.fileName}]`);
+    
+    const parameters = parseEvent(detail);
+
+    const clientId = parameters.clientId;
+    const accountId = parameters.accountId;
+    const walletId = parameters.walletId;
+    const transactionsToAdd = parameters.transactions;
+    const overwrite = !('overwrite' in parameters) || parameters.overwrite;
+    const generateId = parameters.generateId;
+
+    console.log("Loading details for account", accountId);
+    const account = await retrieve(dynamodb, clientId, accountId);
+    const monthStartDateRule = account.monthStartDateRule;
+    console.log("Month Start Date rule", monthStartDateRule)
+
+    console.log(`Creating transactions for user ${clientId} and wallet ${walletId}.`);
+    
+    const transactions = transactionsToAdd.transactions.map((transactionDetails) => {
+        const transaction = new Transaction();
+        transaction.txId = transactionDetails.txId;
+        transaction.txDate = transactionDetails.txDate;
+        transaction.accountId = accountId;
+        transaction.walletId = walletId;
+        transaction.dt = transactionDetails.dt;
+        transaction.value = transactionDetails.value;
+        transaction.description = transactionDetails.description;
+        transaction.type = transactionDetails.type;
+        transaction.balance = transactionDetails.balance;
+        transaction.balanceType = transactionDetails.balanceType;
+        transaction.includedBy = clientId;
+        transaction.categoryId = transactionDetails.categoryId;
+        transaction.keyword = transactionDetails.keyword;
+        transaction.source = transactionsToAdd.source;
+        transaction.sourceType = transactionsToAdd.sourceType;
+        transaction.referenceMonth = monthStartDateRule.getMonth(transactionDetails.txDate);
+
+        return transaction;
+    });
+
+    const dbClient = new DynamoDb(dynamodb);
+    const result = await create(dbClient, clientId, accountId, walletId, transactions, overwrite, generateId);
+
+    const transformedResults = Array.isArray(result) ? result.map(transformPutItemsResult) : [transformPutItemsResult(result)];
+
+    console.log(`Finished processing transaction from file [${detail.fileName}]`);
+
+    await publishEvent(eventbridge, transformedResults, transactions);
+
+    return transformedResults;
+}

@@ -9,8 +9,8 @@ class UlsterCsvParserHandler {
     }
 
     async handle(fileInfo) {
-        const transactions = await this.parser.parseCsvFile(fileInfo.bucketName, fileInfo.objectKey);
-
+        const [clientId, transactions] = await this.parser.parseCsvFile(fileInfo.bucketName, fileInfo.objectKey);
+        fileInfo.clientId = clientId;
         const result = await publishEvent(this.eventbridge, transactions, fileInfo);
 
         console.log("Publish event result ", result);

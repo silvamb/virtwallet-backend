@@ -24,15 +24,26 @@ class UlsterCsvParser {
             Key: s3Key
         };
 
-        const s3Stream = this.s3.getObject(s3Params).createReadStream();
+        this.s3.getObject(s3Params);
+
+        const request = this.s3.getObject(s3Params);
+        const s3Stream = request.createReadStream();
 
         console.log(`Parsing transactions from file [${s3Key}]`);
-        const transactions = await readTransactions(s3Stream);
+        const [clientId, transactions] = await Promise.all([getClientId(request), readTransactions(s3Stream)]);
 
-        console.log(`Total transactions parsed [${transactions.length}]`);
+        console.log(`Total transactions parsed [${transactions.length}]`, "ClientId:", clientId);
 
-        return transactions;
+        return [clientId, transactions];
     }
+}
+
+async function getClientId(request) {
+    return new Promise((resolve) => {
+        request.on('httpHeaders', (_statusCode, httpHeaders) => {
+            resolve(httpHeaders['x-amz-meta-clientid']);
+        });
+    });
 }
 
 async function readTransactions(fileStream) {

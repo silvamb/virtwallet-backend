@@ -36,7 +36,7 @@ async function processTransactionsCreated(dynamodb, details) {
 
 function reducer(metricsMap, transaction) {
     const yearKey = transaction.txDate.substring(0,4);
-    const monthKey = transaction.txDate.substring(0,7);
+    const monthKey = transaction.referenceMonth;
     const dayKey = transaction.txDate;
 
     increment(metricsMap, yearKey, transaction);

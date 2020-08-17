@@ -1,5 +1,7 @@
 const uuidv4 = require("uuid/v4");
 const dynamodb = require("./dynamodb");
+const dateUtils = require("../libs/dateUtils");
+const MonthStartDateRule = dateUtils.MonthStartDateRule;
 const DynamoDb = dynamodb.DynamoDb;
 const fromItem = dynamodb.fromItem;
 
@@ -7,7 +9,8 @@ const attrTypeMap = new Map([
     ["accountId", dynamodb.StringAttributeType],
     ["ownerId", dynamodb.StringAttributeType],
     ["name", dynamodb.StringAttributeType],
-    ["description", dynamodb.StringAttributeType]
+    ["description", dynamodb.StringAttributeType],
+    ["monthStartDateRule", dynamodb.JSONAttributeType],
 ]);
 
 
@@ -19,6 +22,16 @@ function getSK(ownerId, accountId) {
     return `ACCOUNT#${ownerId}#${accountId}`;
 }
 
+function convertToAccount(item) {
+    const account = fromItem(item, new Account());
+
+    if(!(account.monthStartDateRule instanceof MonthStartDateRule)) {
+        account.monthStartDateRule = new MonthStartDateRule(account.monthStartDateRule);
+    }
+
+    return account;
+}
+
 class Account {
 
     constructor(accountId = uuidv4()) {
@@ -26,6 +39,7 @@ class Account {
         this.ownerId = "";
         this.name = "";
         this.description = "";
+        this.monthStartDateRule = new MonthStartDateRule();
     }
 
     getHash() {
@@ -51,6 +65,9 @@ exports.create = async (dynamodb, clientId, accountDetails) => {
     account.name = accountDetails.name;
     account.description = accountDetails.description;
 
+    if(accountDetails.monthStartDateRule) {
+        account.monthStartDateRule = accountDetails.monthStartDateRule;
+    }
 
     console.log(`New account created: ${JSON.stringify(account)}`);
 
@@ -72,9 +89,7 @@ exports.list = async (dynamodb, clientId) => {
 
     const queryData = await dbClient.queryAll(pk);
 
-    const accounts = queryData.Items.map((item) => {
-        return fromItem(item, new Account());
-    });
+    const accounts = queryData.Items.map(convertToAccount);
 
     console.log(`Accounts retrieved for user [${clientId}]: ${accounts.length}`);
 
@@ -89,8 +104,9 @@ exports.retrieve = async (dynamodb, ownerId, accountId) => {
     const pk = getPK(ownerId);
     const sk = getSK(ownerId, accountId);
 
+    console.log("Retrieving account:", accountId, ", Owner:", ownerId);
     const queryData = await dbClient.queryAll(pk, sk);
-    const account = fromItem(queryData.Items[0], new Account()); 
+    const account = convertToAccount(queryData.Items[0]); 
 
     return account;
 }

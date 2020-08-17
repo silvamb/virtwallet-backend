@@ -22,6 +22,7 @@ const attrTypeMap = new Map([
     ["keyword", dynamoDbLib.StringAttributeType],
     ["source", dynamoDbLib.StringAttributeType],
     ["sourceType", dynamoDbLib.StringAttributeType],
+    ["referenceMonth", dynamoDbLib.StringAttributeType],
 ]);
 
 const attrsToCompare = new Set([
@@ -91,6 +92,7 @@ class Transaction {
         this.keyword = "";
         this.source = "MANUAL";
         this.sourceType = MANUAL_INPUT;
+        this.referenceMonth = "";
     }
 
     getHash() {
@@ -174,8 +176,9 @@ exports.create = async (dbClient, clientId, accountId, walletId, transactionsToA
         transaction.includedBy = clientId;
         transaction.categoryId = transactionDetails.categoryId;
         transaction.keyword = transactionDetails.keyword || transactionDetails.description.trim();
-        transaction.source = transactionsToAdd.source;
-        transaction.sourceType = transactionsToAdd.sourceType;
+        transaction.source = transactionDetails.source;
+        transaction.sourceType = transactionDetails.sourceType;
+        transaction.referenceMonth = transactionDetails.referenceMonth;
 
         // Generate the Tx ID if it is not specified.
         if(!transaction.txId && generateId) {

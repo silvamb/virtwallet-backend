@@ -2,37 +2,26 @@ const chai = require("chai");
 const chaiAsPromised = require("chai-as-promised");
 chai.use(chaiAsPromised);
 const expect = chai.expect;
-const fs = require('fs');
 
-const TransactionLoaderHandler = require('../src/transactionLoaderHandler').TransactionLoaderHandler;
+const { processEvent } = require('../src/transactionLoaderHandler');
+const values = require('./testValues');
 
-async function waitAndReturn(maxTime, retVal) {
-    return new Promise(resolve => {
-        const timeout = Math.floor(Math.random() * Math.floor(maxTime));
-        setTimeout(() => resolve(retVal), timeout);
-    });
-}
+class DynamoDbMock  {
 
-class DynamoDbMock {
+    setMock(functionName, {validateFunction = (_params) => undefined, expectedResult}) {
 
-    constructor(validateFunction, returnValues = {ScannedItems: 1}) {
-        this.validateFunction = validateFunction;
-        this.returnValues = returnValues;
-        this.putItem = this.mock;
-        this.query = this.mock;
-        this.batchWriteItem = this.mock;
-    }
+        this[functionName] = (params) => {
+            validateFunction(params);
 
-    mock(params) {
-        this.validateFunction(params);
-
-        return {
-            promise: () => {
-                return waitAndReturn(20, this.returnValues);
+            return {
+                promise: () => {
+                    return Promise.resolve(Object.assign({}, expectedResult));
+                }
             }
         }
-    }
 
+        return this;
+    }
 
 };
 
@@ -49,140 +38,44 @@ class EventBridgeMock {
 
         return {
             promise: () => {
-                return Promise.resolve(expectedPutEventResult);
+                return Promise.resolve(values.expectedPutEventResult);
             }
         }
     }
 }
 
-const expectedPutEventResult = {
-    FailedEntryCount: 0, 
-    Entries: [{
-        EventId: "11710aed-b79e-4468-a20b-bb3c0c3b4860"
-    }]
-};
-
 describe('TransactionLoaderHandler unit tests', () => {
     it('should process single transaction with success', () => {
-        const detail = {
-            account: 'a03af6a8-e246-410a-8ca5-bfab980648cc',
-            wallet: '0001',
-            parserName: 'ulster_csv_parser',
-            fileName: 'myfile.csv',
-            bucketName: 'my-bucket',
-            objectKey: 'account-files/a03af6a8-e246-410a-8ca5-bfab980648cc/0001/parsers/ulster_csv_parser/myfile.csv',
-            transactions: [{
-                txDate: "2020-01-01",
-                transactionId: "202001010001",
-                dt: "2020-01-01T00:00:00.000Z",
-                value: "5.27",
-                description: "Transaction1",
-                type: "GSD",
-                balance: "4000",
-                balanceType: "Debit",
-                categoryId: "04"
-            }]
-        };
-
-        const expectedResult = {
-            ConsumedCapacity: {
-                CapacityUnits: 1,
-            }
-        };
-
-        const validateParams = (params) => {
-            // TODO validate input
-        };
-
-        const dynamoDbMock = new DynamoDbMock(validateParams, expectedResult);
-
-        const expectedTransactions = {
-            transactions: [
-                {
-                    accountId: "a03af6a8-e246-410a-8ca5-bfab980648cc",
-                    walletId: "0001",
-                    txDate: "2020-01-01",
-                    value: "5.27",
-                    categoryId: "04"
+        const validateFunction = (params) => {
+            for(let attr in values.putItemParamsForTx1.Item) {
+                for(let value in attr) {
+                    const expectedValue = values.putItemParamsForTx1.Item[attr][value];
+                    expect(params.Item[attr][value]).to.be.equal(expectedValue);
                 }
-            ]
-        };
-        const eventBridgeMock = new EventBridgeMock(expectedTransactions);
+            }
+            expect(params.ReturnConsumedCapacity).to.be.equals(values.putItemParamsForTx1.ReturnConsumedCapacity);
+            expect(params.TableName).to.be.equals(values.putItemParamsForTx1.TableName);
+            expect(params.ReturnValues).to.be.equals(values.putItemParamsForTx1.ReturnValues);
+            expect(params.ConditionExpression).to.be.equals(values.putItemParamsForTx1.ConditionExpression);
+        }
+        console.log(">>>>>>>>>> values.expectedAccount", values.expectedAccount);
+        const dynamoDbMock = new DynamoDbMock()
+            .setMock('query', {expectedResult: Object.assign({}, values.expectedAccount)})
+            .setMock('putItem', { validateFunction });
 
-        const transactionLoaderHandler = new TransactionLoaderHandler(dynamoDbMock, eventBridgeMock);
+        const eventBridgeMock = new EventBridgeMock(values.singleTransactionsCreatedEvent);
+        const promise = processEvent(dynamoDbMock, eventBridgeMock, values.singleTransactionsEvent);
 
-        return expect(transactionLoaderHandler.processEvent(detail)).to.eventually.be.fulfilled;
+        return expect(promise).to.eventually.be.fulfilled;
     });
 
     it('should process two transactions with success', () => {
-        const detail = {
-            account: 'a03af6a8-e246-410a-8ca5-bfab980648cc',
-            wallet: '0001',
-            parserName: 'ulster_csv_parser',
-            fileName: 'myfile.csv',
-            bucketName: 'my-bucket',
-            objectKey: 'account-files/a03af6a8-e246-410a-8ca5-bfab980648cc/0001/parsers/ulster_csv_parser/myfile.csv',
-            transactions: [{
-                txDate: "2020-01-01",
-                transactionId: "202001010001",
-                dt: "2020-01-01T00:00:00.000Z",
-                value: "5.27",
-                description: "Transaction1",
-                type: "GSD",
-                balance: "4000",
-                balanceType: "Debit",
-                categoryId: "04",
-                keyword: "Transaction1"
-            },
-            {
-                txDate: "2020-01-01",
-                transactionId: "202001010002",
-                dt: "2020-01-02T00:00:00.000Z",
-                value: "15.32",
-                description: "Transaction2", 
-                type: "POS",
-                balance: "1000",
-                balanceType: "Debit",
-                categoryId: "06",
-                keyword: "Transaction2"
-            }]
-        };
-
-        const expectedResult = {
-            ConsumedCapacity: {
-                CapacityUnits: 1,
-            }
-        };
-
-        const validateParams = (params) => {
-            // TODO validate input
-        };
-
-        const dynamoDbMock = new DynamoDbMock(validateParams, expectedResult);
-
-        const expectedTransactions = {
-            transactions: [
-                {
-                    accountId: "a03af6a8-e246-410a-8ca5-bfab980648cc",
-                    walletId: "0001",
-                    txDate: "2020-01-01",
-                    value: "5.27",
-                    categoryId: "04"
-                },
-                {
-                    accountId: "a03af6a8-e246-410a-8ca5-bfab980648cc",
-                    walletId: "0001",
-                    txDate: "2020-01-01",
-                    value: "15.32",
-                    categoryId: "06"
-                }
-            ]
-        };
-
-        const eventBridgeMock = new EventBridgeMock(expectedTransactions);
-
-        const transactionLoaderHandler = new TransactionLoaderHandler(dynamoDbMock, eventBridgeMock);
-
-        return expect(transactionLoaderHandler.processEvent(detail)).to.eventually.be.fulfilled;
+        const dynamoDbMock = new DynamoDbMock()
+            .setMock('query', {expectedResult: Object.assign({}, values.expectedAccount)})
+            .setMock('putItem', {});
+        console.log(">>>>>>>>>> values.expectedAccount", values.expectedAccount);
+        const eventBridgeMock = new EventBridgeMock(values.multiTransactionsCreatedEvent);
+        const promise = processEvent(dynamoDbMock, eventBridgeMock, values.multiTransactionsEvent);
+        return expect(promise).to.eventually.be.fulfilled;
     });
 });

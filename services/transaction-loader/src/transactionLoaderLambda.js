@@ -1,12 +1,13 @@
 const AWS = require('aws-sdk');
-const TransactionLoaderHandler = require('./transactionLoaderHandler').TransactionLoaderHandler;
-const handler = new TransactionLoaderHandler(new AWS.DynamoDB(), new AWS.EventBridge());
+const dynamodb = new AWS.DynamoDB();
+const eventbridge = new AWS.EventBridge();
+const { processEvent } = require('./transactionLoaderHandler');
 
 exports.handle = async event => {
     
     const detail = event.detail;
 
-    const result = await handler.processEvent(detail);
+    const result = await processEvent(dynamodb, eventbridge, detail);
     
     console.log(result);
 

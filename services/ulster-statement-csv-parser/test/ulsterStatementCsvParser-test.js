@@ -5,6 +5,7 @@ const expect = chai.expect;
 const fs = require('fs');
 
 const parser = require('../src/ulsterStatementCsvParser');
+const { on } = require("process");
 
 const CsvParser = parser.UlsterCsvParser;
 
@@ -21,7 +22,8 @@ describe('UlsterStatementCsvParserTest', () => {
                 expect(s3Params.Key).to.be.equals(expectedKey);
 
                 return {
-                    createReadStream: () => fileStream
+                    createReadStream: () => fileStream,
+                    on: (_event, callback) => callback(200, {'x-amz-meta-clientid': '7b91u3i7qne31cbj1gh5zd9qcj'}) 
                 }
             }
         };

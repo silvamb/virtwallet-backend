@@ -51,6 +51,7 @@ describe('MetricsUpdateHandler unit tests', () => {
                             accountId: 'a03af6a8-e246-410a-8ca5-bfab980648cc',
                             walletId: '0001',
                             txDate: "2020-02-01",
+                            referenceMonth: "2020-02",
                             value: "4",
                             categoryId: "01"
                         },
@@ -58,6 +59,7 @@ describe('MetricsUpdateHandler unit tests', () => {
                             accountId: 'a03af6a8-e246-410a-8ca5-bfab980648cc',
                             walletId: '0001',
                             txDate: "2020-02-01",
+                            referenceMonth: "2020-02",
                             value: "5",
                             categoryId: "01"
                         }

@@ -21,7 +21,8 @@ describe('UlsterStatementCsvParserHandlerTest', () => {
                 expect(s3Params.Key).to.be.equals(expectedKey);
 
                 return {
-                    createReadStream: () => fileStream
+                    createReadStream: () => fileStream,
+                    on: (_event, callback) => callback(200, {'x-amz-meta-clientid': '7b91u3i7qne31cbj1gh5zd9qcj'})
                 }
             }
         };
@@ -45,6 +46,7 @@ describe('UlsterStatementCsvParserHandlerTest', () => {
                 expect(detail.bucketName).to.be.equal("someS3Bucket");
                 expect(detail.objectKey).to.be.equal("s3Key");
                 expect(detail.transactions.length).to.be.equal(8);
+                expect(detail.clientId).to.be.equal('7b91u3i7qne31cbj1gh5zd9qcj');
 
                 return {
                     promise: () => {

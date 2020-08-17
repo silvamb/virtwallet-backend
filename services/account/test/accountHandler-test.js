@@ -100,7 +100,8 @@ describe('AccountHandler unit tests', () => {
                         accountId:  {"S": "ad7d4de0-184a-4d3d-a4c8-68d5ba87b87f"},
                         ownerId:  {"S": "10v21l6b17g3t27sfbe38b0i8n"},
                         name: {"S": "Account Name"},
-                        description: {"S": "Account Description"}
+                        description: {"S": "Account Description"},
+                        monthStartDateRule: {"S": "{\"currentMonth\": true, \"dayOfMonth\": 5, \"manuallySetPeriods\": []}"}
                     }
                 ],
                 ScannedCount: 2
@@ -112,7 +113,12 @@ describe('AccountHandler unit tests', () => {
                 accountId: "ad7d4de0-184a-4d3d-a4c8-68d5ba87b87f",
                 ownerId: "10v21l6b17g3t27sfbe38b0i8n",
                 name: "Account Name",
-                description: "Account Description"
+                description: "Account Description",
+                monthStartDateRule: {
+                    currentMonth: true,
+                    dayOfMonth: 5,
+                    manuallySetPeriods: []
+                }
             };
 
             return expect(promise).to.eventually.deep.include(expectedList);
@@ -162,7 +168,12 @@ describe('AccountHandler unit tests', () => {
             accountId: "ad7d4de0-184a-4d3d-a4c8-68d5ba87b87f",
             ownerId: "10v21l6b17g3t27sfbe38b0i8n",
             name: "Account Name",
-            description: "Account Description"
+            description: "Account Description",
+            monthStartDateRule: {
+                currentMonth: false,
+                dayOfMonth: 25,
+                manuallySetPeriods: []
+            }
         };
 
         return expect(promise).to.eventually.become(expectedAccount);
