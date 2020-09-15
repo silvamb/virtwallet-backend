@@ -34,7 +34,7 @@ exports.MonthStartDateRule = class  {
     }
 
     getMonthFromManuallySet(date = moment()) {
-        const rule = this.manuallySetPeriods.find(manuallySet => date.isBetween(manuallySet.startDate, manuallySet.endDate));
+        const rule = this.manuallySetPeriods.find(manuallySet => date.isBetween(manuallySet.startDate, manuallySet.endDate, undefined, '[]'));
         if(rule) {
             return rule.month;
         }

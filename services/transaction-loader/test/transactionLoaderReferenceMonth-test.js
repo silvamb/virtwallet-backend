@@ -133,6 +133,44 @@ describe('Reference Month Date unit tests', () => {
         return expect(promise).to.eventually.be.fulfilled;
     });
 
+    it('should set the month when a date is in the first day of a manually inserted period', () => {
+        const expectedEvent = Object.assign({}, values.singleTransactionsEvent);
+        expectedEvent.transactions = expectedEvent.transactions.slice();
+        expectedEvent.transactions[0].txDate = '2019-12-20';
+
+        const validateFunction = (params) => {
+            expect(params.Item.referenceMonth.S).to.be.equals('2020-01');
+        }
+
+        const dynamoDbMock = new DynamoDbMock()
+            .setMock('query', {expectedResult: Object.assign({}, values.expectedAccountWithManuallySetStartDate)})
+            .setMock('putItem', { validateFunction });
+
+        const eventBridgeMock = new EventBridgeMock(values.singleTransactionsCreatedEvent);
+        const promise = processEvent(dynamoDbMock, eventBridgeMock, expectedEvent);
+
+        return expect(promise).to.eventually.be.fulfilled;
+    });
+
+    it('should set the month when a date is the last day of a manually inserted period', () => {
+        const expectedEvent = Object.assign({}, values.singleTransactionsEvent);
+        expectedEvent.transactions = expectedEvent.transactions.slice();
+        expectedEvent.transactions[0].txDate = '2020-01-23';
+
+        const validateFunction = (params) => {
+            expect(params.Item.referenceMonth.S).to.be.equals('2020-01');
+        }
+
+        const dynamoDbMock = new DynamoDbMock()
+            .setMock('query', {expectedResult: Object.assign({}, values.expectedAccountWithManuallySetStartDate)})
+            .setMock('putItem', { validateFunction });
+
+        const eventBridgeMock = new EventBridgeMock(values.singleTransactionsCreatedEvent);
+        const promise = processEvent(dynamoDbMock, eventBridgeMock, expectedEvent);
+
+        return expect(promise).to.eventually.be.fulfilled;
+    });
+
     it('should set the month when a date is after a manually inserted period', () => {
         const expectedEvent = Object.assign({}, values.singleTransactionsEvent);
         expectedEvent.transactions = expectedEvent.transactions.slice();

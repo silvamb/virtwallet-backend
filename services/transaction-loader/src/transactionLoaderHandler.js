@@ -1,7 +1,6 @@
 
 const { Transaction, create } = require('libs/transaction');
 const { retrieve } = require('libs/account');
-const { MonthStartDateRule } = require('libs/dateUtils');
 const DynamoDb = require('libs/dynamodb').DynamoDb;
 
 function parseEvent(detail) {
