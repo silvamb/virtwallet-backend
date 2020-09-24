@@ -40,7 +40,7 @@ class TransactionClassifierHandler {
         transactions.forEach(transaction => {
             const oldCategory = transaction.categoryId;
             const newCategory = getCategory(categoryRulesList, transaction);
-            if(oldCategory != newCategory) {
+            if(oldCategory != newCategory && newCategory !== 'NO_CATEGORY') {
                 console.log(`Transaction ${transaction.txId} changed category from [${oldCategory}] to [${newCategory}]`);
                 changedTransactions.push(new transactionLib.TransactionChangeSet(transaction, {categoryId: newCategory}));
             }
