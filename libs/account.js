@@ -111,4 +111,15 @@ exports.retrieve = async (dynamodb, ownerId, accountId) => {
     return account;
 }
 
+exports.getAll = async (dynamodb, accountId) => {
+    console.log(`Retrieving all data from ${accountId}.`);
+
+    const dbClient = new DynamoDb(dynamodb);
+
+    const pk = `ACCOUNT#${accountId}`;
+    const data = await dbClient.queryAll(pk);
+
+    return data;
+}
+
 exports.Account = Account;
