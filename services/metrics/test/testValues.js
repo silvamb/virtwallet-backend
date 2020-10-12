@@ -89,6 +89,21 @@ exports.singleResult = {
     ScannedCount: 1,
 };
 
+exports.categoryQueryResult = {
+    Count: 1,
+    Items: [
+        {
+            PK: { S: `ACCOUNT#${this.ACCOUNT_ID}` },
+            SK: { S: "CATEGORY#01" },
+            accountId: { S: this.ACCOUNT_ID },
+            categoryId: { S: "01" },
+            name: { S: "Category Name" },
+            description: { S: "Category Description" },
+        },
+    ],
+    ScannedCount: 1,
+};
+
 function createMetric() {
     const metric = new Metrics(exports.ACCOUNT_ID, "0001", "2019-12-19", "01");
     metric.add("3.75");
@@ -96,3 +111,38 @@ function createMetric() {
 }
 
 exports.expectedMetric = createMetric();
+
+exports.csvResult = "accountId,walletId,date,category,sum,count\r\n4811b387618c0-4277-98e9-ba34210bdcf3,0001,2019-12-19,Category Name,3.75,1"
+
+exports.DynamoDbMock = class {
+
+    constructor(paramsValidators = [], returnValues = []) {
+        this.paramsValidators = paramsValidators.reverse();
+        this.returnValues = returnValues.reverse();
+    }
+
+    query(params) {
+        const validator = this.paramsValidators.pop();
+        validator(params);
+
+        return {
+            promise: () => Promise.resolve(this.returnValues.pop())
+        }
+    }
+}
+
+exports.S3Mock = class {
+
+    constructor(paramsValidator, returnValues = []) {
+        this.paramsValidator = paramsValidator;
+        this.returnValues = returnValues.reverse();
+    }
+
+    putObject(params) {
+        this.paramsValidator(params);
+
+        return {
+            promise: () => Promise.resolve(this.returnValues.pop())
+        }
+    }
+}

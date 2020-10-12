@@ -66,6 +66,24 @@ class Category {
     }
 }
 
+class CategoryList {
+    constructor(dynamodb) {
+        this.dynamodb = dynamodb;
+        this.categories = [];
+    }
+
+    async load(accountId) {
+        console.log(`Loading categories for account ${accountId}`);
+        this.categories = await exports.list(this.dynamodb, accountId);
+
+        return this.categories;
+    }
+
+    getCategory(categoryId) {
+        return this.categories.find(category => category.categoryId === categoryId)
+    }
+}
+
 /**
  * Creates the provided categories and persists them.
  * 
@@ -115,7 +133,7 @@ exports.create = async(dynamodb, accountId, categoriesToAdd) =>  {
  * 
  * @param {AWS.DynamoDB} dynamodb Dynamo DB client library
  * @param {string} accountId account ID
- * @returns {Array<Category>} a list with the categories
+ * @returns {Promise<Array<Category>>} a list with the categories
  */
 exports.list = async(dynamodb, accountId) => {
     console.log(`Listing categories for account [${accountId}]`);
@@ -137,3 +155,4 @@ exports.list = async(dynamodb, accountId) => {
 }
 
 exports.Category = Category;
+exports.CategoryList = CategoryList;

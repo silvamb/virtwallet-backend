@@ -22,6 +22,7 @@ provider:
 custom:
   restApiAuthorizerId: '${cf:virtwallet-resources-${self:provider.stage}.VirtwalletRestApiAuthorizerId}'
   cors: '${file(../../config.${self:provider.stage}.yml):cors}'
+  userFilesBucket: ${file(../../config.${self:provider.stage}.yml):userFilesBucket}
 
 package:
   excludeDevDependencies: true
