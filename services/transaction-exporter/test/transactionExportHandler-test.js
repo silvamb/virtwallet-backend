@@ -78,7 +78,8 @@ describe('TransactionExporterHandlerTest', () => {
                                 categoryId: { "S": "01"},
                                 keyword: { "S": "Transaction"},
                                 source: { "S": "JOHNDOE12345678-20200107.csv"},
-                                sourceType: {"S": "A"}
+                                sourceType: {"S": "A"},
+                                referenceMonth: {"S": "2020-03"}
                             }
                         ],
                         ScannedCount: 1

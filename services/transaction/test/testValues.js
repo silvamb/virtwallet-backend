@@ -31,7 +31,8 @@ const transactionItems = [
         categoryId: { "S": "18"},
         keyword: { "S": "Transaction"},
         source: { "S": "JOHNDOE12345678-20200107.csv"},
-        sourceType: {"S": "A"}
+        sourceType: {"S": "A"},
+        referenceMonth: {"S": "2020-01"}
     },
     {
         PK: { "S": "ACCOUNT#4801b837-18c0-4277-98e9-ba57130edeb3" },
@@ -51,7 +52,8 @@ const transactionItems = [
         categoryId: { "S": "01"},
         keyword: { "S": "Transaction"},
         source: { "S": "JOHNDOE12345678-20200107.csv"},
-        sourceType: {"S": "A"}
+        sourceType: {"S": "A"},
+        referenceMonth: {"S": "2020-01"}
     },
     {
         PK: { "S": "ACCOUNT#4801b837-18c0-4277-98e9-ba57130edeb3" },
@@ -71,7 +73,8 @@ const transactionItems = [
         categoryId: { "S": "10"},
         keyword: { "S": "Transaction"},
         source: { "S": "JOHNDOE12345678-20200107.csv"},
-        sourceType: {"S": "A"}
+        sourceType: {"S": "A"},
+        referenceMonth: {"S": "2020-01"}
     }
 ];
 
@@ -105,7 +108,8 @@ const transactionsList = [
         keyword: "Transaction",
         referenceMonth: "",
         source: "JOHNDOE12345678-20200107.csv",
-        sourceType: "A"
+        sourceType: "A",
+        referenceMonth: "2020-01"
     },
     {
         accountId: "4801b837-18c0-4277-98e9-ba57130edeb3",
@@ -124,7 +128,8 @@ const transactionsList = [
         keyword: "Transaction",
         referenceMonth: "",
         source: "JOHNDOE12345678-20200107.csv",
-        sourceType: "A"
+        sourceType: "A",
+        referenceMonth: "2020-01"
     },
     {
         accountId: "4801b837-18c0-4277-98e9-ba57130edeb3",
@@ -143,7 +148,8 @@ const transactionsList = [
         keyword: "Transaction",
         referenceMonth: "",
         source: "JOHNDOE12345678-20200107.csv",
-        sourceType: "A"
+        sourceType: "A",
+        referenceMonth: "2020-01"
     },
 ]
 
