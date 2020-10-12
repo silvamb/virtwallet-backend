@@ -1,7 +1,5 @@
 const categoryRules = require("libs/categoryRule");
 const transactionLib = require("libs/transaction");
-const dynamodb = require("libs/dynamodb");
-const DynamoDb = dynamodb.DynamoDb;
 
 class TransactionClassifierHandler {
     constructor(dynamodb, eventbridge) {
@@ -28,9 +26,8 @@ class TransactionClassifierHandler {
 
     async reclassifyTransactions(event) {
         const accountId = event.pathParameters.accountId;
-        const dbClient = new DynamoDb(this.dynamodb);
         
-        const transactions = await loadTransactions(dbClient, event);
+        const transactions = await loadTransactions(this.dynamodb, event);
         if(transactions.length == 0) {
             return [];
         }
@@ -47,7 +44,7 @@ class TransactionClassifierHandler {
         });
 
         if(changedTransactions.length > 0) {
-            return await updateTransactions(dbClient, this.eventbridge, event, changedTransactions);
+            return await updateTransactions(this.dynamodb, this.eventbridge, event, changedTransactions);
         }
 
         console.log("No transactions have been updated");
@@ -55,7 +52,7 @@ class TransactionClassifierHandler {
     }
 }
 
-async function loadTransactions(dbClient, event) {
+async function loadTransactions(dynamodb, event) {
     const accountId = event.pathParameters.accountId;
     const walletId = event.pathParameters.walletId;
     const from = event.queryStringParameters.from;
@@ -71,7 +68,7 @@ async function loadTransactions(dbClient, event) {
     }
 
     console.log("Loading transactions for params:", accountId, walletId, from, to);
-    const transactions = await transactionLib.list(dbClient, accountId, walletId, transactionFilter);
+    const transactions = await transactionLib.list(dynamodb, accountId, walletId, transactionFilter);
 
     console.log("Total transactions loaded:", transactions.length);
     
@@ -94,12 +91,12 @@ function getCategory(categoryRulesList, transaction) {
     return categoryId;
 }
 
-async function updateTransactions(dbClient, eventbridge, event, changedTransactions) {
+async function updateTransactions(dynamodb, eventbridge, event, changedTransactions) {
     const accountId = event.pathParameters.accountId;
     const walletId = event.pathParameters.walletId;
 
     console.log("Updating transactions");
-    const updateAllResult = await transactionLib.updateAll(dbClient, changedTransactions);
+    const updateAllResult = await transactionLib.updateAll(dynamodb, changedTransactions);
 
     console.log("Update transactions result:", updateAllResult);
 

@@ -1,8 +1,6 @@
 const transaction = require('libs/transaction');
 const Transaction = transaction.Transaction;
 const TransactionFilter = transaction.TransactionFilter;
-const dynamodb = require('libs/dynamodb');
-const DynamoDb = dynamodb.DynamoDb;
 
 const category = require('libs/category');
 
@@ -25,10 +23,8 @@ exports.handle = async (event, dynamoDb, s3) => {
 
     const requestTime = event.requestContext.requestTimeEpoch;
 
-    const dbClient = new DynamoDb(dynamoDb);
-
     const transactionFilter = new TransactionFilter().between(from, to);
-    const transactions = await transaction.list(dbClient, accountId, walletId, transactionFilter, order);
+    const transactions = await transaction.list(dynamoDb, accountId, walletId, transactionFilter, order);
 
     await setCategoryNames(dynamoDb, accountId, transactions);
 

@@ -146,7 +146,7 @@ class TransactionFilter {
 /**
  * Create transactions.
  * 
- * @param {DynamoDb} dbClient Dynamo DB client
+ * @param {AWS.DynamoDb} dynamodb AWS Dynamo DB client
  * @param {string} clientId ID of the user that is inserting this transaction
  * @param {string} accountId Transaction object to update
  * @param {string} walletId Transaction object to update
@@ -154,8 +154,8 @@ class TransactionFilter {
  * @param {boolean} overwrite Indicates if the transaction with the same identifiers should be overwritten
  * @param {boolean} generateId Indicates if the transaction id should be generated, if not present
  */
-exports.create = async (dbClient, clientId, accountId, walletId, transactionsToAdd, overwrite = false, generateId = false) => {
-    if(!dbClient || !accountId || !walletId || !transactionsToAdd) {
+exports.create = async (dynamodb, clientId, accountId, walletId, transactionsToAdd, overwrite = false, generateId = false) => {
+    if(!dynamodb || !accountId || !walletId || !transactionsToAdd) {
         throw new Error("Missing mandatory parameters");
     }
 
@@ -188,6 +188,7 @@ exports.create = async (dbClient, clientId, accountId, walletId, transactionsToA
         return transaction;
     });
 
+    const dbClient = new dynamoDbLib.DynamoDb(dynamodb);
     if(transactions.length == 1) {
         console.log(`Persisting single transaction in DynamoDb: [${JSON.stringify(transactions[0])}]`);
         return dbClient.putItem(transactions[0], overwrite);
@@ -199,13 +200,13 @@ exports.create = async (dbClient, clientId, accountId, walletId, transactionsToA
 /**
  * List transactions.
  * 
- * @param {DynamoDb} dbClient Dynamo DB client.
+ * @param {AWS.DynamoDb} dbClient AWS Dynamo DB
  * @param {string} accountId The account ID.
  * @param {string} walletId The wallet ID.
  * @param {TransactionFilter} filter Filters to apply when querying the transactions.
  * @param {string} order Ordering to retrieve the transactions. Either ASC or DESC.
  */
-exports.list = async (dbClient, accountId, walletId, filter = new TransactionFilter(), order) => {
+exports.list = async (dynamodb, accountId, walletId, filter = new TransactionFilter(), order) => {
     const pk = getPK(accountId);
 
     const fromWalletId = walletId || "0000";
@@ -213,7 +214,7 @@ exports.list = async (dbClient, accountId, walletId, filter = new TransactionFil
     const from = getSK(fromWalletId, filter.from);
     const to = getSK(toWalletId, filter.to);
     const queryBuilder = new dynamoDbLib.QueryBuilder(pk).sk.between(from, to);
-    
+
     const filterExpression = filter.expression;
 
     if(filterExpression.expression.length > 0) {
@@ -221,13 +222,14 @@ exports.list = async (dbClient, accountId, walletId, filter = new TransactionFil
         queryBuilder.withFilterExpression(filterExpression);
     }
 
+    const dbClient = new dynamoDbLib.DynamoDb(dynamodb);
     const queryData = await dbClient.query(queryBuilder.build());
 
     const transactions = queryData.Items.map((item) => {
         return dynamoDbLib.fromItem(item, new Transaction());
     });
 
-    if(order == "ASC" || order == "DESC") {
+    if(order === "ASC" || order === "DESC") {
         console.log(`Ordering transactions, [${order}] order`);
         transactions.sort((first, second) => {
             const firstTx = first.dt + first.txId;
@@ -247,21 +249,22 @@ exports.list = async (dbClient, accountId, walletId, filter = new TransactionFil
 /**
  * Updates a transaction.
  * 
- * @param {DynamoDb} dbClient Dynamo DB client
+ * @param {AWS.DynamoDb} dynamodb AWS Dynamo DB client
  * @param {Transaction} transactionToUpdate transaction object to update
  * @param {*} attrsToUpdate attributes to be updated.
  */
-exports.update = async (dbClient, transactionToUpdate, attrsToUpdate) => {
-    if(!dbClient || !transactionToUpdate || !attrsToUpdate) {
+exports.update = async (dynamodb, transactionToUpdate, attrsToUpdate) => {
+    if(!dynamodb || !transactionToUpdate || !attrsToUpdate) {
         throw new Error("Missing mandatory parameters");
     }
 
     validateUpdateParams(transactionToUpdate, attrsToUpdate);
 
+    const dbClient = new dynamoDbLib.DynamoDb(dynamodb);
     return dbClient.updateItem(transactionToUpdate, attrsToUpdate);
 }
 
-exports.updateAll = async (dbClient, transactionChanges = []) => {
+exports.updateAll = async (dynamodb, transactionChanges = []) => {
 
     transactionChanges.forEach((transactionChange, i) => {
         try {
@@ -275,6 +278,7 @@ exports.updateAll = async (dbClient, transactionChanges = []) => {
         return new dynamoDbLib.UpdateExpressionBuilder(transactionChange.transaction).updateTo(transactionChange.updatedAttributes).build();
     });
 
+    const dbClient = new dynamoDbLib.DynamoDb(dynamodb);
     return dbClient.updateItems(updateParamsList);
 }
 

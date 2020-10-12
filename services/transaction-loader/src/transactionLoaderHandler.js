@@ -1,7 +1,6 @@
 
 const { Transaction, create } = require('libs/transaction');
 const { retrieve } = require('libs/account');
-const DynamoDb = require('libs/dynamodb').DynamoDb;
 
 function parseEvent(detail) {
     console.log("Parsing event detail", detail);
@@ -110,8 +109,7 @@ exports.processEvent = async (dynamodb, eventbridge, detail) => {
         return transaction;
     });
 
-    const dbClient = new DynamoDb(dynamodb);
-    const result = await create(dbClient, clientId, accountId, walletId, transactions, overwrite, generateId);
+    const result = await create(dynamodb, clientId, accountId, walletId, transactions, overwrite, generateId);
 
     const transformedResults = Array.isArray(result) ? result.map(transformPutItemsResult) : [transformPutItemsResult(result)];
 

@@ -522,7 +522,7 @@ describe('TransactionHandler unit tests', () => {
                 }
             };
 
-            const transactionHandler = new TransactionHandler();
+            const transactionHandler = new TransactionHandler({});
             const promise = transactionHandler.update(parameters);
             return expect(promise).to.eventually.be.rejectedWith(Error, "Transaction attribute 'accountId' is not updatable");
         });

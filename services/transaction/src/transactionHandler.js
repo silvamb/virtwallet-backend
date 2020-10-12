@@ -14,9 +14,9 @@ const getSK = transaction.getSK;
 const getSKAttr = transaction.getSKAttr;
 
 class TransactionHandler {
-    constructor(dbClient, eventbridge) {
+    constructor(dynamodb, eventbridge) {
         console.log("Creating Transaction Handler");
-        this.dbClient = new DynamoDb(dbClient);
+        this.dynamodb = dynamodb;
         this.eventbridge = eventbridge;
     }
 
@@ -38,7 +38,7 @@ class TransactionHandler {
         const overwrite = !('overwrite' in parameters) || parameters.overwrite;
         const generateId = parameters.generateId;
 
-        return await createTransactions(this.dbClient, clientId, accountId, walletId, transactionsToAdd, overwrite, generateId);
+        return await createTransactions(this.dynamodb, clientId, accountId, walletId, transactionsToAdd, overwrite, generateId);
     }
 
     async list(parameters) {
@@ -50,7 +50,7 @@ class TransactionHandler {
 
         const transactionFilter = new TransactionFilter().between(from, to);
 
-        return await listTransactions(this.dbClient, accountId, walletId, transactionFilter, order)
+        return await listTransactions(this.dynamodb, accountId, walletId, transactionFilter, order)
     }
 
     async get(_parameters) {
@@ -90,7 +90,7 @@ class TransactionHandler {
         transactionToUpdate.txDate = txDate;
         transactionToUpdate.txId = parameters.txId;
 
-        const updateResult = await updateTransaction(this.dbClient, transactionToUpdate, updatedAttributes);
+        const updateResult = await updateTransaction(this.dynamodb, transactionToUpdate, updatedAttributes);
 
         console.log("Transaction updated, result:", updateResult);
 
@@ -112,12 +112,12 @@ class TransactionHandler {
         const pk = getPK(accountId);
         const sk = getSK(walletId);
         const query = new QueryBuilder(pk).sk.beginsWith(sk).returnKeys().build();
-
-        const queryData = await this.dbClient.query(query);
+        const dbClient = new DynamoDb(this.dynamodb);
+        const queryData = await dbClient.query(query);
 
         console.log(`Returned ${queryData.Items.length} items to delete`);
 
-        const deleteAllResult = await this.dbClient.deleteAll(queryData.Items);
+        const deleteAllResult = await dbClient.deleteAll(queryData.Items);
 
         return deleteAllResult;
     }

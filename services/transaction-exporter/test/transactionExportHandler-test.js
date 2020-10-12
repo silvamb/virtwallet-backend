@@ -53,9 +53,9 @@ describe('TransactionExporterHandlerTest', () => {
                     };
                 } else {
                     expect(params.ExpressionAttributeValues[":pk"].S).to.be.equal("ACCOUNT#4801b837-18c0-4277-98e9-ba57130edeb3");
-                    expect(params.ExpressionAttributeValues[":SK_start"].S).to.be.equal("TX#0001#2020-02-25");
-                    expect(params.ExpressionAttributeValues[":SK_end"].S).to.be.equal("TX#0001#2020-03-24");
-                    expect(params.KeyConditionExpression).to.be.equal("PK = :pk AND SK BETWEEN :SK_start AND :SK_end");
+                    expect(params.ExpressionAttributeValues[":sk_start"].S).to.be.equal("TX#0001#2020-02-25");
+                    expect(params.ExpressionAttributeValues[":sk_end"].S).to.be.equal("TX#0001#2020-03-24");
+                    expect(params.KeyConditionExpression).to.be.equal("PK = :pk AND SK BETWEEN :sk_start AND :sk_end");
 
                     expectedResult = {
                         Count: 1,
