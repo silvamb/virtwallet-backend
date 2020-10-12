@@ -27,8 +27,8 @@ class AttributeType {
 }
 
 const StringAttributeType = new AttributeType("S");
-const NumberAttributeType = new AttributeType("N", String);
-const IntegerAttributeType = new AttributeType("N", String);
+const NumberAttributeType = new AttributeType("N", String, Number);
+const IntegerAttributeType = new AttributeType("N", String, Number);
 const StringSetAttributeType = new AttributeType("SS", Array.from);
 const JSONAttributeType = new AttributeType("S", JSON.stringify, JSON.parse);
 
@@ -52,12 +52,17 @@ function toItem(obj) {
 }
 
 function fromItem(item, obj) {
+    
+    if(obj.fromKeys){
+        obj.fromKeys(item.PK.S, item.SK.S);
+    }
+
     for( [attrName, attrType] of obj.getAttrTypeMap().entries()) {
         const attr = item[attrName];
         if(typeof attr === 'object') {
             obj[attrName] = attrType.getAttribute(item[attrName]);
         } else {
-            console.log(`Attribute ${attrName} not found in item, ignoring it`); 
+            console.log(`Attribute ${attrName} not found in item, ignoring it`);
         }
     }
 

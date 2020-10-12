@@ -1,12 +1,10 @@
 const dynamodb = require("./dynamodb");
 const DynamoDb = dynamodb.DynamoDb;
 const UpdateExpressionBuilder = dynamodb.UpdateExpressionBuilder;
+const QueryBuilder = dynamodb.QueryBuilder;
+const fromItem = dynamodb.fromItem;
 
 const ATTR_TYPE_MAP = new Map([
-    ["accountId", dynamodb.StringAttributeType],
-    ["walletId", dynamodb.StringAttributeType],
-    ["date", dynamodb.StringAttributeType],
-    ["categoryId", dynamodb.StringAttributeType],
     ["sum", dynamodb.NumberAttributeType],
     ["count", dynamodb.NumberAttributeType]
 ]);
@@ -58,6 +56,21 @@ class Metrics {
 
     getAttrTypeMap() {
         return ATTR_TYPE_MAP;
+    }
+
+    fromKeys(pk, sk) {
+        this.accountId = pk.split("#")[1];
+
+        if(sk){
+            const [suffix, walletId, granularity, date, categoryId] = sk.split("#");
+            if(suffix === "METRIC" && GRANULARITY_MAP.get(date.length) === granularity) {
+                this.walletId = walletId;
+                this.date = date;
+                this.categoryId = categoryId;
+            } else {
+                console.log("Metrics SK format is inconsistent. PK:", pk, "SK:", sk);
+            }
+        }
     }
 
     add(value) {
@@ -114,6 +127,28 @@ function printUpdateResults(items, results) {
 
         console.log(`Result from item ${items[i].getRange()}:`, transformedResult);
     }
+}
+
+exports.retrieve = async (dynamodb, accountId, walletId, date, categoryId) => {
+    if(!accountId) {
+        throw new Error("account parameters is mandatory");
+    }
+    
+    console.log("Retrieving metrics with params: ", {accountId, walletId, date, categoryId});
+    const dbClient = new DynamoDb(dynamodb);
+
+    const pk = getPK(accountId);
+    const sk = getSK(walletId, date, categoryId);
+
+    const queryBuilder = new QueryBuilder(pk).sk.beginsWith(sk);
+    const queryData = await dbClient.query(queryBuilder.build());
+
+    console.log("Total metrics retrieved: ", queryData.Items.length);
+    const metrics = queryData.Items.map((item) => {
+        return fromItem(item, new Metrics());
+    });
+
+    return metrics;
 }
 
 exports.Metrics = Metrics;
