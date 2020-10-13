@@ -1,6 +1,126 @@
-const Metrics = require('libs/metrics').Metrics;
+const { Metrics } = require('libs/metrics');
 
 exports.ACCOUNT_ID = "4811b387618c0-4277-98e9-ba34210bdcf3";
+
+exports.sameDayAndCategoryUpdateEvent = {
+    'detail-type': 'transactions created',
+    detail: {
+        transactions: [
+            {
+                accountId: 'a03af6a8-e246-410a-8ca5-bfab980648cc',
+                walletId: '0001',
+                txDate: "2020-02-01",
+                referenceMonth: "2020-02",
+                value: "4",
+                categoryId: "01"
+            },
+            {
+                accountId: 'a03af6a8-e246-410a-8ca5-bfab980648cc',
+                walletId: '0001',
+                txDate: "2020-02-01",
+                referenceMonth: "2020-02",
+                value: "5",
+                categoryId: "01"
+            }
+        ]
+    }
+};
+
+exports.valueUpdateEvent = {
+    'detail-type': 'transaction updated',
+    detail: {
+        accountId: "4801b837-18c0-4277-98e9-ba57130edeb3",
+        walletId: "0001",
+        txDate: "2020-03-03",
+        txId: "202003030001",
+        old: {
+            categoryId: "01",
+            value: 2,
+        },
+        new: {
+            value: 5
+        }
+    }
+};
+
+exports.categoryUpdateEvent = {
+    'detail-type': 'transaction updated',
+    detail: {
+        accountId: "4801b837-18c0-4277-98e9-ba57130edeb3",
+        walletId: "0001",
+        txDate: "2020-03-03",
+        txId: "202003030001",
+        old: {
+            categoryId: "01",
+            value: 2,
+        },
+        new: {
+            categoryId: "02",
+        }
+    }
+};
+
+exports.categoryAndValueUpdateEvent = {
+    'detail-type': 'transaction updated',
+    detail: {
+        accountId: "4801b837-18c0-4277-98e9-ba57130edeb3",
+        walletId: "0001",
+        txDate: "2020-03-03",
+        txId: "202003030001",
+        old: {
+            categoryId: "01",
+            value: 2,
+        },
+        new: {
+            categoryId: "02",
+            value: 5,
+        }
+    }
+};
+
+exports.multipleCategoriesUpdate = {
+    'detail-type': 'transactions updated',
+    detail: {
+        accountId: "4801b837-18c0-4277-98e9-ba57130edeb3",
+        walletId: "0001",
+        changes: [
+            {
+                txDate: "2020-03-03",
+                txId: "202003030001",
+                old: {
+                    categoryId: "01",
+                    value: 2,
+                },
+                new: {
+                    categoryId: "02"
+                }
+            },
+            {
+                txDate: "2020-03-03",
+                txId: "202003030002",
+                old: {
+                    categoryId: "01",
+                    value: 3,
+                },
+                new: {
+                    categoryId: "02"
+                }
+            }
+        ]
+    }
+};
+
+exports.dbRangeKeysCat01 = [
+    "METRIC#0001#Y#2020#01",
+    "METRIC#0001#M#2020-03#01",
+    "METRIC#0001#D#2020-03-03#01"
+];
+
+exports.dbRangeKeysCat02 = [
+    "METRIC#0001#Y#2020#02",
+    "METRIC#0001#M#2020-03#02",
+    "METRIC#0001#D#2020-03-03#02"
+];
 
 exports.getAccountMetricsEvent = {
     httpMethod: "GET",
