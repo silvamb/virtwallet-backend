@@ -112,15 +112,15 @@ class TransactionFilter {
     
     constructor() {
         this.expressionBuilder = new dynamoDbLib.ExpressionBuilder();
-        this.from = "9999-99-99";
-        this.to = "0000-00-00";
+        this.from = "0000-00-00";
+        this.to = "9999-99-99";
     }
 
     get expression() {
         return this.expressionBuilder.build();
     }
 
-    between(from = "9999-99-99", to = "0000-00-00") {
+    between(from = "0000-00-00", to = "9999-99-99") {
         this.from = from;
         this.to = to;
 
