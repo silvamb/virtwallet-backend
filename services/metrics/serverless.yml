@@ -15,6 +15,10 @@ provider:
         'Fn::ImportValue': Virtwallet-${self:provider.stage}-ApiGatewayAccountResourceId
       '/account/{accountId}': 
         'Fn::ImportValue': Virtwallet-${self:provider.stage}-ApiGatewayAccountAccountIdVarResourceId
+      '/account/{accountId}/wallet': 
+        'Fn::ImportValue': Virtwallet-${self:provider.stage}-ApiGatewayWalletResourceId
+      '/account/{accountId}/wallet/{walletId}': 
+        'Fn::ImportValue': Virtwallet-${self:provider.stage}-ApiGatewayWalletWalletIdVarResourceId
   stackTags:
     Project: virtwallet
     Service: metrics

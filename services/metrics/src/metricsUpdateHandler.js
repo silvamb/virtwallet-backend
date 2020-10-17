@@ -1,5 +1,6 @@
 const metrics = require('libs/metrics');
 const Metrics = metrics.Metrics;
+const { list } = require('libs/transaction')
 
 exports.updateMetrics = async (dynamodb, event) => {
     const eventType = event['detail-type'];
@@ -127,4 +128,36 @@ function updatedTransactionsReducer(metricsMap, metric) {
     }
 
     return metricsMap;
+}
+
+exports.recalculateMetrics =  async (dynamodb, event) => {
+    if(!event.pathParameters || !event.pathParameters.accountId) {
+        throw new Error("Missing account ID");
+    }
+
+    if(!event.pathParameters.walletId) {
+        throw new Error("Missing wallet ID");
+    }
+
+    const accountId = event.pathParameters.accountId;
+    const walletId = event.pathParameters.walletId;
+
+    await metrics.deleteAll(dynamodb, accountId, walletId);
+
+    console.log("Retrieving transactions for account", accountId, "and wallet", walletId);
+    const transactions = await list(dynamodb, accountId, walletId);
+
+    console.log("Recalculating metrics");
+
+    const metricsToUpdateMap = transactions.reduce(reducer, new Map());
+
+    const metricsToUpdate = Array.from(metricsToUpdateMap.values());
+
+    console.log("Metrics calculated: ", metricsToUpdate);
+
+    const metricsUpsertResult = await metrics.upsert(dynamodb, metricsToUpdate);
+
+    console.log("Metric updated", metricsUpsertResult);
+
+    return metricsUpsertResult;
 }

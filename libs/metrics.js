@@ -151,4 +151,44 @@ exports.retrieve = async (dynamodb, accountId, walletId, date, categoryId) => {
     return metrics;
 }
 
+exports.upsert = async (dynamodb, metricsList = []) => {
+    if(!dynamodb) {
+        throw new Error("dynamodb is mandatory");
+    }
+    
+    console.log("Recreating metrics, metric list size", metricsList.length);
+    const dbClient = new DynamoDb(dynamodb);
+    const updateResult = await dbClient.putItems(metricsList);
+
+    console.log("Recreate metrics result", updateResult);
+
+    return metricsList.map((metrics, index) => {
+        return {
+            metrics,
+            success: updateResult[index].success
+        }
+    });
+}
+
+exports.deleteAll = async (dynamodb, accountId, walletId) => {
+    if(!dynamodb || !accountId || !walletId) {
+        throw new Error("mandatory parameters missing");
+    }
+    console.log("Deleting all metrics for account", accountId, "and wallet", walletId);
+    
+    console.log(`Retrieving all metrics to delete`);
+    const metricsToDelete = await this.retrieve(dynamodb, accountId, walletId);
+
+    console.log(`Returned ${metricsToDelete.length} metrics to delete`);
+
+    if(metricsToDelete.length > 0){
+        console.log("Deleting metrics");
+        const dbClient = new DynamoDb(dynamodb);
+        const deleteResult = await dbClient.deleteItems(metricsToDelete);
+        return deleteResult.filter(deleteResult => deleteResult.success).map(deleteResult => fromItem(deleteResult.data.Attributes, new Metrics()))
+    }
+
+    return [];
+}
+
 exports.Metrics = Metrics;
