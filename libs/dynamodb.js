@@ -75,6 +75,7 @@ async function executeInChunks(dbClient, operation, paramsList) {
     const queues = Array(itemsInParalel).fill(0).map((_val) => []);
     const flatResult = Array(totalItems);
 
+    console.log("Executing DynamoDB operation in chunks:", operation);
     console.log(`Splitting ${totalItems} items into ${itemsInParalel} chunks`);
     let workerId;
     for (let i = 0; i < paramsList.length; i++) {
@@ -221,6 +222,26 @@ class DynamoDb {
         const result = await this.dynamodb.deleteItem(params).promise();
 
         return new Result(result);
+    }
+
+    async deleteItems(objArray) {
+        const paramsList = objArray.map(obj => {
+            const item = toItem(obj);
+    
+            const params = {
+                Key: {
+                    PK: item.PK,
+                    SK: item.SK,
+                },
+                ReturnConsumedCapacity: "TOTAL",
+                TableName: TABLE_NAME,
+                ReturnValues: "ALL_OLD"
+            };
+
+            return params;
+        });
+
+        return await executeInChunks(this.dynamodb, "deleteItem", paramsList);
     }
 
     async deleteAll(items) {
