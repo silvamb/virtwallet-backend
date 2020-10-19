@@ -1,0 +1,25 @@
+service: virtwallet-ulster-csv-parser
+
+provider:
+  name: aws
+  runtime: nodejs12.x
+  stage: ${opt:stage, 'dev'}
+  region: ${opt:stage, 'eu-west-1'}
+  stackTags:
+    Project: virtwallet
+    Service: ulster-csv-parser
+
+custom:
+  userFilesBucket: ${file(../../config.${self:provider.stage}.yml):userFilesBucket}
+
+package:
+  excludeDevDependencies: true
+  exclude:
+    - .git/**
+    - test/**
+    - '*.yml'
+    - '*.json'
+
+functions: ${file(./sls-functions.yml)}
+plugins:
+  - serverless-iam-roles-per-function

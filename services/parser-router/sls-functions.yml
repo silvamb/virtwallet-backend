@@ -1,0 +1,15 @@
+s3-event-handler:
+  handler: src/fileRouterLambda.handle
+  events:
+    - s3:
+        bucket: ${self:custom.userFilesBucket}
+        event: s3:ObjectCreated:*
+        rules:
+          - prefix: account-files/
+        existing: true
+  iamRoleStatementsName: virtwallet-parser-router-${self:provider.stage}-iam-role
+  iamRoleStatements:
+    - Effect: Allow
+      Action: 
+        - events:PutEvents
+      Resource: "*"

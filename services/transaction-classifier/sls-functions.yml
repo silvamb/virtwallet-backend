@@ -1,0 +1,56 @@
+eventBridge-handler:
+  handler: src/transactionClassifierLambda.handle
+  events:
+    - eventBridge:
+        pattern:
+          source:
+            - virtwallet
+          detail-type:
+            - transactions parsed
+  iamRoleStatementsName: virtwallet-transaction-classifier-${self:provider.stage}-iam-role
+  iamRoleStatements:
+    - Effect: Allow
+      Action:
+        - dynamodb:Query
+        - dynamodb:Scan
+        - dynamodb:GetItem
+        - dynamodb:UpdateItem
+      Resource: "arn:aws:dynamodb:${opt:region, self:provider.region}:*:table/virtwallet"
+    - Effect: Allow
+      Action: 
+        - events:PutEvents
+      Resource: "*"
+
+apigw-handler:
+  handler: src/transactionReclassifierLambda.handle
+  events:
+    - http:
+        path: account/{accountId}/wallet/{walletId}/reclassify
+        method: PUT
+        authorizer:
+          type: COGNITO_USER_POOLS
+          authorizerId: ${self:custom.restApiAuthorizerId}
+        parameters:
+          paths:
+            accountId: true
+            walletId: true
+          querystrings:
+            from: true
+            to: true
+            filters: false
+        cors: ${self:custom.cors}
+  environment:
+    CORS_ALLOWED_ORIGIN: ${self:custom.cors.origin, None}
+  iamRoleStatementsName: virtwallet-transaction-reclassify-${self:provider.stage}-iam-role
+  iamRoleStatements:
+    - Effect: Allow
+      Action:
+        - dynamodb:Query
+        - dynamodb:Scan
+        - dynamodb:GetItem
+        - dynamodb:UpdateItem
+      Resource: "arn:aws:dynamodb:${opt:region, self:provider.region}:*:table/virtwallet"
+    - Effect: Allow
+      Action: 
+        - events:PutEvents
+      Resource: "*"

@@ -1,0 +1,59 @@
+apigw-event-handler:
+  handler: src/categoryRuleLambda.handle
+  events:
+    - http:
+        path: account/{accountId}/categoryRule
+        method: GET
+        authorizer:
+          type: COGNITO_USER_POOLS
+          authorizerId: ${self:custom.restApiAuthorizerId}
+        parameters:
+          paths:
+            accountId: true
+        cors: ${self:custom.cors}
+    - http:
+        path: account/{accountId}/categoryRule
+        method: POST
+        authorizer:
+          type: COGNITO_USER_POOLS
+          authorizerId: ${self:custom.restApiAuthorizerId}
+        parameters:
+          paths:
+            accountId: true
+        cors: ${self:custom.cors}
+    - http:
+        path: account/{accountId}/categoryRule/{ruleType}/{ruleId}
+        method: PUT
+        authorizer:
+          type: COGNITO_USER_POOLS
+          authorizerId: ${self:custom.restApiAuthorizerId}
+        parameters:
+          paths:
+            accountId: true
+            ruleType: true
+            ruleId: true
+        cors: ${self:custom.cors}
+    - http:
+        path: account/{accountId}/categoryRule/{ruleType}/{ruleId}
+        method: DELETE
+        authorizer:
+          type: COGNITO_USER_POOLS
+          authorizerId: ${self:custom.restApiAuthorizerId}
+        parameters:
+          paths:
+            accountId: true
+            ruleType: true
+            ruleId: true
+        cors: ${self:custom.cors}
+  environment:
+    CORS_ALLOWED_ORIGIN: ${self:custom.cors.origin, None}
+  iamRoleStatements:
+    - Effect: Allow
+      Action:
+        - dynamodb:Query
+        - dynamodb:Scan
+        - dynamodb:GetItem
+        - dynamodb:PutItem
+        - dynamodb:UpdateItem
+        - dynamodb:DeleteItem
+      Resource: "arn:aws:dynamodb:${opt:region, self:provider.region}:*:table/virtwallet"

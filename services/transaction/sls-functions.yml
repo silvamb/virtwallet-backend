@@ -1,0 +1,96 @@
+apigw-event-handler:
+  handler: src/transactionLambda.handle
+  events:
+    - http:
+        path: account/{accountId}/wallet/{walletId}/transaction
+        method: GET
+        authorizer:
+          type: COGNITO_USER_POOLS
+          authorizerId: ${self:custom.restApiAuthorizerId}
+        parameters:
+          paths:
+            accountId: true
+            walletId: true
+          querystrings:
+            from: true
+            to: true
+            order: false
+        cors: true
+    - http:
+        path: account/{accountId}/wallet/{walletId}/transaction
+        method: PUT
+        authorizer:
+          type: COGNITO_USER_POOLS
+          authorizerId: ${self:custom.restApiAuthorizerId}
+        parameters:
+          paths:
+            accountId: true
+            walletId: true
+          querystrings:
+            from: false
+            to: false
+        cors: true
+    - http:
+        path: account/{accountId}/wallet/{walletId}/transaction
+        method: DELETE
+        authorizer:
+          type: COGNITO_USER_POOLS
+          authorizerId: ${self:custom.restApiAuthorizerId}
+        parameters:
+          paths:
+            accountId: true
+            walletId: true
+        cors: true
+    - http:
+        path: account/{accountId}/wallet/{walletId}/transaction/{transactionId}
+        method: GET
+        authorizer:
+          type: COGNITO_USER_POOLS
+          authorizerId: ${self:custom.restApiAuthorizerId}
+        parameters:
+          paths:
+            accountId: true
+            walletId: true
+            transactionId: true
+        cors: true
+    - http:
+        path: account/{accountId}/wallet/{walletId}/transaction/{transactionId}
+        method: PUT
+        authorizer:
+          type: COGNITO_USER_POOLS
+          authorizerId: ${self:custom.restApiAuthorizerId}
+        parameters:
+          paths:
+            accountId: true
+            walletId: true
+            transactionId: true
+        cors: true
+    - http:
+        path: account/{accountId}/wallet/{walletId}/transaction/{transactionId}
+        method: DELETE
+        authorizer:
+          type: COGNITO_USER_POOLS
+          authorizerId: ${self:custom.restApiAuthorizerId}
+        parameters:
+          paths:
+            accountId: true
+            walletId: true
+            transactionId: true
+        cors: true
+  environment:
+    CORS_ALLOWED_ORIGIN: ${self:custom.cors.origin, None}
+  iamRoleStatements:
+    - Effect: Allow
+      Action:
+        - dynamodb:Query
+        - dynamodb:Scan
+        - dynamodb:GetItem
+        - dynamodb:PutItem
+        - dynamodb:UpdateItem
+        - dynamodb:DeleteItem
+        - dynamodb:BatchWriteItem
+      Resource: "arn:aws:dynamodb:${opt:region, self:provider.region}:*:table/virtwallet"
+    - Effect: Allow
+      Action: 
+        - events:PutEvents
+      Resource: "*"    

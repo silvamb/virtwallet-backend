@@ -1,0 +1,49 @@
+service: virtwallet-wallet
+
+provider:
+  name: aws
+  runtime: nodejs12.x
+  stage: ${opt:stage, 'dev'}
+  region: ${opt:stage, 'eu-west-1'}
+  apiGateway:
+    restApiId:
+      'Fn::ImportValue': Virtwallet-${self:provider.stage}-RestApiId
+    restApiRootResourceId:
+      'Fn::ImportValue': Virtwallet-${self:provider.stage}-RootResourceId
+    restApiResources:
+      '/account': 
+        'Fn::ImportValue': Virtwallet-${self:provider.stage}-ApiGatewayAccountResourceId
+      '/account/{accountId}': 
+        'Fn::ImportValue': Virtwallet-${self:provider.stage}-ApiGatewayAccountAccountIdVarResourceId
+  stackTags:
+    Project: virtwallet
+    Service: wallet
+
+custom:
+  restApiAuthorizerId: '${cf:virtwallet-resources-${self:provider.stage}.VirtwalletRestApiAuthorizerId}'
+  cors: '${file(../../config.${self:provider.stage}.yml):cors}'
+
+package:
+  excludeDevDependencies: true
+  exclude:
+    - .git/**
+    - test/**
+    - '*.yml'
+    - '*.json'
+
+functions: ${file(./sls-functions.yml)}
+plugins:
+  - serverless-iam-roles-per-function
+
+resources:
+  Outputs:
+    ApiGatewayWalletResourceId:
+      Description: Id of '/account/{accountId}/wallet' resource created
+      Value: !Ref ApiGatewayResourceAccountAccountidVarWallet
+      Export:
+        Name: Virtwallet-${self:provider.stage}-ApiGatewayWalletResourceId
+    ApiGatewayWalletWalletIdVarResourceId:
+      Description: Id of '/account/{accountId}/wallet/{walletId}' resource created
+      Value: !Ref ApiGatewayResourceAccountAccountidVarWalletWalletidVar
+      Export:
+        Name: Virtwallet-${self:provider.stage}-ApiGatewayWalletWalletIdVarResourceId

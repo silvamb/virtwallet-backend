@@ -1,0 +1,12 @@
+{
+    "name": "virtwallet-libs",
+    "version": "0.1.0",
+    "description": "Virtwallet Libs",
+    "repository": "https://github.com/silvamb/virtwallet-serverless.git",
+    "author": "Matheus Silva <crush.comp04@gmail.com>",
+    "license": "GPLv3",
+    "dependencies": {
+        "moment": "^2.27.0",
+        "uuid": "^3.3.3"
+    }
+}

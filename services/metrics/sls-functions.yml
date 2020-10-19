@@ -1,0 +1,108 @@
+eventBridge-handler:
+  handler: src/metricsUpdateLambda.handle
+  events:
+    - eventBridge:
+        pattern:
+          source:
+            - virtwallet
+          detail-type:
+            - transactions created
+            - transaction updated
+            - transactions updated
+  iamRoleStatementsName: virtwallet-metrics-${self:provider.stage}-iam-role
+  iamRoleStatements:
+    - Effect: Allow
+      Action:
+        - dynamodb:Query
+        - dynamodb:Scan
+        - dynamodb:GetItem
+        - dynamodb:PutItem
+        - dynamodb:UpdateItem
+        - dynamodb:DeleteItem
+      Resource: "arn:aws:dynamodb:${opt:region, self:provider.region}:*:table/virtwallet"
+
+apigw-retrieve-handler:
+  handler: src/retrieveMetricsLambda.handle
+  events:
+    - http:
+        path: account/{accountId}/metrics
+        method: GET
+        authorizer:
+          type: COGNITO_USER_POOLS
+          authorizerId: ${self:custom.restApiAuthorizerId}
+        parameters:
+          paths:
+            accountId: true
+          querystrings:
+            walletId: false
+            date: false
+            categoryId: false
+        cors: ${self:custom.cors}
+  environment:
+    CORS_ALLOWED_ORIGIN: ${self:custom.cors.origin, None}
+  iamRoleStatementsName: virtwallet-retrieve-metrics-${self:provider.stage}-iam-role
+  iamRoleStatements:
+    - Effect: Allow
+      Action:
+        - dynamodb:Query
+        - dynamodb:Scan
+        - dynamodb:GetItem
+      Resource: "arn:aws:dynamodb:${opt:region, self:provider.region}:*:table/virtwallet"
+
+apigw-export-handler:
+  handler: src/exportMetricsLambda.handle
+  events:
+    - http:
+        path: account/{accountId}/metrics/export
+        method: POST
+        authorizer:
+          type: COGNITO_USER_POOLS
+          authorizerId: ${self:custom.restApiAuthorizerId}
+        parameters:
+          paths:
+            accountId: true
+        cors: ${self:custom.cors}
+  environment:
+    CORS_ALLOWED_ORIGIN: ${self:custom.cors.origin, None}
+    ACCOUNT_FILES_BUCKET: ${self:custom.userFilesBucket}
+  iamRoleStatementsName: virtwallet-export-metrics-${self:provider.stage}-iam-role
+  iamRoleStatements:
+    - Effect: Allow
+      Action:
+        - dynamodb:Query
+        - dynamodb:Scan
+        - dynamodb:GetItem
+      Resource: "arn:aws:dynamodb:${opt:region, self:provider.region}:*:table/virtwallet"
+    - Effect: Allow
+      Action: 
+        - s3:PutObject
+        - s3:GetObject
+      Resource: "arn:aws:s3:::${self:custom.userFilesBucket}/account-data*"
+
+apigw-recalc-handler:
+  handler: src/recalculateMetricsLambda.handle
+  timeout: 30 
+  events:
+    - http:
+        path: account/{accountId}/wallet/{walletId}/recalculateMetrics
+        method: POST
+        authorizer:
+          type: COGNITO_USER_POOLS
+          authorizerId: ${self:custom.restApiAuthorizerId}
+        parameters:
+          paths:
+            accountId: true
+            walletId: true
+        cors: ${self:custom.cors}
+  environment:
+    CORS_ALLOWED_ORIGIN: ${self:custom.cors.origin, None}
+  iamRoleStatementsName: virtwallet-recalc-metrics-${self:provider.stage}-iam-role
+  iamRoleStatements:
+    - Effect: Allow
+      Action:
+        - dynamodb:Query
+        - dynamodb:Scan
+        - dynamodb:GetItem
+        - dynamodb:PutItem
+        - dynamodb:DeleteItem
+      Resource: "arn:aws:dynamodb:${opt:region, self:provider.region}:*:table/virtwallet"

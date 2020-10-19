@@ -1,0 +1,16 @@
+{
+    "httpMethod": "PUT",
+    "requestContext": {
+        "authorizer": {
+            "claims": {
+                "aud": "10v21l6b17g3t27sfbe38b0i8n"
+            }
+        }
+    },
+    "queryStringParameters":{},
+    "pathParameters": {
+        "accountId": "4801b837-18c0-4277-98e9-ba57130edeb3",
+        "walletId": "ad7d4de0-184a-4d3d-a4c8-68d5ba87b87f"
+    },
+    "body": "[{\"txDate\": \"2020-01-01\", \"transactionId\": \"202001010001\",\"dt\": \"2020-01-01T00:00:00.000Z\",\"value\": \"5.27\",\"description\": \"Transaction1\",\"type\": \"GSD\",\"balance\": \"4000\",\"balanceType\": \"Debit\"}]"
+}

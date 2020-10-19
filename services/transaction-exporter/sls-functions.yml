@@ -1,0 +1,33 @@
+apigw-handler:
+  handler: src/transactionExporterLambda.handle
+  events:
+    - http:
+        path: account/{accountId}/wallet/{walletId}/export
+        method: GET
+        authorizer:
+          type: COGNITO_USER_POOLS
+          authorizerId: ${self:custom.restApiAuthorizerId}
+        parameters:
+          paths:
+            accountId: true
+            walletId: true
+          querystrings:
+            from: true
+            to: true
+            delimiter: false
+            order: false
+        cors: ${self:custom.cors}
+  environment:
+    ACCOUNT_FILES_BUCKET: ${self:custom.userFilesBucket}
+    CORS_ALLOWED_ORIGIN: ${self:custom.cors.origin, None}
+  iamRoleStatements:
+    - Effect: Allow
+      Action:
+        - dynamodb:Query
+        - dynamodb:Scan
+      Resource: "arn:aws:dynamodb:${opt:region, self:provider.region}:*:table/virtwallet"
+    - Effect: Allow
+      Action: 
+        - s3:PutObject
+        - s3:GetObject
+      Resource: "arn:aws:s3:::${self:custom.userFilesBucket}/export-files*"

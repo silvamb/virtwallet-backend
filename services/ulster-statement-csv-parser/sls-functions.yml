@@ -1,0 +1,24 @@
+eventBridge-handler:
+  handler: src/ulsterStatementCsvParserLambda.handle
+  events:
+    - eventBridge:
+        pattern:
+          source:
+            - virtwallet
+          detail-type:
+            - file ready to parse
+          detail:
+            parserName:
+              - ulster_csv
+
+  iamRoleStatementsName: virtwallet-ulster-csv-parser-${self:provider.stage}-iam-role
+
+  iamRoleStatements:
+    - Effect: Allow
+      Action: 
+        - s3:GetObject
+      Resource: "arn:aws:s3:::${self:custom.userFilesBucket}/account-files*"
+    - Effect: Allow
+      Action: 
+        - events:PutEvents
+      Resource: "*"
