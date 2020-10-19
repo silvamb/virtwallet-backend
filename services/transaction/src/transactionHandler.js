@@ -61,6 +61,7 @@ class TransactionHandler {
         const oldAttributes = parameters.transactions.old;
         const updatedAttributes = parameters.transactions.new;
         const txDate = parameters.txDate;
+        const referenceMonth = parameters.referenceMonth;
 
         if(!oldAttributes || !updatedAttributes || !txDate) {
             throw new Error("Event body invalid for Transaction update");
@@ -89,6 +90,7 @@ class TransactionHandler {
         transactionToUpdate.walletId = parameters.walletId;
         transactionToUpdate.txDate = txDate;
         transactionToUpdate.txId = parameters.txId;
+        transactionToUpdate.referenceMonth = referenceMonth;
 
         const updateResult = await updateTransaction(this.dynamodb, transactionToUpdate, updatedAttributes);
 
@@ -134,6 +136,7 @@ async function publishUpdatedTransaction(eventbridge, parameters, oldAttributes)
         accountId: parameters.accountId,
         walletId: parameters.walletId,
         txDate: parameters.txDate,
+        referenceMonth: parameters.referenceMonth,
         txId: parameters.txId,
         old: Object.assign(old, parameters.transactions.old),
         new: parameters.transactions.new,

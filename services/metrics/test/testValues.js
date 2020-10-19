@@ -32,6 +32,7 @@ exports.valueUpdateEvent = {
         accountId: "4801b837-18c0-4277-98e9-ba57130edeb3",
         walletId: "0001",
         txDate: "2020-03-03",
+        referenceMonth: "2020-03",
         txId: "202003030001",
         old: {
             categoryId: "01",
@@ -49,6 +50,7 @@ exports.categoryUpdateEvent = {
         accountId: "4801b837-18c0-4277-98e9-ba57130edeb3",
         walletId: "0001",
         txDate: "2020-03-03",
+        referenceMonth: "2020-03",
         txId: "202003030001",
         old: {
             categoryId: "01",
@@ -66,6 +68,7 @@ exports.categoryAndValueUpdateEvent = {
         accountId: "4801b837-18c0-4277-98e9-ba57130edeb3",
         walletId: "0001",
         txDate: "2020-03-03",
+        referenceMonth: "2020-03",
         txId: "202003030001",
         old: {
             categoryId: "01",
@@ -86,6 +89,7 @@ exports.multipleCategoriesUpdate = {
         changes: [
             {
                 txDate: "2020-03-03",
+                referenceMonth: "2020-03",
                 txId: "202003030001",
                 old: {
                     categoryId: "01",
@@ -97,6 +101,7 @@ exports.multipleCategoriesUpdate = {
             },
             {
                 txDate: "2020-03-03",
+                referenceMonth: "2020-03",
                 txId: "202003030002",
                 old: {
                     categoryId: "01",
@@ -528,6 +533,7 @@ exports.DynamoDbMock = class {
         this.batchWriteItems = this.mock;
         this.putItem = this.mock;
         this.deleteItem = this.mock;
+        this.updateItem = this.mock;
     }
 
     mock(params) {

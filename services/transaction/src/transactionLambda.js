@@ -32,6 +32,7 @@ function parseEvent(event) {
         accountId: event.pathParameters.accountId,
         walletId: event.pathParameters.walletId,
         txDate: transactions !== undefined ? transactions.txDate : undefined,
+        referenceMonth: transactions !== undefined ? transactions.referenceMonth : undefined,
         txId: event.pathParameters.transactionId,
         transactions: transactions,
         generateId: event.queryStringParameters && event.queryStringParameters.generateId,

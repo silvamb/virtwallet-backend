@@ -160,7 +160,8 @@ describe('TransactionHandler unit tests', () => {
                         includedBy: { "S": "10v21l6b17g3t27sfbe38b0i8n"},
                         version: { "N": 1},
                         categoryId: { "S": "NO_CATEGORY"},
-                        keyword: { "S": "Transaction"}
+                        keyword: { "S": "Transaction"},
+                        referenceMonth: {"S": "2020-01"}
                     }
                 ],
                 ConsumedCapacity: {
@@ -212,7 +213,8 @@ describe('TransactionHandler unit tests', () => {
                         includedBy: { "S": "10v21l6b17g3t27sfbe38b0i8n"},
                         version: { "N": 1},
                         categoryId: { "S": "NO_CATEGORY"},
-                        keyword: { "S": "Transaction"}
+                        keyword: { "S": "Transaction"},
+                        referenceMonth: {"S": "2020-01"},
                     }
                 ],
                 ConsumedCapacity: {
@@ -324,6 +326,7 @@ describe('TransactionHandler unit tests', () => {
                 accountId: "4801b837-18c0-4277-98e9-ba57130edeb3",
                 walletId: "0001",
                 txDate: "2020-02-04",
+                referenceMonth: "2020-02",
                 txId: "202002040001",
                 transactions: {
                     old: {
@@ -388,6 +391,7 @@ describe('TransactionHandler unit tests', () => {
                 accountId: "4801b837-18c0-4277-98e9-ba57130edeb3",
                 walletId: "0001",
                 txDate: "2020-02-03",
+                referenceMonth: "2020-02",
                 txId: "202002030001",
                 transactions: {
                     old: {
@@ -417,6 +421,7 @@ describe('TransactionHandler unit tests', () => {
             };
 
             const validateParams = params => {
+                console.log("params.Key.SK", JSON.stringify(params.Key.SK))
                 expect(params.Key.PK.S).to.equals("ACCOUNT#4801b837-18c0-4277-98e9-ba57130edeb3");
                 expect(params.Key.SK.S).to.equals("TX#0001#2020-02-03#202002030001");
                 expect(params.ExpressionAttributeNames["#value"]).to.be.equals("value");
@@ -440,6 +445,7 @@ describe('TransactionHandler unit tests', () => {
                 accountId: "4801b837-18c0-4277-98e9-ba57130edeb3",
                 walletId: "0001",
                 txDate: "2020-02-03",
+                referenceMonth: "2020-02",
                 txId: "202002030001",
                 old: {
                     categoryId: "01",
@@ -462,6 +468,7 @@ describe('TransactionHandler unit tests', () => {
                 accountId: "4801b837-18c0-4277-98e9-ba57130edeb3",
                 walletId: "0001",
                 txDate: "2020-02-04",
+                referenceMonth: "2020-02",
                 txId: "202002040001",
                 transactions: {
                     old: {
@@ -485,6 +492,7 @@ describe('TransactionHandler unit tests', () => {
                 accountId: "4801b837-18c0-4277-98e9-ba57130edeb3",
                 walletId: "0001",
                 txDate: "2020-02-04",
+                referenceMonth: "2020-02",
                 txId: "202002040001",
                 transactions: {
                     old: {
@@ -509,6 +517,7 @@ describe('TransactionHandler unit tests', () => {
                 accountId: "4801b837-18c0-4277-98e9-ba57130edeb3",
                 walletId: "0001",
                 txDate: "2020-02-04",
+                referenceMonth: "2020-02",
                 txId: "202002040001",
                 transactions: {
                     old: {

@@ -36,7 +36,7 @@ async function processTransactionsCreated(dynamodb, details) {
 }
 
 function reducer(metricsMap, transaction) {
-    const yearKey = transaction.txDate.substring(0,4);
+    const yearKey = transaction.referenceMonth.substring(0,4);
     const monthKey = transaction.referenceMonth;
     const dayKey = transaction.txDate;
 
@@ -58,19 +58,19 @@ function increment(metricsMap, datePart, transaction) {
 }
 
 
-async function processTransactionUpdated(dbClient, details) {
+async function processTransactionUpdated(dynamodb, details) {
     console.log("Calculating metrics to update after transaction update");
     const metricsToUpdate = [];
 
-    const yearKey = details.txDate.substring(0,4);
-    const monthKey = details.txDate.substring(0,7);
+    const yearKey = details.referenceMonth.substring(0,4);
+    const monthKey = details.referenceMonth;
     const dayKey = details.txDate;
 
     addMetricsFromUpdatedTx(details, yearKey, metricsToUpdate);
     addMetricsFromUpdatedTx(details, monthKey, metricsToUpdate);
     addMetricsFromUpdatedTx(details, dayKey, metricsToUpdate);
 
-    await metrics.update(dbClient, metricsToUpdate);
+    await metrics.update(dynamodb, metricsToUpdate);
 
     console.log("Metrics updated");
 }
@@ -100,8 +100,8 @@ async function processTransactionsUpdated(dbClient, details) {
     let metricsToUpdate = [];
 
     details.changes.forEach(change => {
-        const yearKey = change.txDate.substring(0,4);
-        const monthKey = change.txDate.substring(0,7);
+        const yearKey = change.referenceMonth.substring(0,4);
+        const monthKey = change.referenceMonth;
         const dayKey = change.txDate;
         const updatedDetails = Object.assign({accountId: details.accountId, walletId: details.walletId}, change);
 

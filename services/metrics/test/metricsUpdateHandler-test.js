@@ -41,7 +41,7 @@ describe('MetricsUpdateHandler unit tests', () => {
                 expect(params.UpdateExpression).to.be.equals("ADD #count :count,#sum :sum ");
             }
 
-            const dynamoDbMock = new DynamoDbMock([validateParams], expectedUpdateResults);
+            const dynamoDbMock = new DynamoDbMock(new Array(6).fill(validateParams), new Array(6).fill(expectedUpdateResults));
 
             const promise = updateMetrics(dynamoDbMock, event);
 
@@ -58,7 +58,7 @@ describe('MetricsUpdateHandler unit tests', () => {
                 expect(params.UpdateExpression).to.be.equals("ADD #count :count,#sum :sum ");
             }
 
-            const dynamoDbMock = new DynamoDbMock([validateParams], expectedUpdateResults);
+            const dynamoDbMock = new DynamoDbMock(new Array(6).fill(validateParams), new Array(6).fill(expectedUpdateResults));
 
             const promise = updateMetrics(dynamoDbMock, testValues.valueUpdateEvent);
 
@@ -86,7 +86,7 @@ describe('MetricsUpdateHandler unit tests', () => {
                 }
             }
 
-            const dynamoDbMock = new DynamoDbMock([validateParams], expectedUpdateResults);
+            const dynamoDbMock = new DynamoDbMock(new Array(6).fill(validateParams), new Array(6).fill(expectedUpdateResults));
 
             const promise = updateMetrics(dynamoDbMock, testValues.categoryUpdateEvent);
 
@@ -114,7 +114,7 @@ describe('MetricsUpdateHandler unit tests', () => {
                 }
             }
 
-            const dynamoDbMock = new DynamoDbMock([validateParams], expectedUpdateResults);
+            const dynamoDbMock = new DynamoDbMock(new Array(6).fill(validateParams), new Array(6).fill(expectedUpdateResults));
 
             const promise = updateMetrics(dynamoDbMock, testValues.categoryAndValueUpdateEvent);
 
@@ -142,7 +142,7 @@ describe('MetricsUpdateHandler unit tests', () => {
                 }
             }
 
-            const dynamoDbMock = new DynamoDbMock([validateParams], expectedUpdateResults);
+            const dynamoDbMock = new DynamoDbMock(new Array(6).fill(validateParams), new Array(6).fill(expectedUpdateResults));
 
             const promise = updateMetrics(dynamoDbMock, testValues.multipleCategoriesUpdate);
 
