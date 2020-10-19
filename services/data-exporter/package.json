@@ -1,6 +1,6 @@
 {
   "name": "virtwallet-data-export",
-  "version": "1.0.0",
+  "version": "0.1.0",
   "description": "Virtwallet Data Export",
   "repository": "https://github.com/silvamb/virtwallet-backend.git",
   "author": "Matheus Silva <crush.comp04@gmail.com>",

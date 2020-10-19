@@ -1,6 +1,6 @@
 {
   "name": "virtwallet-category",
-  "version": "1.0.0",
+  "version": "0.1.0",
   "description": "Virtwallet Category Service",
   "repository": "https://github.com/silvamb/virtwallet-serverless.git",
   "author": "Matheus Silva <crush.comp04@gmail.com>",

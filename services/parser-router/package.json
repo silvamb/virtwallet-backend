@@ -1,6 +1,6 @@
 {
   "name": "virtwallet-parser-router",
-  "version": "1.0.0",
+  "version": "0.1.0",
   "description": "Virtwallet Parser Router Service",
   "repository": "https://github.com/silvamb/virtwallet-serverless.git",
   "author": "Matheus Silva <crush.comp04@gmail.com>",
