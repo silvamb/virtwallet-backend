@@ -260,3 +260,4 @@ exports.saveChangeSet = async (dynamodb, changeSet) => {
 exports.NewItem = NewItem;
 exports.UpdatedItem = UpdatedItem;
 exports.DeletedItem = DeletedItem;
+exports.ChangeSet = ChangeSet;
