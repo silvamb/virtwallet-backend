@@ -58,7 +58,7 @@ class Category {
 
         const queryData = await dbClient.queryAll(pk, sk);
 
-        if(queryData.Items.length == 0) {
+        if(queryData.Count === 0) {
             throw new Error(`Category with id ${this.categoryId} not found`);
         }
 

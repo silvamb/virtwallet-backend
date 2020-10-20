@@ -114,53 +114,27 @@ describe("CategoryHandler unit tests", () => {
         });
 
         it("should return error when category id not found", () => {
-            const clientId = "10v21l6b17g3t27sfbe38b0i8n";
-            const accountId = "4801b837-18c0-4277-98e9-ba57130edeb3";
-            const categoryId = "05";
 
-            const event = {
-                resource: "/account/{accountId}/category/{categoryId}",
-                httpMethod: "GET",
-                pathParameters: {
-                    accountId: accountId,
-                    categoryId: categoryId,
-                },
-                body: null,
-                requestContext: {
-                    authorizer: {
-                        claims: {
-                            aud: clientId,
-                        },
-                    },
-                },
-            };
-
-            const validateParams = (params) => {
+            const validateQueryParams = (params) => {
                 expect(params.ExpressionAttributeValues[":pk"].S).to.be.equal(
-                    `ACCOUNT#${accountId}`
+                    `ACCOUNT#${testValues.ACCOUNT_ID}`
                 );
                 expect(params.ExpressionAttributeValues[":sk"].S).to.be.equal(
-                    `CATEGORY#${categoryId}`
+                    `CATEGORY#${testValues.CATEGORY_ID}`
                 );
                 expect(params.KeyConditionExpression).to.be.equal(
                     "PK = :pk AND SK =:sk"
                 );
             };
 
-            const expectedResult = {
-                Count: 0,
-                Items: [],
-                ScannedCount: 0,
-            };
-
-            const validators = [validateParams];
-            const results = [expectedResult];
+            const validators = [validateQueryParams];
+            const results = [testValues.emptyQueryResult];
 
             const dynamoDbMock = new DynamoDbMock(validators, results);
 
-            const promise = categoryHandler.handle(event, dynamoDbMock);
+            const promise = categoryHandler.handle(testValues.getCategoryEvent, dynamoDbMock);
 
-            return expect(promise).to.eventually.be.rejectedWith(Error, `Category with id ${categoryId} not found`);
+            return expect(promise).to.eventually.be.rejectedWith(Error, `Category with id ${testValues.CATEGORY_ID} not found`);
         });
     });
 });
