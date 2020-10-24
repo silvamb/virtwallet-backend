@@ -15,4 +15,5 @@ eventBridge-handler:
         - dynamodb:Scan
         - dynamodb:GetItem
         - dynamodb:UpdateItem
+        - dynamodb:PutItem
       Resource: "arn:aws:dynamodb:${opt:region, self:provider.region}:*:table/virtwallet"

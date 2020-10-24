@@ -1,7 +1,7 @@
 const { saveChangeSet, ChangeSet } = require('libs/version');
 exports.saveChangeSet = async (dynamodb, event) => {
 
-    const {accountId, version, changeSet} = JSON.parse(event.detail);
+    const {accountId, version, changeSet} = event.detail;
 
-    saveChangeSet(dynamodb, new ChangeSet(accountId, version, changeSet));
+    return saveChangeSet(dynamodb, new ChangeSet(accountId, version, changeSet));
 }
