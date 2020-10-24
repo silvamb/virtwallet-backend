@@ -109,6 +109,7 @@ exports.queryResult = {
             categoryId: { S: "01" },
             name: { S: "Category Name" },
             description: { S: "Category Description" },
+            version: 1
         },
     ],
     ScannedCount: 1,
@@ -121,6 +122,57 @@ exports.expectedList = [{
     description: "Category Description",
     version: 1
 }]
+
+exports.versionUpdateResult = {
+    Attributes: {
+        version: {"N": "5"}
+    }
+}
+
+exports.expectedVersionEvent = {
+    Source:"virtwallet",
+    DetailType: "new account version",
+    Detail: JSON.stringify({
+        accountId: this.ACCOUNT_ID,
+        version: 5,
+        changeSet: [{
+            type: "Category",
+            PK: `ACCOUNT#${this.ACCOUNT_ID}`,
+            SK: "CATEGORY#01",
+            op: "Add"
+        }]
+    })
+}
+
+exports.expectedVersionEventMultipleCat = {
+    Source:"virtwallet",
+    DetailType: "new account version",
+    Detail: JSON.stringify({
+        accountId: this.ACCOUNT_ID,
+        version: 5,
+        changeSet: [
+            {
+                type: "Category",
+                PK: `ACCOUNT#${this.ACCOUNT_ID}`,
+                SK: "CATEGORY#01",
+                op: "Add"
+            },
+            {
+                type: "Category",
+                PK: `ACCOUNT#${this.ACCOUNT_ID}`,
+                SK: "CATEGORY#02",
+                op: "Add"
+            }
+        ]
+    })
+}
+
+exports.expectedPutEventResult = {
+    FailedEntryCount: 0, 
+    Entries: [{
+        EventId: "11710aed-b79e-4468-a20b-bb3c0c3b4860"
+    }]
+};
 
 exports.DynamoDbMock = class {
 
@@ -140,6 +192,24 @@ exports.DynamoDbMock = class {
 
         return {
             promise: () => Promise.resolve(this.returnValues.pop())
+        }
+    }
+}
+
+exports.EventBridgeMock = class {
+    constructor(paramsValidators = [], returnValues = []) {
+        this.paramsValidators = paramsValidators.reverse();
+        this.returnValues = returnValues.reverse();
+    }
+
+    putEvents(params){
+        const validator = this.paramsValidators.pop();
+        validator(params);
+
+        return {
+            promise: () => {
+                return Promise.resolve(this.returnValues.pop());
+            }
         }
     }
 }

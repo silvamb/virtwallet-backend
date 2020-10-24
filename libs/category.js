@@ -2,12 +2,14 @@ const dynamodb = require("./dynamodb");
 const DynamoDb = dynamodb.DynamoDb; 
 const QueryBuilder = dynamodb.QueryBuilder;
 const fromItem = dynamodb.fromItem;
+const { getVersion, generateCreatedChanges } = require('./version');
 
 const attrTypeMap = new Map([
     ["accountId", dynamodb.StringAttributeType],
     ["categoryId", dynamodb.StringAttributeType],
     ["name", dynamodb.StringAttributeType],
-    ["description", dynamodb.StringAttributeType]
+    ["description", dynamodb.StringAttributeType],
+    ["version", dynamodb.NumberAttributeType]
 ]);
 
 const getPK = (accountId) => `ACCOUNT#${accountId}`;
@@ -31,6 +33,7 @@ class Category {
         this.categoryId = categoryId;
         this.name = "";
         this.description = "";
+        this.version = 1;
     }
 
     getHash() {
@@ -84,6 +87,21 @@ class CategoryList {
     }
 }
 
+async function transformCreateResult(dynamodb, accountId, categories, results) {
+    const changes = generateCreatedChanges("Category", categories, results);
+
+    let changeSet;
+    if (changes.length > 0){
+        changeSet = await getVersion(dynamodb, accountId, changes)
+        console.log("Change set created", changeSet);
+    }
+
+    return {
+        changeSet,
+        result: results
+    }
+}
+
 /**
  * Creates the provided categories and persists them.
  * 
@@ -111,21 +129,11 @@ exports.create = async(dynamodb, accountId, categoriesToAdd) =>  {
         return category;
     });
 
-    let retVal;
 
-    if (categories.length == 1) {
-        console.log(`Persisting new category in DynamoDb: [${JSON.stringify(categories[0])}]`);
-        const item = await dbClient.putItem(categories[0]);
+    console.log(`Persisting ${categories.length} new categories in DynamoDb`);
+    const putItemResult = await dbClient.putItems(categories, false);
 
-        console.log("Put item returned", item);
-
-        retVal = item;
-    } else {
-        console.log(`Persisting ${categories.length} new categories in DynamoDb`);
-        retVal = await dbClient.putItems(categories);
-    }
-
-    return retVal;
+    return transformCreateResult(dynamodb, accountId, categories, putItemResult);
 }
 
 /**
