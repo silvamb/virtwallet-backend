@@ -22,9 +22,9 @@ class ItemChange {
      * @param {*} obj a versioned entity
      * @param {string} operation the operation, Add, Update or Delete
      */
-    constructor(entityType = "", obj = {}, operation = "") {
+    constructor(obj = {}, operation = "") {
         /** The entity type of the item, i.e. Category, Wallet, Transaction, etc... */
-        this.type = entityType;
+        this.type = obj.getType();
         
         /** The entity PK */
         this.PK = obj.getHash();
@@ -41,8 +41,8 @@ class ItemChange {
  * Represents a new item that has been added
  */
 class NewItem extends ItemChange {
-    constructor(entityType, obj) {
-        super(entityType, obj, "Add");
+    constructor(obj) {
+        super(obj, "Add");
     }
 }
 
@@ -50,8 +50,8 @@ class NewItem extends ItemChange {
  * Represents an updated item
  */
 class UpdatedItem extends ItemChange {
-    constructor(entityType, obj) {
-        super(entityType, obj, "Update");
+    constructor(obj) {
+        super(obj, "Update");
     }
 }
 
@@ -59,8 +59,8 @@ class UpdatedItem extends ItemChange {
  * Represents a deleted item
  */
 class DeletedItem extends ItemChange {
-    constructor(entityType, obj) {
-        super(entityType, obj, "Delete");
+    constructor(obj) {
+        super(obj, "Delete");
     }
 }
 
@@ -125,55 +125,23 @@ async function updateVersion(dbClient, versionUpdate) {
  * Generate item changes.
  * 
  * @param {Function} supplier function to create the item change
- * @param {Array} objArray the object to get the item identifiers
- * @param {Array<Result>} results the database operation results. Only filter the successful operations 
+ * @param {Array<Result>} results the operation results. Only filter the successful operations 
  */
-function generateChangesFromResult(supplier, objArray, results) {
-    const changes = [];
+function generateChangesFromResult(supplier, results) {
+    return results.filter(result => result.err === undefined).map(result => supplier(result.data));
 
-    for(let i = 0; i < objArray.length; i++) {
-        if(results[i].success) {
-            changes.push(supplier(objArray[i]));
-        }
+}
+
+async function createChangeSet({dynamodb, accountId, itemChangeSupplier, results}) {
+    const changes = generateChangesFromResult(itemChangeSupplier, results);
+
+    let changeSet = null;
+    if (changes.length > 0){
+        changeSet = await getVersion(dynamodb, accountId, changes)
+        console.log("Change set created", changeSet);
     }
 
-    return changes;
-}
-
-/**
- * Generate NewItem changes.
- * 
- * @param {*} entityType the entity type (Category, CategoryRule, Wallet, etc...)
- * @param {Array} objArray the object to get the item identifiers
- * @param {Array<Result>} results the database operation results. Only filter the successful operations 
- */
-exports.generateCreatedChanges = (entityType, objArray, results) => {
-    const supplier = (obj) => new NewItem(entityType, obj);
-    return generateChangesFromResult(supplier, objArray, results);
-}
-
-/**
- * Generate UpdateItem changes.
- * 
- * @param {*} entityType the entity type (Category, CategoryRule, Wallet, etc...)
- * @param {Array} objArray the object to get the item identifiers
- * @param {Array<Result>} results the database operation results. Only filter the successful operations 
- */
-exports.generateUpdatedChanges = (entityType, objArray, results) => {
-    const supplier = (obj) => new UpdatedItem(entityType, obj);
-    return generateChangesFromResult(supplier, objArray, results);
-}
-
-/**
- * Generate DeleteItem changes.
- * 
- * @param {*} entityType the entity type (Category, CategoryRule, Wallet, etc...)
- * @param {Array} objArray the object to get the item identifiers
- * @param {Array<Result>} results the database operation results. Only filter the successful operations 
- */
-exports.generateDeletedChanges = (entityType, objArray, results) => {
-    const supplier = (obj) => new DeletedItem(entityType, obj);
-    return generateChangesFromResult(supplier, objArray, results);
+    return changeSet;
 }
 
 /**
@@ -181,9 +149,9 @@ exports.generateDeletedChanges = (entityType, objArray, results) => {
  * 
  * @param {AWS.DynamoDb} dynamodb DynamoDb AWS JS SDK client
  * @param {*} accountId the account ID
- * @param {*} changedItems the items changed, to create a new change set.
+ * @param {*} results the items changed, to create a new change set.
  */
-exports.getVersion = async (dynamodb, accountId, changedItems) => {
+async function getVersion(dynamodb, accountId, changedItems) {
     console.log("Creating new version for account", accountId);
     const metadata = new AccountMetadata(accountId);
     const dbClient = new DynamoDb(dynamodb);
@@ -206,6 +174,45 @@ exports.getVersion = async (dynamodb, accountId, changedItems) => {
     console.log("New version for account ", accountId, ":", updatedVersion.version);
 
     return new ChangeSet(accountId, updatedVersion.version, changedItems);
+}
+
+
+/**
+ * Generates a versioned Result for created items.
+ */
+exports.createVersionForCreatedItems = async ({
+    dynamodb,
+    accountId,
+    results
+}) => {
+    const itemChangeSupplier = (obj) => new NewItem(obj);
+    
+    console.log("Generating versioned results");
+    return createChangeSet({dynamodb, accountId, itemChangeSupplier, results});
+}
+
+/**
+ * Generates a versioned Result for updated items.
+ */
+exports.createVersionForUpdatedItems = async ({
+    dynamodb,
+    accountId,
+    results
+}) => {
+    const itemChangeSupplier = (obj) => new UpdatedItem(obj);
+    return createChangeSet({dynamodb, accountId, itemChangeSupplier, results});
+}
+
+/**
+ * Generates a versioned Result for deleted items.
+ */
+exports.createVersionForDeletedItems = async ({
+    dynamodb,
+    accountId,
+    results
+}) => {
+    const itemChangeSupplier = (obj) => new DeletedItem(obj);
+    return createChangeSet({dynamodb, accountId, itemChangeSupplier, results});
 }
 
 /**
