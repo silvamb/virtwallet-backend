@@ -114,7 +114,7 @@ async function updateVersion(dbClient, versionUpdate) {
         const results = await dbClient.updateItems([versionUpdate]);
         return results[0];
     } catch(err) {
-        console.log("Error update item", err)
+        console.log("Error updating version", err)
         return {
             success: false
         }
@@ -163,7 +163,7 @@ async function getVersion(dynamodb, accountId, changedItems) {
 
     do {
         result = await updateVersion(dbClient, versionUpdate);
-        console.log("Update version succeeded:", result.success, "tries", tries);
+        console.log("Update version result:", result, "tries", tries);
     } while(!result.success && ++tries <= MAX_RETRIES);
 
     if(!result.success) {

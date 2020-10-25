@@ -342,10 +342,14 @@ class DynamoDb {
      * @param {*} updatedObj the Object to update
      * @param {*} updatedAttr the attributes to be updated
      */
-    async updateItem(updatedObj, updatedAttr) {
-        const updateParams = new UpdateExpressionBuilder(updatedObj).updateTo(updatedAttr).build();
+    async updateItem(updatedObj, updatedAttr, versionable = true) {
+        const expression = new UpdateExpressionBuilder(updatedObj).updateTo(updatedAttr);
 
-        const updateResult = await this.updateItems([updateParams]);
+        if(versionable) {
+            expression.addTo("versionId", 1);
+        }
+
+        const updateResult = await this.updateItems([expression.build()]);
 
         return updateResult[0];
     }
