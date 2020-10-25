@@ -123,6 +123,37 @@ exports.expectedList = [{
     version: 1
 }]
 
+exports.expectedSingleCategoryResult = [{
+    data: {
+        accountId: this.ACCOUNT_ID,
+        categoryId: "01",
+        name: "Category Name",
+        description: "Category Description",
+        version: 1
+    }
+}]
+
+exports.expectedMultipleCategoryResult = [
+    {
+        data: {
+            accountId: this.ACCOUNT_ID,
+            categoryId: "01",
+            name: "Category 1 Name",
+            description: "Category 1 Description",
+            version: 1
+        }
+    },
+    {
+        data: {
+            accountId: this.ACCOUNT_ID,
+            categoryId: "02",
+            name: "Category 2 Name",
+            description: "Category 2 Description",
+            version: 1
+        }
+    }
+]
+
 exports.versionUpdateResult = {
     Attributes: {
         version: {"N": "5"}
