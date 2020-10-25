@@ -2,6 +2,7 @@ const dynamodb = require("./dynamodb");
 const DynamoDb = dynamodb.DynamoDb;
 const QueryBuilder = dynamodb.QueryBuilder;
 const fromItem = dynamodb.fromItem;
+const { getVersion, generateCreatedResult } = require('./version');
 
 const KEYWORD_RULE_TYPE = "keyword";
 const STARTS_WITH_RULE_TYPE = "startsWith";
@@ -22,6 +23,7 @@ const exprRuleAttrTypeMap = new Map([
     ["name", dynamodb.StringAttributeType],
     ["priority", dynamodb.IntegerAttributeType],
     ["categoryId", dynamodb.StringAttributeType],
+    ["versionId", dynamodb.NumberAttributeType],
 ]);
 
 const updatableExpressionRuleAttrs = new Set([
@@ -84,6 +86,11 @@ class CategoryRule {
         this.accountId = "";
         this.priority = 0;
         this.categoryId = "";
+        this.versionId = 1;
+    }
+
+    getType() {
+        return "CategoryRule";
     }
 }
 
@@ -144,6 +151,7 @@ class KeywordCategoryRule extends CategoryRule {
             ["accountId", dynamodb.StringAttributeType],
             ["keyword", dynamodb.StringAttributeType],
             ["categoryId", dynamodb.StringAttributeType],
+            ["versionId", dynamodb.NumberAttributeType],
         ]);
     }
 }
@@ -182,8 +190,6 @@ exports.create = async (dynamodb, accountId, categoryRulesToAdd) => {
 
     const pk = getPK(accountId);
 
-    let retVal;
-
     const hasExpressionRules = categoryRulesToAdd.find(EXPRESSION_RULE_FILTER);
 
     let nextRuleId = -1;
@@ -213,19 +219,20 @@ exports.create = async (dynamodb, accountId, categoryRulesToAdd) => {
 
     const categoryRules = keywordRules.concat(expressionRules);
 
-    if (categoryRules.length == 1) {
-        console.log(`Persisting new category rule in DynamoDb: [${JSON.stringify(categoryRules[0])}]`);
-        const item = await dbClient.putItem(categoryRules[0]);
+    console.log(`Persisting ${categoryRules.length} new category rules in DynamoDb`);
+    const putItemsResult = await dbClient.putItems(categoryRules, false);
 
-        console.log("Put item returned", item);
-
-        retVal = item;
-    } else {
-        console.log(`Persisting ${categoryRules.length} new category rules in DynamoDb`);
-        retVal = await dbClient.putItems(categoryRules);
-    }
-
-    return retVal;
+    return putItemsResult.map((result, index) => {
+        if(result.success) {
+            return {
+                data: categoryRules[index]
+            }
+        } else {
+            return {
+                err: result.data
+            }
+        }
+    });
 };
 
 function createKeywords(accountId, ruleId, keywordDetails = {}) {
@@ -327,7 +334,18 @@ exports.update = async (dynamoDbClient, ruleToUpdate, attrsToUpdate) => {
         }
     }
 
-    return dbClient.updateItem(ruleToUpdate, attrsToUpdate);
+    const updateItemResult = await dbClient.updateItem(ruleToUpdate, attrsToUpdate);
+
+    if(updateItemResult.success) {
+        const obj = ruleToUpdate.ruleType === 'keyword' ? new KeywordCategoryRule() : new ExpressionCategoryRule();
+        return {
+            data: fromItem(updateItemResult.data.Attributes, obj)
+        }
+    } else {
+        return {
+            err: updateItemResult.data
+        }
+    }
 }
 
 /**
@@ -353,7 +371,17 @@ exports.remove = async (dynamoDbClient, rule)=> {
         throw new Error("Invalid format, expecting a CategoryRule"); 
     }
 
-    await dbClient.deleteItem(rule);
+    const deleteItemResult = await dbClient.deleteItem(rule);
+
+    if(deleteItemResult.success) {
+        return {
+            data: rule
+        }
+    } else {
+        return {
+            err: deleteItemResult.data
+        }
+    }
 }
 
 exports.KeywordCategoryRule = KeywordCategoryRule;

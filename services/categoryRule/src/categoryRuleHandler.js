@@ -1,6 +1,7 @@
 const categoryRule = require('libs/categoryRule');
+const { createVersionForCreatedItems, createVersionForDeletedItems, createVersionForUpdatedItems, publishChangeSet } = require('libs/version');
 
-exports.handle = async (event, dynamodb) => {
+exports.handle = async (event, dynamodb, eventbridge) => {
     const operationMap = new Map([
         ['GET', listCategoryRules ],
         ['POST', createCategoryRule ],
@@ -14,10 +15,10 @@ exports.handle = async (event, dynamodb) => {
         throw new Error(`Method ${event.httpMethod} for resource ${event.resource} not implemented yet`);
     }
 
-    return operationHandler(event, dynamodb);
+    return operationHandler(event, dynamodb, eventbridge);
 };
 
-function listCategoryRules(event, dynamodb) {
+async function listCategoryRules(event, dynamodb) {
     //const clientId = event.requestContext.authorizer.claims.aud;
     const accountId = event.pathParameters.accountId;
     const ruleType = event.queryStringParameters ? event.queryStringParameters.ruleType : undefined;
@@ -25,7 +26,7 @@ function listCategoryRules(event, dynamodb) {
     return categoryRule.list(dynamodb, accountId, ruleType);
 }
 
-function createCategoryRule(event, dynamodb) {
+async function createCategoryRule(event, dynamodb, eventbridge) {
     //const clientId = event.requestContext.authorizer.claims.aud;
     const accountId = event.pathParameters.accountId;
     const categoryRulesToAdd = JSON.parse(event.body);
@@ -34,10 +35,18 @@ function createCategoryRule(event, dynamodb) {
         throw new Error("Missing accountId");
     }
 
-    return categoryRule.create(dynamodb, accountId, categoryRulesToAdd);
+    const createCategoryRulesResult = await categoryRule.create(dynamodb, accountId, categoryRulesToAdd);
+
+    const changeSet = await createVersionForCreatedItems({dynamodb, accountId, results: createCategoryRulesResult});
+
+    if(changeSet) {
+        await publishChangeSet(eventbridge, changeSet);
+    }
+
+    return createCategoryRulesResult;
 }
 
-function updateCategoryRule(event, dynamodb) {
+async function updateCategoryRule(event, dynamodb, eventbridge) {
     //const clientId = event.requestContext.authorizer.claims.aud;
     const accountId = event.pathParameters.accountId;
     const ruleType = event.pathParameters.ruleType;
@@ -78,10 +87,18 @@ function updateCategoryRule(event, dynamodb) {
         }
     }
 
-    return categoryRule.update(dynamodb, ruleToUpdate, updatedAttributes);
+    const updateCategoryRuleResult = await categoryRule.update(dynamodb, ruleToUpdate, updatedAttributes);
+
+    const versionedChangeSet = await createVersionForUpdatedItems({dynamodb, accountId, results: [updateCategoryRuleResult]});
+
+    if(versionedChangeSet) {
+        await publishChangeSet(eventbridge, versionedChangeSet);
+    }
+
+    return updateCategoryRuleResult;
 }
 
-function deleteCategoryRule(event, dynamodb) {
+async function deleteCategoryRule(event, dynamodb, eventbridge) {
     //const clientId = event.requestContext.authorizer.claims.aud;
     const accountId = event.pathParameters.accountId;
     const ruleType = event.pathParameters.ruleType;
@@ -94,5 +111,13 @@ function deleteCategoryRule(event, dynamodb) {
     const rule = categoryRule.toCategoryRule(accountId, ruleType, ruleId);
 
     console.log("Deleting Category Rule", rule);
-    return categoryRule.remove(dynamodb, rule);
+    const deleteCategoryRuleResult = await categoryRule.remove(dynamodb, rule);
+
+    const changeSet = await createVersionForDeletedItems({dynamodb, accountId, results: [deleteCategoryRuleResult]});
+
+    if(changeSet) {
+        await publishChangeSet(eventbridge, changeSet);
+    }
+
+    return deleteCategoryRuleResult;
 }
