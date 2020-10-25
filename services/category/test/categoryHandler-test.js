@@ -6,6 +6,7 @@ const expect = chai.expect;
 const categoryHandler = require("../src/categoryHandler");
 const testValues = require('./testValues');
 const DynamoDbMock = testValues.DynamoDbMock;
+const EventBridgeMock = testValues.EventBridgeMock;
 
 const validateCategoryQueryParams = (params) => {
     expect(params.ExpressionAttributeValues[":pk"].S).to.be.equals(`ACCOUNT#${testValues.ACCOUNT_ID}`);
@@ -24,22 +25,37 @@ describe("CategoryHandler unit tests", () => {
                 expect(params.Item.description.S).to.be.equal("Category Description");
             };
 
-            const validators = [validateCategoryQueryParams, validatePutItemParams];
-            const results = [testValues.emptyQueryResult, testValues.putItemResult];
+            const validatePutEventParams = (params) => {
+                expect(params.Entries[0].Source).to.be.equal(testValues.expectedVersionEvent.Source);
+                expect(params.Entries[0].DetailType).to.be.equal(testValues.expectedVersionEvent.DetailType);
+                expect(params.Entries[0].Detail).to.be.equal(testValues.expectedVersionEvent.Detail);
+            }
+
+            const validators = [validateCategoryQueryParams, validatePutItemParams, validateUpdateItemParams];
+            const results = [testValues.emptyQueryResult, testValues.putItemResult, testValues.versionUpdateResult];
 
             const dynamoDbMock = new DynamoDbMock(validators, results);
+            const eventBridgeMock = new EventBridgeMock([validatePutEventParams], [testValues.expectedPutEventResult]);
 
-            const promise = categoryHandler.handle(testValues.createCategoryEvent, dynamoDbMock);
+            const promise = categoryHandler.handle(testValues.createCategoryEvent, dynamoDbMock, eventBridgeMock);
 
-            const expectedResult = {
+            const expectedResult = [{
                 success: true,
                 data: testValues.putItemResult
-            };
+            }];
             return expect(promise).to.eventually.be.deep.equals(expectedResult);
         });
 
         it("should create 2 categories with success", () => {
-              const validatePutItem01Params = (params) => {
+            const validateUpdateItemParams = (params) => {
+                expect(params.Key.PK.S).to.be.equal(`ACCOUNT#${testValues.ACCOUNT_ID}`);
+                expect(params.Key.SK.S).to.be.equal("METADATA");
+                expect(params.ExpressionAttributeNames["#version"]).to.be.equals("version");
+                expect(params.ExpressionAttributeValues[":version"].N).to.be.equals("1");
+                expect(params.UpdateExpression).to.be.equals("ADD #version :version ");
+            };
+
+            const validatePutItem01Params = (params) => {
                 expect(params.Item.categoryId.S).to.be.equal("01");
                 expect(params.Item.accountId.S).to.be.equal(testValues.ACCOUNT_ID);
                 expect(params.Item.name.S).to.be.equal("Category 1 Name");
@@ -53,12 +69,19 @@ describe("CategoryHandler unit tests", () => {
                 expect(params.Item.description.S).to.be.equal("Category 2 Description");
             };
 
-            const validators = [validateCategoryQueryParams, validatePutItem01Params, validatePutItem02Params];
-            const results = [testValues.emptyQueryResult, testValues.putItemResult, testValues.putItemResult];
+            const validatePutEventParams = (params) => {
+                expect(params.Entries[0].Source).to.be.equal(testValues.expectedVersionEventMultipleCat.Source);
+                expect(params.Entries[0].DetailType).to.be.equal(testValues.expectedVersionEventMultipleCat.DetailType);
+                expect(params.Entries[0].Detail).to.be.equal(testValues.expectedVersionEventMultipleCat.Detail);
+            }
+
+            const validators = [validateCategoryQueryParams, validatePutItem01Params, validatePutItem02Params, validateUpdateItemParams];
+            const results = [testValues.emptyQueryResult, testValues.putItemResult, testValues.putItemResult, testValues.versionUpdateResult];
 
             const dynamoDbMock = new DynamoDbMock(validators, results);
+            const eventBridgeMock = new EventBridgeMock([validatePutEventParams], [testValues.expectedPutEventResult]);
 
-            const promise = categoryHandler.handle(testValues.createTwoCategoriesEvent, dynamoDbMock);
+            const promise = categoryHandler.handle(testValues.createTwoCategoriesEvent, dynamoDbMock, eventBridgeMock);
 
             const expectedResult = Array(2).fill({
                 success: true,
