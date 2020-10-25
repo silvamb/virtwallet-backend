@@ -2,7 +2,6 @@ const dynamodb = require("./dynamodb");
 const DynamoDb = dynamodb.DynamoDb; 
 const QueryBuilder = dynamodb.QueryBuilder;
 const fromItem = dynamodb.fromItem;
-const { getVersion, generateCreatedChanges } = require('./version');
 
 const attrTypeMap = new Map([
     ["accountId", dynamodb.StringAttributeType],
@@ -48,6 +47,10 @@ class Category {
         return attrTypeMap;
     }
 
+    getType() {
+        return "Category";
+    }
+
     /**
      * Loads data from this category from the database. Any existing attribute is overwritten.
      * 
@@ -87,21 +90,6 @@ class CategoryList {
     }
 }
 
-async function transformCreateResult(dynamodb, accountId, categories, results) {
-    const changes = generateCreatedChanges("Category", categories, results);
-
-    let changeSet;
-    if (changes.length > 0){
-        changeSet = await getVersion(dynamodb, accountId, changes)
-        console.log("Change set created", changeSet);
-    }
-
-    return {
-        changeSet,
-        result: results
-    }
-}
-
 /**
  * Creates the provided categories and persists them.
  * 
@@ -131,9 +119,19 @@ exports.create = async(dynamodb, accountId, categoriesToAdd) =>  {
 
 
     console.log(`Persisting ${categories.length} new categories in DynamoDb`);
-    const putItemResult = await dbClient.putItems(categories, false);
+    const putItemsResult = await dbClient.putItems(categories, false);
 
-    return transformCreateResult(dynamodb, accountId, categories, putItemResult);
+    return putItemsResult.map((result, index) => {
+        if(result.success) {
+            return {
+                data: categories[index]
+            }
+        } else {
+            return {
+                err: result.data
+            }
+        }
+    });
 }
 
 /**

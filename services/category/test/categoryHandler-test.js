@@ -14,6 +14,14 @@ const validateCategoryQueryParams = (params) => {
     expect(params.KeyConditionExpression).to.be.equals("PK = :pk AND begins_with(SK, :sk)");
 };
 
+const validateUpdateItemParams = (params) => {
+    expect(params.Key.PK.S).to.be.equal(`ACCOUNT#${testValues.ACCOUNT_ID}`);
+    expect(params.Key.SK.S).to.be.equal("METADATA");
+    expect(params.ExpressionAttributeNames["#version"]).to.be.equals("version");
+    expect(params.ExpressionAttributeValues[":version"].N).to.be.equals("1");
+    expect(params.UpdateExpression).to.be.equals("ADD #version :version ");
+};
+
 describe("CategoryHandler unit tests", () => {
     describe("create category tests", () => {
         it("should create a single category with success", () => {
@@ -39,21 +47,10 @@ describe("CategoryHandler unit tests", () => {
 
             const promise = categoryHandler.handle(testValues.createCategoryEvent, dynamoDbMock, eventBridgeMock);
 
-            const expectedResult = [{
-                success: true,
-                data: testValues.putItemResult
-            }];
-            return expect(promise).to.eventually.be.deep.equals(expectedResult);
+            return expect(promise).to.eventually.be.deep.equals(testValues.expectedSingleCategoryResult);
         });
 
         it("should create 2 categories with success", () => {
-            const validateUpdateItemParams = (params) => {
-                expect(params.Key.PK.S).to.be.equal(`ACCOUNT#${testValues.ACCOUNT_ID}`);
-                expect(params.Key.SK.S).to.be.equal("METADATA");
-                expect(params.ExpressionAttributeNames["#version"]).to.be.equals("version");
-                expect(params.ExpressionAttributeValues[":version"].N).to.be.equals("1");
-                expect(params.UpdateExpression).to.be.equals("ADD #version :version ");
-            };
 
             const validatePutItem01Params = (params) => {
                 expect(params.Item.categoryId.S).to.be.equal("01");
@@ -83,12 +80,7 @@ describe("CategoryHandler unit tests", () => {
 
             const promise = categoryHandler.handle(testValues.createTwoCategoriesEvent, dynamoDbMock, eventBridgeMock);
 
-            const expectedResult = Array(2).fill({
-                success: true,
-                data: testValues.putItemResult
-            });
-
-            return expect(promise).to.eventually.be.deep.equals(expectedResult);
+            return expect(promise).to.eventually.be.deep.equals(testValues.expectedMultipleCategoryResult);
         });
     });
 

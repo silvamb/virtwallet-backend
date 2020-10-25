@@ -1,5 +1,5 @@
 const category = require('libs/category');
-const { publishChangeSet } = require('libs/version');
+const { createVersionForCreatedItems, publishChangeSet } = require('libs/version');
 
 exports.handle = async (event, dynamodb, eventbridge) => {
     // FIX ME change for a utility function
@@ -26,11 +26,15 @@ const createCategory = async (event, dynamodb, eventbridge) => {
     const accountId = event.pathParameters.accountId;
     const categoriesToAdd = JSON.parse(event.body);
 
-    const {result, changeSet} = await category.create(dynamodb, accountId, categoriesToAdd);
+    const createCategoryResults = await category.create(dynamodb, accountId, categoriesToAdd);
 
-    await publishChangeSet(eventbridge, changeSet);
+    const changeSet = await createVersionForCreatedItems({dynamodb, accountId, results: createCategoryResults});
 
-    return result;
+    if(changeSet) {
+        await publishChangeSet(eventbridge, changeSet);
+    }
+
+    return createCategoryResults;
 }
 
 const getCategory = (event, dynamodb) => {
