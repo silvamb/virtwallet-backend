@@ -6,7 +6,8 @@ const fromItem = dynamodb.fromItem;
 
 const ATTR_TYPE_MAP = new Map([
     ["sum", dynamodb.NumberAttributeType],
-    ["count", dynamodb.NumberAttributeType]
+    ["count", dynamodb.NumberAttributeType],
+    ["versionId", dynamodb.NumberAttributeType]
 ]);
 
 const GRANULARITY_MAP = new Map([
@@ -43,7 +44,8 @@ class Metrics {
         this.date = date;
         this.categoryId = categoryId;
         this.sum = 0;
-        this.count = 0; 
+        this.count = 0;
+        this.versionId = 1;
     }
 
     getHash() {
@@ -56,6 +58,10 @@ class Metrics {
 
     getAttrTypeMap() {
         return ATTR_TYPE_MAP;
+    }
+
+    getType() {
+        return "Metrics";
     }
 
     fromKeys(pk, sk) {
@@ -100,33 +106,22 @@ exports.update = async (dynamodb, metricsList) => {
     
     console.log("Creating update expressions to update metrics");
     const updateParamsList = metricsList.map(metrics => {
-            return new UpdateExpressionBuilder(metrics).addTo("count", metrics.count).addTo("sum", metrics.sum).build();
+        return new UpdateExpressionBuilder(metrics).addTo("count", metrics.count).addTo("sum", metrics.sum).addTo("versionId", 1).build();
     });
 
-    const updateResult = await dbClient.updateItems(updateParamsList);
+    const updateItemsResult = await dbClient.updateItems(updateParamsList);
 
-    printUpdateResults(metricsList, updateResult);
-
-    return updateResult;
-}
-
-function printUpdateResults(items, results) {
-    let result;
-    let transformedResult;
-
-    for(let i = 0; i < items.length; i++) {
-        result = results[i];
-        transformedResult = {
-            success: result.success
-        };
-    
-        if(!result.success) {
-            transformedResult.code = result.data.code;
-            transformedResult.message = result.data.message;
+    return updateItemsResult.map(updateItemResult => {
+        if(updateItemResult.success) {
+            return {
+                data: fromItem(updateItemResult.data.Attributes, new Metrics())
+            }
+        } else {
+            return {
+                err: updateItemResult.data
+            }
         }
-
-        console.log(`Result from item ${items[i].getRange()}:`, transformedResult);
-    }
+    });
 }
 
 exports.retrieve = async (dynamodb, accountId, walletId, date, categoryId) => {
@@ -158,14 +153,19 @@ exports.upsert = async (dynamodb, metricsList = []) => {
     
     console.log("Recreating metrics, metric list size", metricsList.length);
     const dbClient = new DynamoDb(dynamodb);
-    const updateResult = await dbClient.putItems(metricsList);
+    const putItemsResult = await dbClient.putItems(metricsList);
 
-    console.log("Recreate metrics result", updateResult);
+    console.log("Recreate metrics result", putItemsResult);
 
-    return metricsList.map((metrics, index) => {
-        return {
-            metrics,
-            success: updateResult[index].success
+    return putItemsResult.map((putItemResult, index) => {
+        if(putItemResult.success) {
+            return {
+                data: metricsList[index]
+            }
+        } else {
+            return {
+                err: putItemResult.data
+            }
         }
     });
 }
@@ -184,8 +184,19 @@ exports.deleteAll = async (dynamodb, accountId, walletId) => {
     if(metricsToDelete.length > 0){
         console.log("Deleting metrics");
         const dbClient = new DynamoDb(dynamodb);
-        const deleteResult = await dbClient.deleteItems(metricsToDelete);
-        return deleteResult.filter(deleteResult => deleteResult.success).map(deleteResult => fromItem(deleteResult.data.Attributes, new Metrics()))
+        const deleteItemsResult = await dbClient.deleteItems(metricsToDelete);
+
+        return deleteItemsResult.map(updateItemResult => {
+            if(updateItemResult.success) {
+                return {
+                    data: fromItem(updateItemResult.data.Attributes, new Metrics())
+                }
+            } else {
+                return {
+                    err: updateItemResult.data
+                }
+            }
+        });
     }
 
     return [];

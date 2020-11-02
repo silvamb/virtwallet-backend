@@ -1,8 +1,9 @@
 const metrics = require('libs/metrics');
 const Metrics = metrics.Metrics;
-const { list } = require('libs/transaction')
+const { list } = require('libs/transaction');
+const { createVersionForUpdatedItems, publishChangeSet } = require('libs/version');
 
-exports.updateMetrics = async (dynamodb, event) => {
+exports.updateMetrics = async (event, dynamodb, eventbridge) => {
     const eventType = event['detail-type'];
 
     if(!operationMap.has(eventType)) {
@@ -10,7 +11,7 @@ exports.updateMetrics = async (dynamodb, event) => {
     }
 
     const handler = operationMap.get(eventType);
-    await handler(dynamodb, event.detail);
+    await handler(event.detail, dynamodb, eventbridge);
 }
 
 const operationMap = new Map([
@@ -19,7 +20,7 @@ const operationMap = new Map([
     ["transactions updated", processTransactionsUpdated]
 ]);
 
-async function processTransactionsCreated(dynamodb, details) {
+async function processTransactionsCreated(details, dynamodb, eventbridge) {
     console.log("Calculating metrics to update");
 
     const transactions = details.transactions;
@@ -30,9 +31,15 @@ async function processTransactionsCreated(dynamodb, details) {
 
     console.log("Metrics calculated: ", metricsToUpdate.length);
 
-    await metrics.update(dynamodb, metricsToUpdate);
+    const updateMetricsResult = await metrics.update(dynamodb, metricsToUpdate);
 
-    console.log("Metrics updated");
+    console.log("Creating version for updated metrics", updateMetricsResult);
+    const accountId = transactions[0].accountId;
+    const versionedChangeSet = await createVersionForUpdatedItems({dynamodb, accountId, results: updateMetricsResult});
+
+    if(versionedChangeSet) {
+        await publishChangeSet(eventbridge, versionedChangeSet);
+    }
 }
 
 function reducer(metricsMap, transaction) {
@@ -58,7 +65,7 @@ function increment(metricsMap, datePart, transaction) {
 }
 
 
-async function processTransactionUpdated(dynamodb, details) {
+async function processTransactionUpdated(details, dynamodb, eventbridge) {
     console.log("Calculating metrics to update after transaction update");
     const metricsToUpdate = [];
 
@@ -70,9 +77,15 @@ async function processTransactionUpdated(dynamodb, details) {
     addMetricsFromUpdatedTx(details, monthKey, metricsToUpdate);
     addMetricsFromUpdatedTx(details, dayKey, metricsToUpdate);
 
-    await metrics.update(dynamodb, metricsToUpdate);
+    const updateMetricsResult = await metrics.update(dynamodb, metricsToUpdate);
 
-    console.log("Metrics updated");
+    console.log("Creating version for updated metrics");
+    const accountId = details.accountId;
+    const versionedChangeSet = await createVersionForUpdatedItems({dynamodb, accountId, results: updateMetricsResult});
+
+    if(versionedChangeSet) {
+        await publishChangeSet(eventbridge, versionedChangeSet);
+    }
 }
 
 function addMetricsFromUpdatedTx(details, datePart, metricsToUpdate) {
@@ -95,7 +108,7 @@ function addMetricsFromUpdatedTx(details, datePart, metricsToUpdate) {
     }
 }
 
-async function processTransactionsUpdated(dbClient, details) {
+async function processTransactionsUpdated(details, dynamodb, eventbridge) {
     console.log("Calculating metrics to update after transactions update");
     let metricsToUpdate = [];
 
@@ -113,9 +126,15 @@ async function processTransactionsUpdated(dbClient, details) {
     console.log("Aggregating similar categories (if any)");
     const aggregatedMetrics = metricsToUpdate.reduce(updatedTransactionsReducer, new Map());
 
-    await metrics.update(dbClient, Array.from(aggregatedMetrics.values()));
+    const updateMetricsResult = await metrics.update(dynamodb, Array.from(aggregatedMetrics.values()));
 
-    console.log("Metrics updated");
+    console.log("Creating version for updated metrics");
+    const accountId = details.accountId;
+    const versionedChangeSet = await createVersionForUpdatedItems({dynamodb, accountId, results: updateMetricsResult});
+
+    if(versionedChangeSet) {
+        await publishChangeSet(eventbridge, versionedChangeSet);
+    }
 }
 
 function updatedTransactionsReducer(metricsMap, metric) {

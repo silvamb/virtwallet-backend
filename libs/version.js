@@ -74,7 +74,7 @@ class ChangeSet {
      * 
      * @param {string} accountId the account ID 
      * @param {number} version the version number
-     * @param {Array<ChangeSet>} changeSet an array with all the changes
+     * @param {Array<ItemChange>} changeSet an array with all the changes
      */
     constructor(accountId = "", version = 0, changeSet = []) {
         this.accountId = accountId;
@@ -93,6 +93,9 @@ class ChangeSet {
      * Returns this item SK.
      */
     getRange() {
+        // TODO Add left padding to the version to allow BETWEEN queries
+        // Max: 999999999
+        // Pad: 000000001
         return `VERSION#${this.version}`;
     }
 
@@ -135,13 +138,17 @@ function generateChangesFromResult(supplier, results) {
 async function createChangeSet({dynamodb, accountId, itemChangeSupplier, results}) {
     const changes = generateChangesFromResult(itemChangeSupplier, results);
 
-    let changeSet = null;
     if (changes.length > 0){
-        changeSet = await getVersion(dynamodb, accountId, changes)
+        const newVersion = await getVersion(dynamodb, accountId);
+
+        const changeSet = new ChangeSet(accountId, newVersion, changes);
+
         console.log("Change set created", changeSet);
+
+        return changeSet;
     }
 
-    return changeSet;
+    return null;
 }
 
 /**
@@ -149,9 +156,8 @@ async function createChangeSet({dynamodb, accountId, itemChangeSupplier, results
  * 
  * @param {AWS.DynamoDb} dynamodb DynamoDb AWS JS SDK client
  * @param {*} accountId the account ID
- * @param {*} results the items changed, to create a new change set.
  */
-async function getVersion(dynamodb, accountId, changedItems) {
+async function getVersion(dynamodb, accountId) {
     console.log("Creating new version for account", accountId);
     const metadata = new AccountMetadata(accountId);
     const dbClient = new DynamoDb(dynamodb);
@@ -173,7 +179,7 @@ async function getVersion(dynamodb, accountId, changedItems) {
     const updatedVersion = result.success ? fromItem(result.data.Attributes, new AccountMetadata(accountId)) : -1;
     console.log("New version for account ", accountId, ":", updatedVersion.version);
 
-    return new ChangeSet(accountId, updatedVersion.version, changedItems);
+    return updatedVersion.version;
 }
 
 
@@ -212,6 +218,20 @@ exports.createVersionForDeletedItems = async ({
     results
 }) => {
     const itemChangeSupplier = (obj) => new DeletedItem(obj);
+    return createChangeSet({dynamodb, accountId, itemChangeSupplier, results});
+}
+
+/**
+ * Generates a change set for a reset operation
+ */
+exports.createVersionForReset = async ({
+    dynamodb,
+    accountId,
+    results
+}) => {
+    const itemChangeSupplier = (obj) => new NewItem(obj);
+    
+    console.log("Generating versioned results");
     return createChangeSet({dynamodb, accountId, itemChangeSupplier, results});
 }
 

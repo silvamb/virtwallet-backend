@@ -20,6 +20,10 @@ eventBridge-handler:
         - dynamodb:UpdateItem
         - dynamodb:DeleteItem
       Resource: "arn:aws:dynamodb:${opt:region, self:provider.region}:*:table/virtwallet"
+    - Effect: Allow
+      Action: 
+        - events:PutEvents
+      Resource: "*"
 
 apigw-retrieve-handler:
   handler: src/retrieveMetricsLambda.handle
