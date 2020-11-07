@@ -4,36 +4,12 @@ chai.use(chaiAsPromised);
 const expect = chai.expect;
 const fs = require('fs');
 const testValues = require('./testValues');
+const createTransactionsValues = require('./createTransactions.test.values');
+const updateTransactionsValues = require('./updateTransactions.test.values');
+const deleteTransactionsValues = require('./deleteTransactions.test.values');
+const { DynamoDb } = require("libs/dynamodb");
 
 const TransactionHandler = require('../src/transactionHandler').TransactionHandler;
-
-async function waitAndReturn(maxTime, retVal) {
-    return new Promise(resolve => {
-        const timeout = Math.floor(Math.random() * Math.floor(maxTime));
-        setTimeout(() => resolve(retVal), timeout);
-    });
-}
-
-class DynamoDbMock {
-
-    constructor(validateFunction, returnValues = {ScannedItems: 1}) {
-        this.validateFunction = validateFunction;
-        this.returnValues = returnValues;
-        this.putItem = this.mock;
-        this.query = this.mock;
-        this.batchWriteItem = this.mock;
-    }
-
-    mock(params) {
-        this.validateFunction(params);
-
-        return {
-            promise: () => {
-                return waitAndReturn(20, this.returnValues);
-            }
-        }
-    }
-};
 
 const expectedPutEventResult = {
     FailedEntryCount: 0, 
@@ -42,24 +18,29 @@ const expectedPutEventResult = {
     }]
 };
 
-class EventBridgeMock {
-    constructor(parameters) {
-        this.parameters = parameters;
-    }
+const DynamoDbMock = testValues.DynamoDbMock;
+const EventBridgeMock = testValues.EventBridgeMock;
 
-    putEvents(params){
-        expect(params.Entries[0].Source).to.be.equal("virtwallet");
-        expect(params.Entries[0].DetailType).to.be.equal("transaction updated");
-        const detail = JSON.parse(params.Entries[0].Detail);
-        expect(detail).to.be.deep.equals(this.parameters);
+const validateTransactionUpdatedEvent = (params) => {
+    expect(params.Entries[0].Source).to.be.equal("virtwallet");
+    expect(params.Entries[0].DetailType).to.be.equal("transaction updated");
+    const detail = JSON.parse(params.Entries[0].Detail);
+    expect(detail).to.be.deep.equals(this.parameters);
 
-        return {
-            promise: () => {
-                return Promise.resolve(expectedPutEventResult);
-            }
+    return {
+        promise: () => {
+            return Promise.resolve(expectedPutEventResult);
         }
     }
 }
+
+const validateUpdateVersionParams = (params) => {
+    expect(params.Key.PK.S).to.be.equal(`ACCOUNT#${testValues.ACCOUNT_ID}`);
+    expect(params.Key.SK.S).to.be.equal("METADATA");
+    expect(params.ExpressionAttributeNames["#version"]).to.be.equals("version");
+    expect(params.ExpressionAttributeValues[":version"].N).to.be.equals("1");
+    expect(params.UpdateExpression).to.be.equals("ADD #version :version ");
+};
 
 describe('TransactionHandler unit tests', () => {
     describe('list transactions tests', () => {
@@ -76,7 +57,7 @@ describe('TransactionHandler unit tests', () => {
 
             const expectedResult = testValues.listTestDbResponse;
 
-            const transactionHandler = new TransactionHandler(new DynamoDbMock(validateParams, expectedResult));
+            const transactionHandler = new TransactionHandler(new DynamoDbMock([validateParams], [expectedResult]));
             const promise = transactionHandler.list(parameters);
 
             const expectedList = testValues.listTestExpectedList;
@@ -97,7 +78,7 @@ describe('TransactionHandler unit tests', () => {
 
             const expectedResult = testValues.orderTestDbResponse;
 
-            const transactionHandler = new TransactionHandler(new DynamoDbMock(validateParams, expectedResult));
+            const transactionHandler = new TransactionHandler(new DynamoDbMock([validateParams], [expectedResult]));
             const promise = transactionHandler.list(parameters);
 
             const expectedList = testValues.orderTestExpectedList;
@@ -118,7 +99,7 @@ describe('TransactionHandler unit tests', () => {
 
             const expectedResult = testValues.orderTestDbResponse;
 
-            const transactionHandler = new TransactionHandler(new DynamoDbMock(validateParams, expectedResult));
+            const transactionHandler = new TransactionHandler(new DynamoDbMock([validateParams], [expectedResult]));
             const promise = transactionHandler.list(parameters);
 
             const expectedList = testValues.orderTestExpectedList.reverse();
@@ -128,338 +109,144 @@ describe('TransactionHandler unit tests', () => {
     });
 
     describe('CreateTransactionTests', () => {
-        it('should create transactions in a bulk less than 25', () => {
-            const eventJson =  fs.readFileSync('./test/events/transactions_15.json');
-            const event = JSON.parse(eventJson);
+        it('should create transactions', () => {
 
-            const parameters = {
-                clientId: event.requestContext.authorizer.claims.aud,
-                accountId: event.pathParameters.accountId,
-                walletId: event.pathParameters.walletId,
-                txId: event.pathParameters.txId,
-                transactions: event.body ? JSON.parse(event.body) : undefined,
-                to: event.queryStringParameters ? event.queryStringParameters.to : null,
-                from: event.queryStringParameters ? event.queryStringParameters.from : null
-            };
-            
-            const expectedItem = {
-                Attributes: [
-                    {
-                        PK: { "S": "ACCOUNT#4801b837-18c0-4277-98e9-ba57130edeb3" },
-                        SK: { "S": "TX#0001#2020-01-01#202001010001" },
-                        accountId: { "S": "4801b837-18c0-4277-98e9-ba57130edeb3" },
-                        walletId: { "S": "0001" },
-                        txDate: { "S": "2020-01-01" },
-                        txId: { "S": "202001010001" },
-                        dt: { "S": "2020-01-01T00:00:00.000Z" },
-                        value: { "N": 19.9 },
-                        description: { "S": "Transaction Test" },
-                        type: { "S": "POS" },
-                        balance: { "N": 1234.56 },
-                        balanceType: { "S": "Debit" },
-                        includedBy: { "S": "10v21l6b17g3t27sfbe38b0i8n"},
-                        version: { "N": 1},
-                        categoryId: { "S": "NO_CATEGORY"},
-                        keyword: { "S": "Transaction"},
-                        referenceMonth: {"S": "2020-01"}
-                    }
-                ],
-                ConsumedCapacity: {
-                    TableName: "virtwallet",
-                    CapacityUnits: 1
+            const validateParamsList = createTransactionsValues.transactionsToCreate.map(transaction => {
+                return (params) => {
+                    expect(params.Item.PK.S).to.be.equal(`ACCOUNT#${createTransactionsValues.ACCOUNT_ID}`);
+                    expect(params.Item.SK.S).to.be.equal(`TX#0001#${transaction.txDate}#${transaction.txId}`);
+                    expect(params.Item.txId.S).to.be.equal(transaction.txId);
+                    expect(params.Item.txDate.S).to.be.equal(transaction.txDate);
+                    expect(params.Item.accountId.S).to.be.equal(createTransactionsValues.ACCOUNT_ID);
+                    expect(params.Item.walletId.S).to.be.equal("0001");
+                    expect(params.Item.dt.S).to.be.equal(transaction.dt);
+                    expect(params.Item.value.N).to.be.equal(String(transaction.value));
+                    expect(params.Item.description.S).to.be.equal(transaction.description);
+                    expect(params.Item.type.S).to.be.equal(transaction.type);
+                    expect(params.Item.balance.N).to.be.equal(String(transaction.balance));
+                    expect(params.Item.balanceType.S).to.be.equal(transaction.balanceType);
+                    expect(params.Item.includedBy.S).to.be.equal(createTransactionsValues.CLIENT_ID);
+                    expect(params.Item.categoryId.S).to.be.equal(transaction.categoryId);
+                    expect(params.Item.keyword.S).to.be.equal(transaction.keyword);
+                    expect(params.Item.source.S).to.be.equal("MANUAL");
+                    expect(params.Item.sourceType.S).to.be.equal("M");
+                    expect(params.Item.referenceMonth.S).to.be.equal(transaction.referenceMonth);
+                    expect(params.Item.versionId.N).to.be.equal(String(1));
                 }
-            };
-
-            const validateParams = (params) => {
-            };
-
-            const expectedResult = Array(15).fill({success: true, data: expectedItem});
-
-            const transactionHandler = new TransactionHandler(new DynamoDbMock(validateParams, expectedItem));
-            const promise = transactionHandler.create(parameters);
-
-            return expect(promise).to.eventually.be.deep.equals(expectedResult);
-        });
-
-        it('should create a single transaction', () => {
-            const eventJson =  fs.readFileSync('./test/events/transactions_1.json');
-            const event = JSON.parse(eventJson);
+            })
+            validateParamsList.push(validateUpdateVersionParams);
+            const expectedResults = Array(3).fill(createTransactionsValues.putItemResult).concat(testValues.versionUpdateResult);
+            const dynamoDbMock = new DynamoDbMock(validateParamsList, expectedResults);
             
-            const parameters = {
-                clientId: event.requestContext.authorizer.claims.aud,
-                accountId: event.pathParameters.accountId,
-                walletId: event.pathParameters.walletId,
-                txId: event.pathParameters.txId,
-                transactions: event.body ? JSON.parse(event.body) : undefined,
-                to: event.queryStringParameters ? event.queryStringParameters.to : null,
-                from: event.queryStringParameters ? event.queryStringParameters.from : null
+            const validatePutVersionEventParams = (params) => {
+                expect(params.Entries[0].Source).to.be.equal(createTransactionsValues.createTransactionsUpdateVersionEvent.Source);
+                expect(params.Entries[0].DetailType).to.be.equal(createTransactionsValues.createTransactionsUpdateVersionEvent.DetailType);
+                expect(params.Entries[0].Detail).to.be.equal(createTransactionsValues.createTransactionsUpdateVersionEvent.Detail);
             };
+            const eventBridgeMock = new EventBridgeMock([validatePutVersionEventParams]);
 
-            const putItemResult = {
-                Attributes: [
-                    {
-                        PK: { "S": "ACCOUNT#4801b837-18c0-4277-98e9-ba57130edeb3" },
-                        SK: { "S": "TX#0001#2020-01-01#202001010001" },
-                        accountId: { "S": "4801b837-18c0-4277-98e9-ba57130edeb3" },
-                        walletId: { "S": "0001" },
-                        txDate: { "S": "2020-01-01" },
-                        txId: { "S": "202001010001" },
-                        dt: { "S": "2020-01-01T00:00:00.000Z" },
-                        value: { "N": 19.9 },
-                        description: { "S": "Transaction Test" },
-                        type: { "S": "POS" },
-                        balance: { "N": 1234.56 },
-                        balanceType: { "S": "Debit" },
-                        includedBy: { "S": "10v21l6b17g3t27sfbe38b0i8n"},
-                        version: { "N": 1},
-                        categoryId: { "S": "NO_CATEGORY"},
-                        keyword: { "S": "Transaction"},
-                        referenceMonth: {"S": "2020-01"},
-                    }
-                ],
-                ConsumedCapacity: {
-                    TableName: "virtwallet",
-                    CapacityUnits: 1
-                }
-            };
+            const transactionHandler = new TransactionHandler(dynamoDbMock, eventBridgeMock);
+            const promise = transactionHandler.create(createTransactionsValues.createTransactionsParameters);
 
-            const validateParams = (params) => {
-            };
-
-            const transactionHandler = new TransactionHandler(new DynamoDbMock(validateParams, putItemResult));
-            const promise = transactionHandler.create(parameters);
-
-            const expectedResult = {
-                success: true,
-                data: putItemResult
-            };
-
-            return expect(promise).to.eventually.become(expectedResult);
+            return expect(promise).to.eventually.be.fulfilled;
         });
     });
 
     describe('DeleteAllTransactionTests', () => {
         it('should delete all transactions from a wallet', () => {
-            const parameters = {
-                clientId: "10v21l6b17g3t27sfbe38b0i8n",
-                accountId: "4801b837-18c0-4277-98e9-ba57130edeb3",
-                walletId: "0001",
-            }
-
-            const expectedQueryResult = {
-                "Items": [
-                    {
-                        "PK": {
-                            "S": "ACCOUNT#4801b837-18c0-4277-98e9-ba57130edeb3"
-                        },
-                        "SK": {
-                            "S": "TX#0001#2019-12-30f#201912300011"
-                        }
-                    },
-                    {
-                        "PK": {
-                            "S": "ACCOUNT#4801b837-18c0-4277-98e9-ba57130edeb3"
-                        },
-                        "SK": {
-                            "S": "TX#0001#2019-12-30#201912300012"
-                        }
-                    }
-                ],
-                "Count": 2,
-                "ScannedCount": 2
+            const validateQueryParams = (params) => {
+                expect(params.KeyConditionExpression).to.be.equals("PK = :pk AND begins_with(SK, :sk)");
+                expect(params.ProjectionExpression).to.be.equals("PK,SK");
+                expect(params.ExpressionAttributeValues).to.deep.include({":pk":{S: "ACCOUNT#4801b837-18c0-4277-98e9-ba57130edeb3"}});
+                expect(params.ExpressionAttributeValues).to.deep.include({":sk":{S: "TX#0001"}});
             };
 
-            const expectedDeleteParams = {
-                RequestItems: {
-                    "virtwallet": [
-                        {
-                            DeleteRequest: {
-                                Key: {
-                                    PK: expectedQueryResult.Items[0].PK,
-                                    SK: expectedQueryResult.Items[0].SK
-                                }
-                            }
-                        },
-                        {
-                            DeleteRequest: {
-                                Key: {
-                                    PK: expectedQueryResult.Items[1].PK,
-                                    SK: expectedQueryResult.Items[1].SK
-                                }
-                            }
-                        }
-                    ]
-                }
-            }
+            const validateDeleteItemsParams = (params) => {
+                expect(params).to.be.deep.equals(deleteTransactionsValues.expectedDeleteParams);
+            };
 
-            const dynamoDbMock = {
-                query: (params) => {
-                    expect(params.KeyConditionExpression).to.be.equals("PK = :pk AND begins_with(SK, :sk)");
-                    expect(params.ProjectionExpression).to.be.equals("PK,SK");
-                    expect(params.ExpressionAttributeValues).to.deep.include({":pk":{S: "ACCOUNT#4801b837-18c0-4277-98e9-ba57130edeb3"}});
-                    expect(params.ExpressionAttributeValues).to.deep.include({":sk":{S: "TX#0001"}});
-
-                    return {
-                        promise: () => Promise.resolve(expectedQueryResult)
-                    };
-                },
-
-                batchWriteItem: (params) => {
-                    expect(params).to.be.deep.equals(expectedDeleteParams);
-
-                    return {
-                        promise: () => Promise.resolve({ UnprocessedItems: {} })
-                    };
-                }
-            }
+            const dbParamsValidators = [validateQueryParams, validateDeleteItemsParams];
+            const dbResults = [deleteTransactionsValues.queryTransactionsResult, deleteTransactionsValues.deleteTransactionsResult]
+            const dynamoDbMock = new DynamoDbMock(dbParamsValidators, dbResults);
 
             const transactionHandler = new TransactionHandler(dynamoDbMock);
-            const promise = transactionHandler.deleteAll(parameters);
+            const promise = transactionHandler.deleteAll(deleteTransactionsValues.deleteTransactionsParameters);
             return expect(promise).to.eventually.be.fulfilled;
         });
     });
 
     describe('UpdateTransactionTests', () => {
         it('should update a transaction with success', () => {
-            const parameters = {
-                clientId: "10v21l6b17g3t27sfbe38b0i8n",
-                accountId: "4801b837-18c0-4277-98e9-ba57130edeb3",
-                walletId: "0001",
-                txDate: "2020-02-04",
-                referenceMonth: "2020-02",
-                txId: "202002040001",
-                transactions: {
-                    old: {
-                        "balance": 0.00,
-                        "description": "No Desc"
-                    },
-                    new: {
-                        "balance": 123.40,
-                        "description": "Some Desc"
-                    }
-                }
-            };
 
-            const expectedUpdateResult = {
-                "Attributes": {
-                    "balance": {
-                        "N": "123.4"
-                    },
-                    "description": {
-                        "S": "Some Desc"
-                    },
-                    "PK": {
-                        "S": "ACCOUNT#4801b837-18c0-4277-98e9-ba57130edeb3"
-                    },
-                    "SK": {
-                      "S": "TX#0001#2020-02-04#202002040001"
-                    }
-                }
-            };
-
-            const validateParams = params => {
+            const validateTxUpdateParams = params => {
                 expect(params.Key.PK.S).to.equals("ACCOUNT#4801b837-18c0-4277-98e9-ba57130edeb3");
                 expect(params.Key.SK.S).to.equals("TX#0001#2020-02-04#202002040001");
                 expect(params.ExpressionAttributeNames["#balance"]).to.be.equals("balance");
                 expect(params.ExpressionAttributeNames["#description"]).to.be.equals("description");
+                expect(params.ExpressionAttributeNames["#versionId"]).to.be.equals("versionId");
                 expect(params.ExpressionAttributeValues[":balance"].N).to.be.equals("123.4");
                 expect(params.ExpressionAttributeValues[":description"].S).to.be.equals("Some Desc");
                 expect(params.ExpressionAttributeValues[":old_balance"].N).to.be.equals("0");
                 expect(params.ExpressionAttributeValues[":old_description"].S).to.be.equals("No Desc");
-                expect(params.UpdateExpression).to.be.equals(" SET #balance = :balance,#description = :description");
+                expect(params.ExpressionAttributeValues[":versionId"].N).to.be.equals("1");
+                expect(params.UpdateExpression).to.be.equals("ADD #versionId :versionId SET #balance = :balance,#description = :description");
                 expect(params.ConditionExpression).to.be.equals("#balance = :old_balance AND #description = :old_description");
             }
+            const dbParamsValidators = [validateTxUpdateParams, validateUpdateVersionParams];
+            const dbResults = [updateTransactionsValues.nonNotifiableAttrToUpdateTxResult, testValues.versionUpdateResult];
 
-            const dynamoDbMock = {
-                updateItem: (params) => {
-                    validateParams(params);
+            const dynamoDbMock = new DynamoDbMock(dbParamsValidators, dbResults);
 
-                    return {
-                        promise: () => Promise.resolve(expectedUpdateResult)
-                    };
-                }
+            const validatePutVersionEventParams = (params) => {
+                expect(params.Entries[0].Source).to.be.equal(updateTransactionsValues.nonNotifiableAttrToUpdateTxUpdateVersionEvent.Source);
+                expect(params.Entries[0].DetailType).to.be.equal(updateTransactionsValues.nonNotifiableAttrToUpdateTxUpdateVersionEvent.DetailType);
+                expect(params.Entries[0].Detail).to.be.equal(updateTransactionsValues.nonNotifiableAttrToUpdateTxUpdateVersionEvent.Detail);
             }
 
-            const transactionHandler = new TransactionHandler(dynamoDbMock);
-            const promise = transactionHandler.update(parameters);
-            return expect(promise).to.eventually.become({data: expectedUpdateResult, success: true});
+            const eventBridgeMock = new EventBridgeMock([validatePutVersionEventParams]);
+            
+            const transactionHandler = new TransactionHandler(dynamoDbMock, eventBridgeMock);
+            const promise = transactionHandler.update(updateTransactionsValues.nonNotifiableAttrToUpdateTxParameters);
+
+            return expect(promise).to.eventually.be.fulfilled;
         });
 
         it('should update a transaction notifiable attribute with success', () => {
-            const parameters = {
-                clientId: "10v21l6b17g3t27sfbe38b0i8n",
-                accountId: "4801b837-18c0-4277-98e9-ba57130edeb3",
-                walletId: "0001",
-                txDate: "2020-02-03",
-                referenceMonth: "2020-02",
-                txId: "202002030001",
-                transactions: {
-                    old: {
-                        "value": 1.50
-                    },
-                    new: {
-                        "value": 2.90
-                    }
-                }
-            };
-
-            const expectedUpdateResult = {
-                "Attributes": {
-                    "categoryId": {
-                        "S": "01"
-                    },
-                    "value": {
-                        "N": "2.9"
-                    },
-                    "PK": {
-                        "S": "ACCOUNT#4801b837-18c0-4277-98e9-ba57130edeb3"
-                    },
-                    "SK": {
-                      "S": "TX#0001#2020-02-04#202002040001"
-                    }
-                }
-            };
-
-            const validateParams = params => {
+            const validateTxUpdateParams = params => {
                 console.log("params.Key.SK", JSON.stringify(params.Key.SK))
                 expect(params.Key.PK.S).to.equals("ACCOUNT#4801b837-18c0-4277-98e9-ba57130edeb3");
                 expect(params.Key.SK.S).to.equals("TX#0001#2020-02-03#202002030001");
                 expect(params.ExpressionAttributeNames["#value"]).to.be.equals("value");
+                expect(params.ExpressionAttributeNames["#versionId"]).to.be.equals("versionId");
                 expect(params.ExpressionAttributeValues[":value"].N).to.be.equals("2.9");
                 expect(params.ExpressionAttributeValues[":old_value"].N).to.be.equals("1.5");
-                expect(params.UpdateExpression).to.be.equals(" SET #value = :value");
+                expect(params.ExpressionAttributeValues[":versionId"].N).to.be.equals("1");
+                expect(params.UpdateExpression).to.be.equals("ADD #versionId :versionId SET #value = :value");
                 expect(params.ConditionExpression).to.be.equals("#value = :old_value");
             }
 
-            const dynamoDbMock = {
-                updateItem: (params) => {
-                    validateParams(params);
+            const dbParamsValidators = [validateTxUpdateParams, validateUpdateVersionParams];
+            const dbResults = [updateTransactionsValues.notifiableAttrToUpdateTxResult, testValues.versionUpdateResult];
 
-                    return {
-                        promise: () => Promise.resolve(expectedUpdateResult)
-                    };
-                }
-            };
+            const dynamoDbMock = new DynamoDbMock(dbParamsValidators, dbResults);
 
-            const expectedEvent = {
-                accountId: "4801b837-18c0-4277-98e9-ba57130edeb3",
-                walletId: "0001",
-                txDate: "2020-02-03",
-                referenceMonth: "2020-02",
-                txId: "202002030001",
-                old: {
-                    categoryId: "01",
-                    value: 1.5,
-                },
-                new: {
-                    value: 2.9
-                }
-            };
-            const eventBridgeMock = new EventBridgeMock(expectedEvent);
+            const validateTransactionUpdatedEventParams = (params) => {
+                expect(params.Entries[0].Source).to.be.equal(updateTransactionsValues.notifiableAttrToUpdateTxUpdateVersionEvent.Source);
+                expect(params.Entries[0].DetailType).to.be.equal(updateTransactionsValues.notifiableAttrToUpdateTxUpdateVersionEvent.DetailType);
+                expect(params.Entries[0].Detail).to.be.equal(updateTransactionsValues.notifiableAttrToUpdateTxUpdateVersionEvent.Detail);
+            }
+
+            const validatePutVersionEventParams = (params) => {
+                expect(params.Entries[0].Source).to.be.equal(updateTransactionsValues.transactionUpdatedEvent.Source);
+                expect(params.Entries[0].DetailType).to.be.equal(updateTransactionsValues.transactionUpdatedEvent.DetailType);
+                expect(params.Entries[0].Detail).to.be.equal(updateTransactionsValues.transactionUpdatedEvent.Detail);
+            }
+
+            const eventBridgeMock = new EventBridgeMock([validateTransactionUpdatedEventParams, validatePutVersionEventParams]);
 
             const transactionHandler = new TransactionHandler(dynamoDbMock, eventBridgeMock);
-            const promise = transactionHandler.update(parameters);
-            return expect(promise).to.eventually.become({data: expectedUpdateResult, success: true});
+            const promise = transactionHandler.update(updateTransactionsValues.notifiableAttrToUpdateTxParameters);
+            return expect(promise).to.eventually.be.fulfilled;
         });
 
         it('should fail when trying to update a transaction with missing old attributes', () => {
