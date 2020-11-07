@@ -8,7 +8,7 @@ const attrTypeMap = new Map([
     ["categoryId", dynamodb.StringAttributeType],
     ["name", dynamodb.StringAttributeType],
     ["description", dynamodb.StringAttributeType],
-    ["version", dynamodb.NumberAttributeType]
+    ["versionId", dynamodb.NumberAttributeType]
 ]);
 
 const getPK = (accountId) => `ACCOUNT#${accountId}`;
@@ -32,7 +32,7 @@ class Category {
         this.categoryId = categoryId;
         this.name = "";
         this.description = "";
-        this.version = 1;
+        this.versionId = 1;
     }
 
     getHash() {

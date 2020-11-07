@@ -109,7 +109,7 @@ exports.queryResult = {
             categoryId: { S: "01" },
             name: { S: "Category Name" },
             description: { S: "Category Description" },
-            version: 1
+            versionId: 1
         },
     ],
     ScannedCount: 1,
@@ -120,7 +120,7 @@ exports.expectedList = [{
     categoryId: "01",
     name: "Category Name",
     description: "Category Description",
-    version: 1
+    versionId: 1
 }]
 
 exports.expectedSingleCategoryResult = [{
@@ -129,7 +129,7 @@ exports.expectedSingleCategoryResult = [{
         categoryId: "01",
         name: "Category Name",
         description: "Category Description",
-        version: 1
+        versionId: 1
     }
 }]
 
@@ -140,7 +140,7 @@ exports.expectedMultipleCategoryResult = [
             categoryId: "01",
             name: "Category 1 Name",
             description: "Category 1 Description",
-            version: 1
+            versionId: 1
         }
     },
     {
@@ -149,13 +149,14 @@ exports.expectedMultipleCategoryResult = [
             categoryId: "02",
             name: "Category 2 Name",
             description: "Category 2 Description",
-            version: 1
+            versionId: 1
         }
     }
 ]
 
 exports.versionUpdateResult = {
     Attributes: {
+        accountId: this.ACCOUNT_ID,
         version: {"N": "5"}
     }
 }
