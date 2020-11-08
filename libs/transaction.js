@@ -308,7 +308,7 @@ exports.updateAll = async (dynamodb, transactionChanges = []) => {
     return updateItemsResult.map(updateItemResult => {
         if(updateItemResult.success) {
             return {
-                data: fromItem(updateItemResult.data.Attributes, new Transaction())
+                data: dynamoDbLib.fromItem(updateItemResult.data.Attributes, new Transaction())
             }
         } else {
             return {
