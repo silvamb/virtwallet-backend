@@ -25,17 +25,25 @@ class DynamoDbMock  {
 
 };
 
-class EventBridgeMock {
+const EventBridgeMock = values.EventBridgeMock;
 
-    putEvents(_params){
-
-        return {
-            promise: () => {
-                return Promise.resolve(values.expectedPutEventResult);
-            }
-        }
-    }
+const validateEvent = (params) => {
+    expect(params.Entries[0].Source).to.be.equal("virtwallet");
+    expect(params.Entries[0].DetailType).to.be.equal("transactions created");
 }
+
+const validatePutVersionEventParams = (params) => {
+    expect(params.Entries[0].Source).to.be.equal(values.createSingleTransactionUpdateVersionEvent.Source);
+    expect(params.Entries[0].DetailType).to.be.equal(values.createSingleTransactionUpdateVersionEvent.DetailType);
+};
+
+const validateUpdateVersionParams = (params) => {
+    expect(params.Key.PK.S).to.be.equal(`ACCOUNT#${values.ACCOUNT_ID}`);
+    expect(params.Key.SK.S).to.be.equal("METADATA");
+    expect(params.ExpressionAttributeNames["#version"]).to.be.equals("version");
+    expect(params.ExpressionAttributeValues[":version"].N).to.be.equals("1");
+    expect(params.UpdateExpression).to.be.equals("ADD #version :version ");
+};
 
 describe('Reference Month Date unit tests', () => {
     it('should set current month when currentMonth is true and the date is after start date', () => {
@@ -49,9 +57,10 @@ describe('Reference Month Date unit tests', () => {
         
         const dynamoDbMock = new DynamoDbMock()
             .setMock('query', {expectedResult: values.expectedAccountWithStartDate})
-            .setMock('putItem', { validateFunction });
+            .setMock('putItem', { validateFunction })
+            .setMock('updateItem', { validateFunction: validateUpdateVersionParams, expectedResult: values.versionUpdateResult });
 
-        const eventBridgeMock = new EventBridgeMock(values.singleTransactionsCreatedEvent);
+        const eventBridgeMock = new EventBridgeMock([validateEvent, validatePutVersionEventParams]);
         const promise = processEvent(dynamoDbMock, eventBridgeMock, expectedEvent);
 
         return expect(promise).to.eventually.be.fulfilled;
@@ -68,9 +77,10 @@ describe('Reference Month Date unit tests', () => {
 
         const dynamoDbMock = new DynamoDbMock()
             .setMock('query', {expectedResult: Object.assign({}, values.expectedAccountWithStartDate)})
-            .setMock('putItem', { validateFunction });
+            .setMock('putItem', { validateFunction })
+            .setMock('updateItem', { validateFunction: validateUpdateVersionParams, expectedResult: values.versionUpdateResult });
 
-        const eventBridgeMock = new EventBridgeMock(values.singleTransactionsCreatedEvent);
+        const eventBridgeMock = new EventBridgeMock([validateEvent, validatePutVersionEventParams]);
         const promise = processEvent(dynamoDbMock, eventBridgeMock, expectedEvent);
 
         return expect(promise).to.eventually.be.fulfilled;
@@ -87,9 +97,10 @@ describe('Reference Month Date unit tests', () => {
 
         const dynamoDbMock = new DynamoDbMock()
             .setMock('query', {expectedResult: Object.assign({}, values.expectedAccount)})
-            .setMock('putItem', { validateFunction });
+            .setMock('putItem', { validateFunction })
+            .setMock('updateItem', { validateFunction: validateUpdateVersionParams, expectedResult: values.versionUpdateResult });
 
-        const eventBridgeMock = new EventBridgeMock(values.singleTransactionsCreatedEvent);
+        const eventBridgeMock = new EventBridgeMock([validateEvent, validatePutVersionEventParams]);
         const promise = processEvent(dynamoDbMock, eventBridgeMock, expectedEvent);
 
         return expect(promise).to.eventually.be.fulfilled;
@@ -106,9 +117,10 @@ describe('Reference Month Date unit tests', () => {
 
         const dynamoDbMock = new DynamoDbMock()
             .setMock('query', {expectedResult: Object.assign({}, values.expectedAccount)})
-            .setMock('putItem', { validateFunction });
+            .setMock('putItem', { validateFunction })
+            .setMock('updateItem', { validateFunction: validateUpdateVersionParams, expectedResult: values.versionUpdateResult });
 
-        const eventBridgeMock = new EventBridgeMock(values.singleTransactionsCreatedEvent);
+        const eventBridgeMock = new EventBridgeMock([validateEvent, validatePutVersionEventParams]);
         const promise = processEvent(dynamoDbMock, eventBridgeMock, expectedEvent);
 
         return expect(promise).to.eventually.be.fulfilled;
@@ -125,9 +137,10 @@ describe('Reference Month Date unit tests', () => {
 
         const dynamoDbMock = new DynamoDbMock()
             .setMock('query', {expectedResult: Object.assign({}, values.expectedAccountWithManuallySetStartDate)})
-            .setMock('putItem', { validateFunction });
+            .setMock('putItem', { validateFunction })
+            .setMock('updateItem', { validateFunction: validateUpdateVersionParams, expectedResult: values.versionUpdateResult });
 
-        const eventBridgeMock = new EventBridgeMock(values.singleTransactionsCreatedEvent);
+        const eventBridgeMock = new EventBridgeMock([validateEvent, validatePutVersionEventParams]);
         const promise = processEvent(dynamoDbMock, eventBridgeMock, expectedEvent);
 
         return expect(promise).to.eventually.be.fulfilled;
@@ -144,9 +157,10 @@ describe('Reference Month Date unit tests', () => {
 
         const dynamoDbMock = new DynamoDbMock()
             .setMock('query', {expectedResult: Object.assign({}, values.expectedAccountWithManuallySetStartDate)})
-            .setMock('putItem', { validateFunction });
+            .setMock('putItem', { validateFunction })
+            .setMock('updateItem', { validateFunction: validateUpdateVersionParams, expectedResult: values.versionUpdateResult });
 
-        const eventBridgeMock = new EventBridgeMock(values.singleTransactionsCreatedEvent);
+        const eventBridgeMock = new EventBridgeMock([validateEvent, validatePutVersionEventParams]);
         const promise = processEvent(dynamoDbMock, eventBridgeMock, expectedEvent);
 
         return expect(promise).to.eventually.be.fulfilled;
@@ -163,9 +177,10 @@ describe('Reference Month Date unit tests', () => {
 
         const dynamoDbMock = new DynamoDbMock()
             .setMock('query', {expectedResult: Object.assign({}, values.expectedAccountWithManuallySetStartDate)})
-            .setMock('putItem', { validateFunction });
+            .setMock('putItem', { validateFunction })
+            .setMock('updateItem', { validateFunction: validateUpdateVersionParams, expectedResult: values.versionUpdateResult });
 
-        const eventBridgeMock = new EventBridgeMock(values.singleTransactionsCreatedEvent);
+        const eventBridgeMock = new EventBridgeMock([validateEvent, validatePutVersionEventParams]);
         const promise = processEvent(dynamoDbMock, eventBridgeMock, expectedEvent);
 
         return expect(promise).to.eventually.be.fulfilled;
@@ -182,9 +197,10 @@ describe('Reference Month Date unit tests', () => {
 
         const dynamoDbMock = new DynamoDbMock()
             .setMock('query', {expectedResult: Object.assign({}, values.expectedAccountWithManuallySetStartDate)})
-            .setMock('putItem', { validateFunction });
+            .setMock('putItem', { validateFunction })
+            .setMock('updateItem', { validateFunction: validateUpdateVersionParams, expectedResult: values.versionUpdateResult });
 
-        const eventBridgeMock = new EventBridgeMock(values.singleTransactionsCreatedEvent);
+        const eventBridgeMock = new EventBridgeMock([validateEvent, validatePutVersionEventParams]);
         const promise = processEvent(dynamoDbMock, eventBridgeMock, expectedEvent);
 
         return expect(promise).to.eventually.be.fulfilled;

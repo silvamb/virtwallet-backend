@@ -1,6 +1,7 @@
 
 const { Transaction, create } = require('libs/transaction');
 const { retrieve } = require('libs/account');
+const { createVersionForCreatedItems, createVersionForUpdatedItems, publishChangeSet } = require('libs/version');
 
 function parseEvent(detail) {
     console.log("Parsing event detail", detail);
@@ -18,26 +19,13 @@ function parseEvent(detail) {
     };
 }
 
-function transformPutItemsResult(result) {
-    const transformedResult = {
-        success: result.success
-    };
-
-    if(!result.success) {
-        transformedResult.code = result.data.code;
-        transformedResult.message = result.data.message;
-    }
-
-    return transformedResult;
-}
-
 async function publishEvent(eventbridge, results, transactions) {
     const eventDetail = {
         transactions: []
     };
 
     for(let i = 0; i < results.length; i++) {
-        if(results[i].success) {
+        if(results[i].data) {
             eventDetail.transactions.push({
                 accountId: transactions[i].accountId,
                 walletId: transactions[i].walletId,
@@ -109,13 +97,15 @@ exports.processEvent = async (dynamodb, eventbridge, detail) => {
         return transaction;
     });
 
-    const result = await create(dynamodb, clientId, accountId, walletId, transactions, overwrite, generateId);
+    const createTransactionsResult = await create(dynamodb, clientId, accountId, walletId, transactions, overwrite, generateId);
 
-    const transformedResults = Array.isArray(result) ? result.map(transformPutItemsResult) : [transformPutItemsResult(result)];
+    await publishEvent(eventbridge, createTransactionsResult, transactions);
 
-    console.log(`Finished processing transaction from file [${detail.fileName}]`);
+    const changeSet = await createVersionForCreatedItems({dynamodb, accountId, results: createTransactionsResult});
 
-    await publishEvent(eventbridge, transformedResults, transactions);
+    if(changeSet) {
+        await publishChangeSet(eventbridge, changeSet);
+    }
 
-    return transformedResults;
+    return createTransactionsResult;
 }

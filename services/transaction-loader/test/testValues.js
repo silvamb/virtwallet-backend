@@ -1,3 +1,5 @@
+exports.ACCOUNT_ID = "a03af6a8-e246-410a-8ca5-bfab980648cc";
+
 exports.expectedAccount = {
     Count: 1,
     Items: [
@@ -115,7 +117,7 @@ const transactionItems = [
         balance: { "N": "4000" },
         balanceType: { "S": "Debit" },
         includedBy: { "S": "NOT_DEFINED"},
-        version: { "N": 1 },
+        versionId: { "N": 1 },
         categoryId: { "S": "04"},
         keyword: { "S": "Transaction1"},
         source: { "S": "myfile.csv"},
@@ -136,7 +138,7 @@ const transactionItems = [
         balance: { "N": "1000" },
         balanceType: { "S": "Debit" },
         includedBy: { "S": "NOT_DEFINED"},
-        version: { "N": 1 },
+        versionId: { "N": 1 },
         categoryId: { "S": "06"},
         keyword: { "S": "Transaction2"},
         source: { "S": "myfile.csv"},
@@ -222,3 +224,64 @@ exports.expectedAccountWithManuallySetStartDate = {
     ],
     ScannedCount: 2
 };
+
+exports.EventBridgeMock = class {
+    constructor(paramsValidators = [], returnValues = []) {
+        this.paramsValidators = paramsValidators.reverse();
+        this.returnValues = returnValues.reverse();
+    }
+
+    putEvents(params){
+        const validator = this.paramsValidators.pop();
+        validator(params);
+
+        return {
+            promise: () => {
+                const returnValue = this.returnValues.pop() || exports.expectedPutEventResult;
+
+                return Promise.resolve(returnValue);
+            }
+        }
+    }
+}
+
+exports.versionUpdateResult = {
+    Attributes: {
+        accountId: this.ACCOUNT_ID,
+        version: {"N": "7"}
+    }
+}
+
+exports.createSingleTransactionUpdateVersionEvent = {
+    Source:"virtwallet",
+    DetailType: "new account version",
+    Detail: JSON.stringify({
+        accountId: this.ACCOUNT_ID,
+        version: 7,
+        changeSet: this.singleTransactionsEvent.transactions.map(transaction => {
+            return  {
+                type: "Transaction",
+                PK: `ACCOUNT#${this.ACCOUNT_ID}`,
+                SK: `TX#0001#${transaction.txDate}#${transaction.txId}`,
+                op: "Add"
+            }
+        })
+    })
+}
+
+exports.createMultipleTransactionUpdateVersionEvent = {
+    Source:"virtwallet",
+    DetailType: "new account version",
+    Detail: JSON.stringify({
+        accountId: this.ACCOUNT_ID,
+        version: 7,
+        changeSet: this.multiTransactionsEvent.transactions.map(transaction => {
+            return  {
+                type: "Transaction",
+                PK: `ACCOUNT#${this.ACCOUNT_ID}`,
+                SK: `TX#0001#${transaction.txDate}#${transaction.txId}`,
+                op: "Add"
+            }
+        })
+    })
+}
