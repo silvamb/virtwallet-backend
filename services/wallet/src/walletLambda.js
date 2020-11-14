@@ -1,6 +1,6 @@
 const AWS = require('aws-sdk');
 const WalletHandler = require('./walletHandler').WalletHandler;
-const walletHandler = new WalletHandler(new AWS.DynamoDB());
+const walletHandler = new WalletHandler(new AWS.DynamoDB(), new AWS.EventBridge());
 
 exports.handle = async event => {
     

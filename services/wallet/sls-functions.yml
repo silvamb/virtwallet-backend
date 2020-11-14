@@ -66,3 +66,7 @@ apigw-event-handler:
         - dynamodb:UpdateItem
         - dynamodb:DeleteItem
       Resource: "arn:aws:dynamodb:${opt:region, self:provider.region}:*:table/virtwallet"
+    - Effect: Allow
+      Action: 
+        - events:PutEvents
+      Resource: "*"
