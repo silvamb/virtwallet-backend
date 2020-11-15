@@ -11,6 +11,77 @@ provider:
 
 resources:
   Resources:
+    VirtwalletTable:
+      Type: AWS::DynamoDB::Table
+      Properties:
+        AttributeDefinitions: 
+          - AttributeName: "PK"
+            AttributeType: "S"
+          - AttributeName: "SK"
+            AttributeType: "S"
+        BillingMode: PAY_PER_REQUEST
+        KeySchema: 
+          - AttributeName: "PK"
+            KeyType: "HASH"
+          - AttributeName: "SK"
+            KeyType: "RANGE"
+        TableName: virtwallet-${self:provider.stage}
+
+    VirtwalletUserPool:
+      Type: AWS::Cognito::UserPool
+      Properties:
+        AccountRecoverySetting:
+          RecoveryMechanisms: 
+            - Name: admin_only
+              Priority: 1
+        AdminCreateUserConfig:
+          AllowAdminCreateUserOnly: True
+        AliasAttributes:
+          - phone_number
+        AutoVerifiedAttributes:
+          - email
+        MfaConfiguration: "OFF"
+        Schema:
+          - AttributeDataType: String
+            Name: email
+            Required: True
+          - AttributeDataType: String
+            Name: phone_number
+            Required: True
+        UserPoolName: virtwallet-${self:provider.stage}-userpool
+
+    VirtwalletMaterialUIAppClient:
+      Type: AWS::Cognito::UserPoolClient
+      Properties:
+        AllowedOAuthFlows:
+          - code
+          - implicit
+        AllowedOAuthFlowsUserPoolClient: True
+        AllowedOAuthScopes:
+          - phone
+          - email
+          - openid
+        CallbackURLs:
+          - ${file(../../config.${self:provider.stage}.yml):callbackUrl}
+        ClientName: "Material UI ${self:provider.stage} client"
+        ExplicitAuthFlows:
+          - ALLOW_USER_SRP_AUTH
+          - ALLOW_REFRESH_TOKEN_AUTH
+        LogoutURLs:
+          - ${file(../../config.${self:provider.stage}.yml):logoutUrl}
+        PreventUserExistenceErrors: ENABLED
+        SupportedIdentityProviders:
+          - COGNITO
+        UserPoolId:
+          Ref: VirtwalletUserPool
+
+    VirtwalletUserPoolDomain:
+      Type: AWS::Cognito::UserPoolDomain 
+      Properties:
+        UserPoolId:
+          Ref: VirtwalletUserPool 
+        Domain: "virtwallet-${self:provider.stage}"
+
     VirtwalletRestApiGW:
       Type: AWS::ApiGateway::RestApi
       Properties:
@@ -23,7 +94,9 @@ resources:
         Type: COGNITO_USER_POOLS
         IdentitySource: method.request.header.Authorization
         ProviderARNs:
-          - ${file(../../config.${self:provider.stage}.yml):cognitoIdpArn}
+          - "Fn::GetAtt":
+              - VirtwalletUserPool
+              - Arn
         RestApiId:
           Ref: VirtwalletRestApiGW
 
