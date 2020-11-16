@@ -53,25 +53,11 @@ resources:
     VirtwalletMaterialUIAppClient:
       Type: AWS::Cognito::UserPoolClient
       Properties:
-        AllowedOAuthFlows:
-          - code
-          - implicit
-        AllowedOAuthFlowsUserPoolClient: True
-        AllowedOAuthScopes:
-          - phone
-          - email
-          - openid
-        CallbackURLs:
-          - ${file(../../config.${self:provider.stage}.yml):callbackUrl}
         ClientName: "Material UI ${self:provider.stage} client"
         ExplicitAuthFlows:
           - ALLOW_USER_SRP_AUTH
           - ALLOW_REFRESH_TOKEN_AUTH
-        LogoutURLs:
-          - ${file(../../config.${self:provider.stage}.yml):logoutUrl}
         PreventUserExistenceErrors: ENABLED
-        SupportedIdentityProviders:
-          - COGNITO
         UserPoolId:
           Ref: VirtwalletUserPool
 
