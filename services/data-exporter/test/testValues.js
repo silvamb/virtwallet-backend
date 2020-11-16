@@ -7,7 +7,7 @@ exports.event = {
     requestContext: {
         authorizer: {
             claims: {
-                aud: "10v21l6b17g3t27sfbe38b0i8n"
+                sub: "ef471999-eb8f-5bc5-b39d-037e99f341c4"
             }
         }
     },

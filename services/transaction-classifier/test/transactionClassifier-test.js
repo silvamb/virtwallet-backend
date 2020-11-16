@@ -117,7 +117,7 @@ describe('TransactionClassifierHandler unit tests', () => {
                         type: "GSD",
                         balance: "4000",
                         balanceType: "Debit",
-                        includedBy: "10v21l6b17g3t27sfbe38b0i8n",
+                        includedBy: "ef471999-eb8f-5bc5-b39d-037e99f341c4",
                         version: 1,
                         keyword: "MyKeyword"
                     }
@@ -156,7 +156,7 @@ describe('TransactionClassifierHandler unit tests', () => {
                         type: "GSD",
                         balance: "4000",
                         balanceType: "Debit",
-                        includedBy: "10v21l6b17g3t27sfbe38b0i8n",
+                        includedBy: "ef471999-eb8f-5bc5-b39d-037e99f341c4",
                         version: 1,
                         keyword: "AnotherKeyword"
                     }
@@ -195,7 +195,7 @@ describe('TransactionClassifierHandler unit tests', () => {
                         type: "GSD",
                         balance: "4000",
                         balanceType: "Debit",
-                        includedBy: "10v21l6b17g3t27sfbe38b0i8n",
+                        includedBy: "ef471999-eb8f-5bc5-b39d-037e99f341c4",
                         version: 1,
                         keyword: "AnotherKeyword"
                     }
@@ -238,7 +238,7 @@ describe('TransactionClassifierHandler unit tests', () => {
                         type: "GSD",
                         balance: "4000",
                         balanceType: "Debit",
-                        includedBy: "10v21l6b17g3t27sfbe38b0i8n",
+                        includedBy: "ef471999-eb8f-5bc5-b39d-037e99f341c4",
                         version: 1,
                         keyword: "AnotherKeyword"
                     }

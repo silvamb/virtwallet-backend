@@ -1,7 +1,7 @@
 
 exports.ACCOUNT_ID = "4801b837-18c0-4277-98e9-ba57130edeb3";
 exports.WALLET_ID = "0001";
-exports.CLIENT_ID = "10v21l6b17g3t27sfbe38b0i8n";
+exports.CLIENT_ID = "ef471999-eb8f-5bc5-b39d-037e99f341c4";
 
 exports.transactionsToCreate = [
     {
@@ -53,7 +53,7 @@ exports.createTransactionsEvent = {
     requestContext: {
         authorizer: {
             claims: {
-                aud: this.CLIENT_ID
+                sub: this.CLIENT_ID
             }
         }
     },

@@ -1,4 +1,4 @@
-exports.clientId = "10v21l6b17g3t27sfbe38b0i8n";
+exports.clientId = "ef471999-eb8f-5bc5-b39d-037e99f341c4";
 exports.accountId = "4801b837-18c0-4277-98e9-ba57130edeb3";
 exports.expectedKeyword = "some_keyword";
 exports.expectedKeywordCategory = "03";
@@ -17,7 +17,7 @@ function generateCreateExpressionRuleEvent(rulesToAdd) {
     requestContext: {
       authorizer: {
         claims: {
-          aud: exports.clientId,
+          sub: exports.clientId,
         },
       },
     },
@@ -70,7 +70,7 @@ exports.listCategoryRulesEvent = {
   requestContext: {
     authorizer: {
       claims: {
-        aud: exports.clientId,
+        sub: exports.clientId,
       },
     },
   },
@@ -162,7 +162,7 @@ exports.updateExpressionRuleEvent = {
     requestContext: {
         authorizer: {
         claims: {
-            aud: exports.clientId,
+            sub: exports.clientId,
         },
         },
     },
@@ -217,7 +217,7 @@ exports.updateKeywordRuleEvent = {
   requestContext: {
       authorizer: {
       claims: {
-          aud: exports.clientId,
+          sub: exports.clientId,
       },
       },
   },
@@ -274,7 +274,7 @@ exports.invalidUpdateKeywordRuleEvent = {
   requestContext: {
       authorizer: {
       claims: {
-          aud: exports.clientId,
+          sub: exports.clientId,
       },
       },
   },
@@ -291,7 +291,7 @@ exports.deleteExpressionRuleEvent = {
   requestContext: {
       authorizer: {
       claims: {
-          aud: exports.clientId,
+          sub: exports.clientId,
       },
       },
   },
@@ -325,7 +325,7 @@ exports.deleteKeywordRuleEvent = {
   requestContext: {
       authorizer: {
       claims: {
-          aud: exports.clientId,
+          sub: exports.clientId,
       },
       },
   },

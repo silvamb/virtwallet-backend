@@ -251,7 +251,7 @@ describe('TransactionHandler unit tests', () => {
 
         it('should fail when trying to update a transaction with missing old attributes', () => {
             const parameters = {
-                clientId: "10v21l6b17g3t27sfbe38b0i8n",
+                clientId: "ef471999-eb8f-5bc5-b39d-037e99f341c4",
                 accountId: "4801b837-18c0-4277-98e9-ba57130edeb3",
                 walletId: "0001",
                 txDate: "2020-02-04",
@@ -275,7 +275,7 @@ describe('TransactionHandler unit tests', () => {
 
         it('should fail when trying to update a transaction with invalid attributes', () => {
             const parameters = {
-                clientId: "10v21l6b17g3t27sfbe38b0i8n",
+                clientId: "ef471999-eb8f-5bc5-b39d-037e99f341c4",
                 accountId: "4801b837-18c0-4277-98e9-ba57130edeb3",
                 walletId: "0001",
                 txDate: "2020-02-04",
@@ -300,7 +300,7 @@ describe('TransactionHandler unit tests', () => {
 
         it('should fail when trying to update a transaction read-only attribute', () => {
             const parameters = {
-                clientId: "10v21l6b17g3t27sfbe38b0i8n",
+                clientId: "ef471999-eb8f-5bc5-b39d-037e99f341c4",
                 accountId: "4801b837-18c0-4277-98e9-ba57130edeb3",
                 walletId: "0001",
                 txDate: "2020-02-04",

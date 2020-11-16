@@ -9,7 +9,7 @@ exports.handle = async event => {
     console.log(event);
 
     const params = new CreateFileUrlParameters();
-    params.clientId = event.requestContext.authorizer.claims.aud;
+    params.clientId = event.requestContext.authorizer.claims.sub;
     params.bucket = process.env.ACCOUNT_FILES_BUCKET;
     params.accountId = event.pathParameters.accountId;
     params.walletId = event.pathParameters.walletId;

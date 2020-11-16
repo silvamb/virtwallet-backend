@@ -4,10 +4,10 @@ exports.expectedAccount = {
     Count: 1,
     Items: [
         {
-            PK: {"S": "USER#10v21l6b17g3t27sfbe38b0i8n"},
-            SK: {"S": "ACCOUNT#10v21l6b17g3t27sfbe38b0i8n#ad7d4de0-184a-4d3d-a4c8-68d5ba87b87f"},
+            PK: {"S": "USER#ef471999-eb8f-5bc5-b39d-037e99f341c4"},
+            SK: {"S": "ACCOUNT#ef471999-eb8f-5bc5-b39d-037e99f341c4#ad7d4de0-184a-4d3d-a4c8-68d5ba87b87f"},
             accountId:  {"S": "ad7d4de0-184a-4d3d-a4c8-68d5ba87b87f"},
-            ownerId:  {"S": "10v21l6b17g3t27sfbe38b0i8n"},
+            ownerId:  {"S": "ef471999-eb8f-5bc5-b39d-037e99f341c4"},
             name: {"S": "Account Name"},
             description: {"S": "Account Description"}
         }
@@ -181,10 +181,10 @@ exports.expectedAccountWithStartDate = {
     Count: 1,
     Items: [
         {
-            PK: {"S": "USER#10v21l6b17g3t27sfbe38b0i8n"},
-            SK: {"S": "ACCOUNT#10v21l6b17g3t27sfbe38b0i8n#ad7d4de0-184a-4d3d-a4c8-68d5ba87b87f"},
+            PK: {"S": "USER#ef471999-eb8f-5bc5-b39d-037e99f341c4"},
+            SK: {"S": "ACCOUNT#ef471999-eb8f-5bc5-b39d-037e99f341c4#ad7d4de0-184a-4d3d-a4c8-68d5ba87b87f"},
             accountId:  {"S": "ad7d4de0-184a-4d3d-a4c8-68d5ba87b87f"},
-            ownerId:  {"S": "10v21l6b17g3t27sfbe38b0i8n"},
+            ownerId:  {"S": "ef471999-eb8f-5bc5-b39d-037e99f341c4"},
             name: {"S": "Account Name"},
             description: {"S": "Account Description"},
             monthStartDateRule: {"S": JSON.stringify({
@@ -202,10 +202,10 @@ exports.expectedAccountWithManuallySetStartDate = {
     Count: 1,
     Items: [
         {
-            PK: {"S": "USER#10v21l6b17g3t27sfbe38b0i8n"},
-            SK: {"S": "ACCOUNT#10v21l6b17g3t27sfbe38b0i8n#ad7d4de0-184a-4d3d-a4c8-68d5ba87b87f"},
+            PK: {"S": "USER#ef471999-eb8f-5bc5-b39d-037e99f341c4"},
+            SK: {"S": "ACCOUNT#ef471999-eb8f-5bc5-b39d-037e99f341c4#ad7d4de0-184a-4d3d-a4c8-68d5ba87b87f"},
             accountId:  {"S": "ad7d4de0-184a-4d3d-a4c8-68d5ba87b87f"},
-            ownerId:  {"S": "10v21l6b17g3t27sfbe38b0i8n"},
+            ownerId:  {"S": "ef471999-eb8f-5bc5-b39d-037e99f341c4"},
             name: {"S": "Account Name"},
             description: {"S": "Account Description"},
             monthStartDateRule: {"S": JSON.stringify({

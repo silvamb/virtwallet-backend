@@ -20,7 +20,7 @@ class WalletHandler {
     }
 
     async create(event) {
-        const clientId = event.requestContext.authorizer.claims.aud;
+        const clientId = event.requestContext.authorizer.claims.sub;
         const accountId = event.pathParameters.accountId;
         const walletDetails = JSON.parse(event.body);
 
@@ -41,7 +41,7 @@ class WalletHandler {
     }
 
     async get(event) {
-        const ownerId = event.requestContext.authorizer.claims.aud;
+        const ownerId = event.requestContext.authorizer.claims.sub;
 
         const accountId = event.pathParameters.accountId;
         const walletId = event.pathParameters.walletId;

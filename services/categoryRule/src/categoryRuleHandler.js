@@ -19,7 +19,7 @@ exports.handle = async (event, dynamodb, eventbridge) => {
 };
 
 async function listCategoryRules(event, dynamodb) {
-    //const clientId = event.requestContext.authorizer.claims.aud;
+    //const clientId = event.requestContext.authorizer.claims.sub;
     const accountId = event.pathParameters.accountId;
     const ruleType = event.queryStringParameters ? event.queryStringParameters.ruleType : undefined;
 
@@ -27,7 +27,7 @@ async function listCategoryRules(event, dynamodb) {
 }
 
 async function createCategoryRule(event, dynamodb, eventbridge) {
-    //const clientId = event.requestContext.authorizer.claims.aud;
+    //const clientId = event.requestContext.authorizer.claims.sub;
     const accountId = event.pathParameters.accountId;
     const categoryRulesToAdd = JSON.parse(event.body);
 
@@ -47,7 +47,7 @@ async function createCategoryRule(event, dynamodb, eventbridge) {
 }
 
 async function updateCategoryRule(event, dynamodb, eventbridge) {
-    //const clientId = event.requestContext.authorizer.claims.aud;
+    //const clientId = event.requestContext.authorizer.claims.sub;
     const accountId = event.pathParameters.accountId;
     const ruleType = event.pathParameters.ruleType;
     const ruleId =  decodeURIComponent(event.pathParameters.ruleId);
@@ -99,7 +99,7 @@ async function updateCategoryRule(event, dynamodb, eventbridge) {
 }
 
 async function deleteCategoryRule(event, dynamodb, eventbridge) {
-    //const clientId = event.requestContext.authorizer.claims.aud;
+    //const clientId = event.requestContext.authorizer.claims.sub;
     const accountId = event.pathParameters.accountId;
     const ruleType = event.pathParameters.ruleType;
     const ruleId =  decodeURIComponent(event.pathParameters.ruleId);
