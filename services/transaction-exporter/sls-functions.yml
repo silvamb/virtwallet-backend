@@ -20,12 +20,13 @@ apigw-handler:
   environment:
     ACCOUNT_FILES_BUCKET: ${self:custom.userFilesBucket}
     CORS_ALLOWED_ORIGIN: ${self:custom.cors.origin, None}
+    STAGE: ${self:provider.stage}
   iamRoleStatements:
     - Effect: Allow
       Action:
         - dynamodb:Query
         - dynamodb:Scan
-      Resource: "arn:aws:dynamodb:${opt:region, self:provider.region}:*:table/virtwallet"
+      Resource: "arn:aws:dynamodb:${opt:region, self:provider.region}:*:table/virtwallet-${self:provider.stage}"
     - Effect: Allow
       Action: 
         - s3:PutObject

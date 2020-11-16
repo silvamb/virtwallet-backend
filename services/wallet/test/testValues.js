@@ -57,7 +57,7 @@ exports.expectedWalletCountQueryResult = {
 
 exports.putItemResult = {
     ConsumedCapacity: {
-        TableName: 'virtwallet',
+        TableName: 'virtwallet-dev',
         CapacityUnits: 1
     } 
   }

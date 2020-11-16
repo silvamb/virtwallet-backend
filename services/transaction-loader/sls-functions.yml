@@ -7,8 +7,9 @@ eventBridge-handler:
             - virtwallet
           detail-type:
             - transactions classified
+  environment:
+    STAGE: ${self:provider.stage}
   iamRoleStatementsName: virtwallet-trasaction-loader-${self:provider.stage}-iam-role
-
   iamRoleStatements:
     - Effect: Allow
       Action:
@@ -18,7 +19,7 @@ eventBridge-handler:
         - dynamodb:PutItem
         - dynamodb:UpdateItem
         - dynamodb:DeleteItem
-      Resource: "arn:aws:dynamodb:${opt:region, self:provider.region}:*:table/virtwallet"
+      Resource: "arn:aws:dynamodb:${opt:region, self:provider.region}:*:table/virtwallet-${self:provider.stage}"
     - Effect: Allow
       Action: 
         - events:PutEvents

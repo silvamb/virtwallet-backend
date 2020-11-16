@@ -1,6 +1,6 @@
 exports.ACCOUNT_ID = "4811b387618c0-4277-98e9-ba34210bdcf3";
 
-const TABLE_NAME = 'virtwallet';
+const TABLE_NAME = 'virtwallet-dev';
 
 
 function generateReturnValue(date) {

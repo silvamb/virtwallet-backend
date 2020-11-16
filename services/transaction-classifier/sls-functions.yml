@@ -7,6 +7,8 @@ eventBridge-handler:
             - virtwallet
           detail-type:
             - transactions parsed
+  environment:
+    STAGE: ${self:provider.stage}
   iamRoleStatementsName: virtwallet-transaction-classifier-${self:provider.stage}-iam-role
   iamRoleStatements:
     - Effect: Allow
@@ -15,7 +17,7 @@ eventBridge-handler:
         - dynamodb:Scan
         - dynamodb:GetItem
         - dynamodb:UpdateItem
-      Resource: "arn:aws:dynamodb:${opt:region, self:provider.region}:*:table/virtwallet"
+      Resource: "arn:aws:dynamodb:${opt:region, self:provider.region}:*:table/virtwallet-${self:provider.stage}"
     - Effect: Allow
       Action: 
         - events:PutEvents
@@ -41,6 +43,7 @@ apigw-handler:
         cors: ${self:custom.cors}
   environment:
     CORS_ALLOWED_ORIGIN: ${self:custom.cors.origin, None}
+    STAGE: ${self:provider.stage}
   iamRoleStatementsName: virtwallet-transaction-reclassify-${self:provider.stage}-iam-role
   iamRoleStatements:
     - Effect: Allow
@@ -49,7 +52,7 @@ apigw-handler:
         - dynamodb:Scan
         - dynamodb:GetItem
         - dynamodb:UpdateItem
-      Resource: "arn:aws:dynamodb:${opt:region, self:provider.region}:*:table/virtwallet"
+      Resource: "arn:aws:dynamodb:${opt:region, self:provider.region}:*:table/virtwallet-${self:provider.stage}"
     - Effect: Allow
       Action: 
         - events:PutEvents

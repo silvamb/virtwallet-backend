@@ -151,7 +151,7 @@ const transactionItems = [
 exports.putItemParamsForTx1 = {
     Item: transactionItems[0],
     ReturnConsumedCapacity: "TOTAL",
-    TableName: 'virtwallet',
+    TableName: 'virtwallet-dev',
     ReturnValues: "ALL_OLD",
     ConditionExpression: 'attribute_not_exists(PK)'
 };
@@ -159,7 +159,7 @@ exports.putItemParamsForTx1 = {
 exports.putItemTransaction2 = {
     Item: transactionItems[1],
     ReturnConsumedCapacity: "TOTAL",
-    TableName: 'virtwallet',
+    TableName: 'virtwallet-dev',
     ReturnValues: "ALL_OLD",
     ConditionExpression: 'attribute_not_exists(PK)'
 };

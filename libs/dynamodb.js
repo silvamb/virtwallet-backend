@@ -1,5 +1,6 @@
 
-const TABLE_NAME = "virtwallet";
+const environment = process.env.STAGE || "dev";
+const TABLE_NAME = `virtwallet-${environment}`;
 const BATCH_SIZE = 25;
 
 class AttributeValue {

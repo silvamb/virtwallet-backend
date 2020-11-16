@@ -83,7 +83,7 @@ exports.emptyQueryResult = {
 
 exports.putItemResult = {
     ConsumedCapacity: {
-        TableName: 'virtwallet',
+        TableName: 'virtwallet-dev',
         CapacityUnits: 1
     } 
 }

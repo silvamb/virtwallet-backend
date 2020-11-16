@@ -136,7 +136,7 @@ exports.expectedRules = {
 
 exports.putItemResult = {
   ConsumedCapacity: {
-      TableName: 'virtwallet',
+      TableName: 'virtwallet-dev',
       CapacityUnits: 1
   } 
 }
@@ -306,7 +306,7 @@ exports.deleteExpressionRuleParams = {
           S: "RULE#EXPRESSION#05"
       }
   },
-  TableName: "virtwallet"
+  TableName: "virtwallet-dev"
 }
 
 exports.deleteRuleResult = {
@@ -340,7 +340,7 @@ exports.deleteKeywordRuleParams = {
           S: "RULE#KEYWORD#My Keyword"
       }
   },
-  TableName: "virtwallet"
+  TableName: "virtwallet-dev"
 }
 
 exports.versionUpdateResult = {

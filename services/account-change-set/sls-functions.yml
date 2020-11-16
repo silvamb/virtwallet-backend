@@ -7,6 +7,8 @@ eventBridge-handler:
             - virtwallet
           detail-type:
             - new account version
+  environment:
+    STAGE: ${self:provider.stage}
   iamRoleStatementsName: virtwallet-account-change-set-${self:provider.stage}-iam-role
   iamRoleStatements:
     - Effect: Allow
@@ -16,4 +18,4 @@ eventBridge-handler:
         - dynamodb:GetItem
         - dynamodb:UpdateItem
         - dynamodb:PutItem
-      Resource: "arn:aws:dynamodb:${opt:region, self:provider.region}:*:table/virtwallet"
+      Resource: "arn:aws:dynamodb:${opt:region, self:provider.region}:*:table/virtwallet-${self:provider.stage}"
