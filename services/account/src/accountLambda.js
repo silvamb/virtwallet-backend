@@ -9,6 +9,7 @@ exports.handle = async event => {
         const data = await accountHandler.handle(event, new AWS.DynamoDB());
         return new AccountResponse(data);
     } catch(err) {
+        console.log(err);
         return new AccountResponse({message: err.message}, 500);
     }
 };

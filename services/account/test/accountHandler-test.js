@@ -49,7 +49,7 @@ describe('AccountHandler unit tests', () => {
                 requestContext: {
                     authorizer: {
                         claims: {
-                            aud: "10v21l6b17g3t27sfbe38b0i8n"
+                            sub: "ef471999-eb8f-5bc5-b39d-037e99f341c4"
                         }
                     }
                 },
@@ -57,7 +57,7 @@ describe('AccountHandler unit tests', () => {
             };
 
             const validateParams = (params) => {
-                expect(params.Item.ownerId.S).to.be.equal("10v21l6b17g3t27sfbe38b0i8n");
+                expect(params.Item.ownerId.S).to.be.equal("ef471999-eb8f-5bc5-b39d-037e99f341c4");
                 expect(params.Item.name.S).to.be.equal("Account Name");
                 expect(params.Item.description.S).to.be.equal("Account Description");
             };
@@ -65,7 +65,7 @@ describe('AccountHandler unit tests', () => {
             const promise = accountHandler.handle(event, new DynamoDbMock(validateParams));
 
             return Promise.all([
-                expect(promise).to.eventually.has.property("ownerId", "10v21l6b17g3t27sfbe38b0i8n"),
+                expect(promise).to.eventually.has.property("ownerId", "ef471999-eb8f-5bc5-b39d-037e99f341c4"),
                 expect(promise).to.eventually.has.property("name", "Account Name"),
                 expect(promise).to.eventually.has.property("description", "Account Description")
             ]);
@@ -80,14 +80,14 @@ describe('AccountHandler unit tests', () => {
                 requestContext: {
                     authorizer: {
                         claims: {
-                            aud: "10v21l6b17g3t27sfbe38b0i8n"
+                            sub: "ef471999-eb8f-5bc5-b39d-037e99f341c4"
                         }
                     }
                 }
             };
 
             const validateParams = (params) => {
-                expect(params.ExpressionAttributeValues[":pk"].S).to.be.equal("USER#10v21l6b17g3t27sfbe38b0i8n");
+                expect(params.ExpressionAttributeValues[":pk"].S).to.be.equal("USER#ef471999-eb8f-5bc5-b39d-037e99f341c4");
                 expect(params.KeyConditionExpression).to.be.equal("PK = :pk");
             };
 
@@ -95,13 +95,13 @@ describe('AccountHandler unit tests', () => {
                 Count: 1,
                 Items: [
                     {
-                        PK: {"S": "USER#10v21l6b17g3t27sfbe38b0i8n"},
-                        SK: {"S": "ACCOUNT#10v21l6b17g3t27sfbe38b0i8n#ad7d4de0-184a-4d3d-a4c8-68d5ba87b87f"},
+                        PK: {"S": "USER#ef471999-eb8f-5bc5-b39d-037e99f341c4"},
+                        SK: {"S": "ACCOUNT#ef471999-eb8f-5bc5-b39d-037e99f341c4#ad7d4de0-184a-4d3d-a4c8-68d5ba87b87f"},
                         accountId:  {"S": "ad7d4de0-184a-4d3d-a4c8-68d5ba87b87f"},
-                        ownerId:  {"S": "10v21l6b17g3t27sfbe38b0i8n"},
+                        ownerId:  {"S": "ef471999-eb8f-5bc5-b39d-037e99f341c4"},
                         name: {"S": "Account Name"},
                         description: {"S": "Account Description"},
-                        monthStartDateRule: {"S": "{\"currentMonth\": true, \"dayOfMonth\": 5, \"manuallySetPeriods\": []}"}
+                        monthStartDateRule: {"S": "{\"currentMonth\": true, \"dayOfMonth\": 5, \"manuallySetPeriods\": [{\"startDate\":\"2019-12-20\",\"endDate\":\"2020-01-23\"}]}"}
                     }
                 ],
                 ScannedCount: 2
@@ -111,13 +111,18 @@ describe('AccountHandler unit tests', () => {
 
             const expectedList = {
                 accountId: "ad7d4de0-184a-4d3d-a4c8-68d5ba87b87f",
-                ownerId: "10v21l6b17g3t27sfbe38b0i8n",
+                ownerId: "ef471999-eb8f-5bc5-b39d-037e99f341c4",
                 name: "Account Name",
                 description: "Account Description",
                 monthStartDateRule: {
                     currentMonth: true,
                     dayOfMonth: 5,
-                    manuallySetPeriods: []
+                    manuallySetPeriods: [
+                        {
+                            startDate: "2019-12-20",
+                            endDate: "2020-01-23",
+                        }
+                    ]
                 }
             };
 
@@ -135,15 +140,15 @@ describe('AccountHandler unit tests', () => {
             requestContext: {
                 authorizer: {
                     claims: {
-                        aud: "10v21l6b17g3t27sfbe38b0i8n"
+                        sub: "ef471999-eb8f-5bc5-b39d-037e99f341c4"
                     }
                 }
             }
         };
 
         const validateParams = (params) => {
-            expect(params.ExpressionAttributeValues[":pk"].S).to.be.equal("USER#10v21l6b17g3t27sfbe38b0i8n");
-            expect(params.ExpressionAttributeValues[":sk"].S).to.be.equal("ACCOUNT#10v21l6b17g3t27sfbe38b0i8n#ad7d4de0-184a-4d3d-a4c8-68d5ba87b87f");
+            expect(params.ExpressionAttributeValues[":pk"].S).to.be.equal("USER#ef471999-eb8f-5bc5-b39d-037e99f341c4");
+            expect(params.ExpressionAttributeValues[":sk"].S).to.be.equal("ACCOUNT#ef471999-eb8f-5bc5-b39d-037e99f341c4#ad7d4de0-184a-4d3d-a4c8-68d5ba87b87f");
             expect(params.KeyConditionExpression).to.be.equal("PK = :pk AND SK =:sk");
         };
 
@@ -151,10 +156,10 @@ describe('AccountHandler unit tests', () => {
             Count: 1,
             Items: [
                 {
-                    PK: {"S": "USER#10v21l6b17g3t27sfbe38b0i8n"},
-                    SK: {"S": "USER#10v21l6b17g3t27sfbe38b0i8n#ad7d4de0-184a-4d3d-a4c8-68d5ba87b87f"},
+                    PK: {"S": "USER#ef471999-eb8f-5bc5-b39d-037e99f341c4"},
+                    SK: {"S": "USER#ef471999-eb8f-5bc5-b39d-037e99f341c4#ad7d4de0-184a-4d3d-a4c8-68d5ba87b87f"},
                     accountId:  {"S": "ad7d4de0-184a-4d3d-a4c8-68d5ba87b87f"},
-                    ownerId:  {"S": "10v21l6b17g3t27sfbe38b0i8n"},
+                    ownerId:  {"S": "ef471999-eb8f-5bc5-b39d-037e99f341c4"},
                     name: {"S": "Account Name"},
                     description: {"S": "Account Description"}
                 }
@@ -166,7 +171,7 @@ describe('AccountHandler unit tests', () => {
 
         const expectedAccount = {
             accountId: "ad7d4de0-184a-4d3d-a4c8-68d5ba87b87f",
-            ownerId: "10v21l6b17g3t27sfbe38b0i8n",
+            ownerId: "ef471999-eb8f-5bc5-b39d-037e99f341c4",
             name: "Account Name",
             description: "Account Description",
             monthStartDateRule: {
