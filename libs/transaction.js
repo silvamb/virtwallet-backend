@@ -17,7 +17,7 @@ const attrTypeMap = new Map([
     ["balance", dynamoDbLib.NumberAttributeType],
     ["balanceType", dynamoDbLib.StringAttributeType],
     ["includedBy", dynamoDbLib.StringAttributeType],
-    ["version", dynamoDbLib.NumberAttributeType],
+    ["versionId", dynamoDbLib.NumberAttributeType],
     ["categoryId", dynamoDbLib.StringAttributeType],
     ["keyword", dynamoDbLib.StringAttributeType],
     ["source", dynamoDbLib.StringAttributeType],
@@ -87,7 +87,7 @@ class Transaction {
         this.balance = 0.00;
         this.balanceType = DEBIT_BALANCE_TYPE;
         this.includedBy = "";
-        this.version = 1;
+        this.versionId = 1;
         this.categoryId = "";
         this.keyword = "";
         this.source = "MANUAL";
@@ -105,6 +105,10 @@ class Transaction {
 
     getAttrTypeMap() {
         return attrTypeMap;
+    }
+
+    getType() {
+        return "Transaction";
     }
 }
 
@@ -176,9 +180,12 @@ exports.create = async (dynamodb, clientId, accountId, walletId, transactionsToA
         transaction.includedBy = clientId;
         transaction.categoryId = transactionDetails.categoryId;
         transaction.keyword = transactionDetails.keyword || transactionDetails.description.trim();
-        transaction.source = transactionDetails.source;
-        transaction.sourceType = transactionDetails.sourceType;
         transaction.referenceMonth = transactionDetails.referenceMonth;
+
+        if(transactionDetails.source && transactionDetails.sourceType) {
+            transaction.source = transactionDetails.source;
+            transaction.sourceType = transactionDetails.sourceType;
+        }
 
         // Generate the Tx ID if it is not specified.
         if(!transaction.txId && generateId) {
@@ -189,12 +196,19 @@ exports.create = async (dynamodb, clientId, accountId, walletId, transactionsToA
     });
 
     const dbClient = new dynamoDbLib.DynamoDb(dynamodb);
-    if(transactions.length == 1) {
-        console.log(`Persisting single transaction in DynamoDb: [${JSON.stringify(transactions[0])}]`);
-        return dbClient.putItem(transactions[0], overwrite);
-    } else {
-        return dbClient.putItems(transactions, overwrite);
-    }
+    const putItemsResult = await dbClient.putItems(transactions, overwrite);
+
+    return putItemsResult.map((putItemResult, index) => {
+        if(putItemResult.success) {
+            return {
+                data: transactions[index]
+            }
+        } else {
+            return {
+                err: putItemResult.data
+            }
+        }
+    });
 }
 
 /**
@@ -261,7 +275,17 @@ exports.update = async (dynamodb, transactionToUpdate, attrsToUpdate) => {
     validateUpdateParams(transactionToUpdate, attrsToUpdate);
 
     const dbClient = new dynamoDbLib.DynamoDb(dynamodb);
-    return dbClient.updateItem(transactionToUpdate, attrsToUpdate);
+    const updateItemResult = await dbClient.updateItem(transactionToUpdate, attrsToUpdate);
+
+    if(updateItemResult.success) {
+        return {
+            data: dynamoDbLib.fromItem(updateItemResult.data.Attributes, new Transaction())
+        }
+    } else {
+        return {
+            err: updateItemResult.data
+        }
+    }
 }
 
 exports.updateAll = async (dynamodb, transactionChanges = []) => {
@@ -279,7 +303,19 @@ exports.updateAll = async (dynamodb, transactionChanges = []) => {
     });
 
     const dbClient = new dynamoDbLib.DynamoDb(dynamodb);
-    return dbClient.updateItems(updateParamsList);
+    const updateItemsResult = await dbClient.updateItems(updateParamsList);
+
+    return updateItemsResult.map(updateItemResult => {
+        if(updateItemResult.success) {
+            return {
+                data: dynamoDbLib.fromItem(updateItemResult.data.Attributes, new Transaction())
+            }
+        } else {
+            return {
+                err: updateItemResult.data
+            }
+        }
+    });
 }
 
 function validateUpdateParams(transactionToUpdate, attrsToUpdate) {

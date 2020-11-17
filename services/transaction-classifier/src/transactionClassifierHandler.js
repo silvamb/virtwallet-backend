@@ -1,5 +1,6 @@
 const categoryRules = require("libs/categoryRule");
 const transactionLib = require("libs/transaction");
+const { createVersionForUpdatedItems, publishChangeSet } = require('libs/version');
 
 class TransactionClassifierHandler {
     constructor(dynamodb, eventbridge) {
@@ -44,7 +45,15 @@ class TransactionClassifierHandler {
         });
 
         if(changedTransactions.length > 0) {
-            return await updateTransactions(this.dynamodb, this.eventbridge, event, changedTransactions);
+            const updateResult = await updateTransactions(this.dynamodb, this.eventbridge, event, changedTransactions);
+
+            const versionedChangeSet = await createVersionForUpdatedItems({dynamodb: this.dynamodb, accountId, results: updateResult});
+
+            if(versionedChangeSet) {
+                await publishChangeSet(this.eventbridge, versionedChangeSet);
+            }
+    
+            return updateResult;
         }
 
         console.log("No transactions have been updated");
@@ -100,21 +109,12 @@ async function updateTransactions(dynamodb, eventbridge, event, changedTransacti
 
     console.log("Update transactions result:", updateAllResult);
 
-    const updatedTransactions = changedTransactions.filter(result => result.success);
+    const updatedTransactions = changedTransactions.filter((_changeSet, index) => updateAllResult[index].data);
     if(updatedTransactions.length > 0) {
         await publishUpdatedTransactions(eventbridge, accountId, walletId, updatedTransactions);
     }
 
-    return updateAllResult.map((result, i) => {
-        const transaction = changedTransactions[i].transaction;
-        return {
-            txId: transaction.txId,
-            txDate: transaction.txDate,
-            oldCategoryId: transaction.categoryId,
-            newCategoryId: changedTransactions[i].updatedAttributes.categoryId,
-            error: result.success ? null : result.data.message
-        }
-    });
+    return updateAllResult;
 }
 
 function classify(categoryRulesList, transaction) {

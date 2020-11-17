@@ -7,16 +7,32 @@ SCRIPTPATH=$(dirname "$SCRIPT")
 
 SERVICES_DIR="${SCRIPTPATH}/services"
 
+TARGET_ENV=${1-dev}
+
 cd $SERVICES_DIR
 
-for file in *; do
-    if [ -d "${SERVICES_DIR}/$file" ] && [ "$file" != "virtwallet-resources" ]
-    then
-        echo "Deploying service [$file]"
-        cd "${SERVICES_DIR}/${file}"
-        serverless deploy
-        echo "Deploying service [$file] result: $?"
-    fi
-done
+function deployService {
+    service=$1
+    echo "Deploying service [$service]"
+    cd "${SERVICES_DIR}/${service}"
+    serverless deploy -s $TARGET_ENV -r eu-west-1
+    echo "Deploying service [$service] result: $?"
+}
+
+deployService virtwallet-resources
+deployService account
+deployService account-change-set
+deployService category
+deployService categoryRule
+deployService data-exporter
+deployService wallet
+deployService metrics
+deployService parser-router
+deployService request-file-upload
+deployService transaction
+deployService transaction-classifier
+deployService transaction-exporter
+deployService transaction-loader
+deployService ulster-statement-csv-parser
 
 cd $SCRIPTPATH

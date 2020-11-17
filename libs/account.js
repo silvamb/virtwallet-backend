@@ -14,6 +14,11 @@ const attrTypeMap = new Map([
 ]);
 
 
+const metadataAttrTypeMap = new Map([
+    ["accountId", dynamodb.StringAttributeType],
+    ["version", dynamodb.NumberAttributeType],
+]);
+
 function getPK(ownerId) {
     return `USER#${ownerId}`;
 }
@@ -52,6 +57,25 @@ class Account {
 
     getAttrTypeMap() {
         return attrTypeMap;
+    }
+}
+
+class AccountMetadata {
+    constructor(accountId = "") {
+        this.accountId = accountId;
+        this.version = 1;
+    }
+
+    getHash() {
+        return `ACCOUNT#${this.accountId}`;
+    }
+
+    getRange() {
+        return "METADATA";
+    }
+
+    getAttrTypeMap() {
+        return metadataAttrTypeMap;
     }
 }
 
@@ -123,3 +147,4 @@ exports.getAll = async (dynamodb, accountId) => {
 }
 
 exports.Account = Account;
+exports.AccountMetadata = AccountMetadata;

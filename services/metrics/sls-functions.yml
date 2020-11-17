@@ -9,6 +9,8 @@ eventBridge-handler:
             - transactions created
             - transaction updated
             - transactions updated
+  environment: 
+    STAGE: ${self:provider.stage}
   iamRoleStatementsName: virtwallet-metrics-${self:provider.stage}-iam-role
   iamRoleStatements:
     - Effect: Allow
@@ -19,7 +21,11 @@ eventBridge-handler:
         - dynamodb:PutItem
         - dynamodb:UpdateItem
         - dynamodb:DeleteItem
-      Resource: "arn:aws:dynamodb:${opt:region, self:provider.region}:*:table/virtwallet"
+      Resource: "arn:aws:dynamodb:${opt:region, self:provider.region}:*:table/virtwallet-${self:provider.stage}"
+    - Effect: Allow
+      Action: 
+        - events:PutEvents
+      Resource: "*"
 
 apigw-retrieve-handler:
   handler: src/retrieveMetricsLambda.handle
@@ -40,6 +46,7 @@ apigw-retrieve-handler:
         cors: ${self:custom.cors}
   environment:
     CORS_ALLOWED_ORIGIN: ${self:custom.cors.origin, None}
+    STAGE: ${self:provider.stage}
   iamRoleStatementsName: virtwallet-retrieve-metrics-${self:provider.stage}-iam-role
   iamRoleStatements:
     - Effect: Allow
@@ -47,7 +54,7 @@ apigw-retrieve-handler:
         - dynamodb:Query
         - dynamodb:Scan
         - dynamodb:GetItem
-      Resource: "arn:aws:dynamodb:${opt:region, self:provider.region}:*:table/virtwallet"
+      Resource: "arn:aws:dynamodb:${opt:region, self:provider.region}:*:table/virtwallet-${self:provider.stage}"
 
 apigw-export-handler:
   handler: src/exportMetricsLambda.handle
@@ -65,6 +72,7 @@ apigw-export-handler:
   environment:
     CORS_ALLOWED_ORIGIN: ${self:custom.cors.origin, None}
     ACCOUNT_FILES_BUCKET: ${self:custom.userFilesBucket}
+    STAGE: ${self:provider.stage}
   iamRoleStatementsName: virtwallet-export-metrics-${self:provider.stage}-iam-role
   iamRoleStatements:
     - Effect: Allow
@@ -72,7 +80,7 @@ apigw-export-handler:
         - dynamodb:Query
         - dynamodb:Scan
         - dynamodb:GetItem
-      Resource: "arn:aws:dynamodb:${opt:region, self:provider.region}:*:table/virtwallet"
+      Resource: "arn:aws:dynamodb:${opt:region, self:provider.region}:*:table/virtwallet-${self:provider.stage}"
     - Effect: Allow
       Action: 
         - s3:PutObject
@@ -96,6 +104,7 @@ apigw-recalc-handler:
         cors: ${self:custom.cors}
   environment:
     CORS_ALLOWED_ORIGIN: ${self:custom.cors.origin, None}
+    STAGE: ${self:provider.stage}
   iamRoleStatementsName: virtwallet-recalc-metrics-${self:provider.stage}-iam-role
   iamRoleStatements:
     - Effect: Allow
@@ -105,4 +114,4 @@ apigw-recalc-handler:
         - dynamodb:GetItem
         - dynamodb:PutItem
         - dynamodb:DeleteItem
-      Resource: "arn:aws:dynamodb:${opt:region, self:provider.region}:*:table/virtwallet"
+      Resource: "arn:aws:dynamodb:${opt:region, self:provider.region}:*:table/virtwallet-${self:provider.stage}"

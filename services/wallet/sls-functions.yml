@@ -56,6 +56,7 @@ apigw-event-handler:
         cors: ${self:custom.cors}
   environment:
     CORS_ALLOWED_ORIGIN: ${self:custom.cors.origin, None}
+    STAGE: ${self:provider.stage}
   iamRoleStatements:
     - Effect: Allow
       Action:
@@ -65,4 +66,8 @@ apigw-event-handler:
         - dynamodb:PutItem
         - dynamodb:UpdateItem
         - dynamodb:DeleteItem
-      Resource: "arn:aws:dynamodb:${opt:region, self:provider.region}:*:table/virtwallet"
+      Resource: "arn:aws:dynamodb:${opt:region, self:provider.region}:*:table/virtwallet-${self:provider.stage}"
+    - Effect: Allow
+      Action: 
+        - events:PutEvents
+      Resource: "*"

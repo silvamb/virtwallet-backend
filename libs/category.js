@@ -7,7 +7,8 @@ const attrTypeMap = new Map([
     ["accountId", dynamodb.StringAttributeType],
     ["categoryId", dynamodb.StringAttributeType],
     ["name", dynamodb.StringAttributeType],
-    ["description", dynamodb.StringAttributeType]
+    ["description", dynamodb.StringAttributeType],
+    ["versionId", dynamodb.NumberAttributeType]
 ]);
 
 const getPK = (accountId) => `ACCOUNT#${accountId}`;
@@ -31,6 +32,7 @@ class Category {
         this.categoryId = categoryId;
         this.name = "";
         this.description = "";
+        this.versionId = 1;
     }
 
     getHash() {
@@ -43,6 +45,10 @@ class Category {
 
     getAttrTypeMap() {
         return attrTypeMap;
+    }
+
+    getType() {
+        return "Category";
     }
 
     /**
@@ -58,7 +64,7 @@ class Category {
 
         const queryData = await dbClient.queryAll(pk, sk);
 
-        if(queryData.Items.length == 0) {
+        if(queryData.Count === 0) {
             throw new Error(`Category with id ${this.categoryId} not found`);
         }
 
@@ -111,21 +117,21 @@ exports.create = async(dynamodb, accountId, categoriesToAdd) =>  {
         return category;
     });
 
-    let retVal;
 
-    if (categories.length == 1) {
-        console.log(`Persisting new category in DynamoDb: [${JSON.stringify(categories[0])}]`);
-        const item = await dbClient.putItem(categories[0]);
+    console.log(`Persisting ${categories.length} new categories in DynamoDb`);
+    const putItemsResult = await dbClient.putItems(categories, false);
 
-        console.log("Put item returned", item);
-
-        retVal = item;
-    } else {
-        console.log(`Persisting ${categories.length} new categories in DynamoDb`);
-        retVal = await dbClient.putItems(categories);
-    }
-
-    return retVal;
+    return putItemsResult.map((result, index) => {
+        if(result.success) {
+            return {
+                data: categories[index]
+            }
+        } else {
+            return {
+                err: result.data
+            }
+        }
+    });
 }
 
 /**

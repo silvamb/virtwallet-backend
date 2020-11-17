@@ -73,7 +73,7 @@ describe('TransactionExporterHandlerTest', () => {
                                 type: { "S": "POS" },
                                 balance: { "N": "1234.56" },
                                 balanceType: { "S": "Debit" },
-                                includedBy: { "S": "10v21l6b17g3t27sfbe38b0i8n"},
+                                includedBy: { "S": "ef471999-eb8f-5bc5-b39d-037e99f341c4"},
                                 version: { "N": 1 },
                                 categoryId: { "S": "01"},
                                 keyword: { "S": "Transaction"},

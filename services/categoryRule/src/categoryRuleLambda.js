@@ -1,4 +1,6 @@
 const AWS = require('aws-sdk');
+const dynamoDB = new AWS.DynamoDB();
+const eventBridge = new AWS.EventBridge();
 const categoryRuleHandler = require('./categoryRuleHandler');
 
 exports.handle = async event => {
@@ -6,7 +8,7 @@ exports.handle = async event => {
     console.log(event);
 
     try {
-        const data = await categoryRuleHandler.handle(event, new AWS.DynamoDB());
+        const data = await categoryRuleHandler.handle(event, dynamoDB, eventBridge);
         return new Response(data);
     } catch(err) {
         console.log(err);

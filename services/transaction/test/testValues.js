@@ -1,5 +1,7 @@
+exports.ACCOUNT_ID = "4801b837-18c0-4277-98e9-ba57130edeb3";
+
 const listTransactionsParams = {
-    clientId: "10v21l6b17g3t27sfbe38b0i8n",
+    clientId: "ef471999-eb8f-5bc5-b39d-037e99f341c4",
     accountId: "4801b837-18c0-4277-98e9-ba57130edeb3",
     walletId: "0001",
     from: "2020-01-01",
@@ -26,8 +28,8 @@ const transactionItems = [
         type: { "S": "POS" },
         balance: { "N": "1234.56" },
         balanceType: { "S": "Debit" },
-        includedBy: { "S": "10v21l6b17g3t27sfbe38b0i8n"},
-        version: { "N": 1 },
+        includedBy: { "S": "ef471999-eb8f-5bc5-b39d-037e99f341c4"},
+        versionId: { "N": 1 },
         categoryId: { "S": "18"},
         keyword: { "S": "Transaction"},
         source: { "S": "JOHNDOE12345678-20200107.csv"},
@@ -47,8 +49,8 @@ const transactionItems = [
         type: { "S": "POS" },
         balance: { "N": "156.83" },
         balanceType: { "S": "Debit" },
-        includedBy: { "S": "10v21l6b17g3t27sfbe38b0i8n"},
-        version: { "N": 1 },
+        includedBy: { "S": "ef471999-eb8f-5bc5-b39d-037e99f341c4"},
+        versionId: { "N": 1 },
         categoryId: { "S": "01"},
         keyword: { "S": "Transaction"},
         source: { "S": "JOHNDOE12345678-20200107.csv"},
@@ -68,8 +70,8 @@ const transactionItems = [
         type: { "S": "POS" },
         balance: { "N": "33.77" },
         balanceType: { "S": "Debit" },
-        includedBy: { "S": "10v21l6b17g3t27sfbe38b0i8n"},
-        version: { "N": 1 },
+        includedBy: { "S": "ef471999-eb8f-5bc5-b39d-037e99f341c4"},
+        versionId: { "N": 1 },
         categoryId: { "S": "10"},
         keyword: { "S": "Transaction"},
         source: { "S": "JOHNDOE12345678-20200107.csv"},
@@ -102,8 +104,8 @@ const transactionsList = [
         type: "POS",
         balance: 1234.56,
         balanceType: "Debit",
-        includedBy: "10v21l6b17g3t27sfbe38b0i8n",
-        version: 1,
+        includedBy: "ef471999-eb8f-5bc5-b39d-037e99f341c4",
+        versionId: 1,
         categoryId: "18",
         keyword: "Transaction",
         referenceMonth: "",
@@ -122,8 +124,8 @@ const transactionsList = [
         type: "POS",
         balance: 33.77,
         balanceType: "Debit",
-        includedBy: "10v21l6b17g3t27sfbe38b0i8n",
-        version: 1,
+        includedBy: "ef471999-eb8f-5bc5-b39d-037e99f341c4",
+        versionId: 1,
         categoryId: "10",
         keyword: "Transaction",
         referenceMonth: "",
@@ -142,8 +144,8 @@ const transactionsList = [
         type: "POS",
         balance: 156.83,
         balanceType: "Debit",
-        includedBy: "10v21l6b17g3t27sfbe38b0i8n",
-        version: 1,
+        includedBy: "ef471999-eb8f-5bc5-b39d-037e99f341c4",
+        versionId: 1,
         categoryId: "01",
         keyword: "Transaction",
         referenceMonth: "",
@@ -156,3 +158,58 @@ const transactionsList = [
 exports.listTestExpectedList = [transactionsList[0]];
 
 exports.orderTestExpectedList = transactionsList;
+
+
+exports.versionUpdateResult = {
+    Attributes: {
+        accountId: this.ACCOUNT_ID,
+        version: {"N": "7"}
+    }
+}
+
+exports.DynamoDbMock = class {
+
+    constructor(paramsValidators = [], returnValues = []) {
+        this.paramsValidators = paramsValidators.reverse();
+        this.returnValues = returnValues.reverse();
+        this.query = this.mock;
+        this.batchWriteItem = this.mock;
+        this.putItem = this.mock;
+        this.deleteItem = this.mock;
+        this.updateItem = this.mock;
+    }
+
+    mock(params) {
+        const validator = this.paramsValidators.pop();
+        validator(params);
+
+        return {
+            promise: () => Promise.resolve(this.returnValues.pop())
+        }
+    }
+}
+
+exports.expectedPutEventResult = {
+    FailedEntryCount: 0, 
+    Entries: [{
+        EventId: "11710aed-b79e-4468-a20b-bb3c0c3b4860"
+    }]
+};
+
+exports.EventBridgeMock = class {
+    constructor(paramsValidators = [], returnValues = [exports.expectedPutEventResult]) {
+        this.paramsValidators = paramsValidators.reverse();
+        this.returnValues = returnValues.reverse();
+    }
+
+    putEvents(params){
+        const validator = this.paramsValidators.pop();
+        validator(params);
+
+        return {
+            promise: () => {
+                return Promise.resolve(this.returnValues.pop());
+            }
+        }
+    }
+}

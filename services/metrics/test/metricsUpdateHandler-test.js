@@ -5,146 +5,127 @@ const expect = chai.expect;
 
 const { updateMetrics, recalculateMetrics } = require("../src/metricsUpdateHandler");
 const testValues = require('./testValues');
+const updateMetricsTestValues = require('./updateMetricsTestValues');
+const recalculateMetricsTestValues = require('./recalculateMetricsValues');
 
 const DynamoDbMock = testValues.DynamoDbMock;
+const EventBridgeMock = testValues.EventBridgeMock;
 
-const expectedUpdateResults = [
-    {
-        PK: {
-            S: "ACCOUNT#"+exports.ACCOUNT_ID,
-        },
-        SK: { S: "METRIC#0001#D#2020-01-01#01" },
-        count: {
-            N: "1",
-        },
-        sum: { N: "3.5" }
-    }
-];
+const validateUpdateItemParams = (params) => {
+    expect(params.Key.PK.S).to.be.equal(`ACCOUNT#${testValues.ACCOUNT_ID}`);
+    expect(params.Key.SK.S).to.be.equal("METADATA");
+    expect(params.ExpressionAttributeNames["#version"]).to.be.equals("version");
+    expect(params.ExpressionAttributeValues[":version"].N).to.be.equals("1");
+    expect(params.UpdateExpression).to.be.equals("ADD #version :version ");
+};
+
+const generateParamsValidator = (expectedParamsArr) => {
+    return expectedParamsArr.map(expectedParams => {
+        return params => {
+            //console.log("ACTUAL", JSON.stringify(params), "EXPECTED", JSON.stringify(expectedParams))
+            expect(params).to.be.deep.equals(expectedParams);
+        }
+    });
+}
 
 describe('MetricsUpdateHandler unit tests', () => {
     describe('update metrics tests', () => {
         it('should update metrics for same day and same category', () => {
+            const event = updateMetricsTestValues.sameDayAndCategoryUpdateEvent;
 
-            const event = testValues.sameDayAndCategoryUpdateEvent;
-            const dbRangeKeys = [
-                "METRIC#0001#Y#2020#01",
-                "METRIC#0001#M#2020-02#01",
-                "METRIC#0001#D#2020-02-01#01"
-            ];
+            const validateParams = generateParamsValidator(updateMetricsTestValues.sameDayAndCategoryUpdateQueryParams);
+            const validators = validateParams.concat([validateUpdateItemParams]);
+            const expectedDbResults = updateMetricsTestValues.sameDayAndCategoryUpdateResult.concat([testValues.versionUpdateResult]);
+            const dynamoDbMock = new DynamoDbMock(validators, expectedDbResults);
 
-            const validateParams = params => {
-                expect(params.Key.SK.S).to.be.oneOf(dbRangeKeys)
-                expect(params.ExpressionAttributeNames["#count"]).to.be.equals("count");
-                expect(params.ExpressionAttributeNames["#sum"]).to.be.equals("sum");
-                expect(params.ExpressionAttributeValues[":sum"].N).to.be.equals("9");
-                expect(params.ExpressionAttributeValues[":count"].N).to.be.equals("2");
-                expect(params.UpdateExpression).to.be.equals("ADD #count :count,#sum :sum ");
+            const validatePutEventParams = (params) => {
+                expect(params.Entries[0].Source).to.be.equal(updateMetricsTestValues.sameDayAndCategoryMetricUpdateVersionEvent.Source);
+                expect(params.Entries[0].DetailType).to.be.equal(updateMetricsTestValues.sameDayAndCategoryMetricUpdateVersionEvent.DetailType);
+                expect(params.Entries[0].Detail).to.be.equal(updateMetricsTestValues.sameDayAndCategoryMetricUpdateVersionEvent.Detail);
             }
+            const eventBridgeMock = new EventBridgeMock([validatePutEventParams]);
 
-            const dynamoDbMock = new DynamoDbMock(new Array(6).fill(validateParams), new Array(6).fill(expectedUpdateResults));
-
-            const promise = updateMetrics(dynamoDbMock, event);
+            const promise = updateMetrics(event, dynamoDbMock, eventBridgeMock);
 
             return expect(promise).to.eventually.be.fulfilled;
         });
 
         it('should update metrics after transaction value updated', () => {
-            const validateParams = params => {
-                expect(params.Key.SK.S).to.be.oneOf(testValues.dbRangeKeysCat01)
-                expect(params.ExpressionAttributeNames["#count"]).to.be.equals("count");
-                expect(params.ExpressionAttributeNames["#sum"]).to.be.equals("sum");
-                expect(params.ExpressionAttributeValues[":sum"].N).to.be.equals("3");
-                expect(params.ExpressionAttributeValues[":count"].N).to.be.equals("0");
-                expect(params.UpdateExpression).to.be.equals("ADD #count :count,#sum :sum ");
+            const event = updateMetricsTestValues.valueUpdateEvent;
+
+            const validateParams = generateParamsValidator(updateMetricsTestValues.valueUpdateQueryParams);
+            const validators = validateParams.concat([validateUpdateItemParams]);
+            const expectedDbResults = updateMetricsTestValues.valueUpdateUpdateResult.concat([testValues.versionUpdateResult]);
+            const dynamoDbMock = new DynamoDbMock(validators, expectedDbResults);
+
+            const validatePutEventParams = (params) => {
+                expect(params.Entries[0].Source).to.be.equal(updateMetricsTestValues.valueUpdateUpdateVersionEvent.Source);
+                expect(params.Entries[0].DetailType).to.be.equal(updateMetricsTestValues.valueUpdateUpdateVersionEvent.DetailType);
+                expect(params.Entries[0].Detail).to.be.equal(updateMetricsTestValues.valueUpdateUpdateVersionEvent.Detail);
             }
+            const eventBridgeMock = new EventBridgeMock([validatePutEventParams]);
 
-            const dynamoDbMock = new DynamoDbMock(new Array(6).fill(validateParams), new Array(6).fill(expectedUpdateResults));
-
-            const promise = updateMetrics(dynamoDbMock, testValues.valueUpdateEvent);
+            const promise = updateMetrics(event, dynamoDbMock, eventBridgeMock);
 
             return expect(promise).to.eventually.be.fulfilled;
         });
 
         it('should update metrics after transaction category updated', () => {
+            const event = updateMetricsTestValues.categoryUpdateEvent;
 
-            const validateParams = params => {
-                expect(params.ExpressionAttributeNames["#count"]).to.be.equals("count");
-                expect(params.ExpressionAttributeNames["#sum"]).to.be.equals("sum");
+            const validateParams = generateParamsValidator(updateMetricsTestValues.categoryUpdateQueryParams);
+            const validators = validateParams.concat([validateUpdateItemParams]);
+            const expectedDbResults = updateMetricsTestValues.categoryUpdateResult.concat([testValues.versionUpdateResult]);
+            const dynamoDbMock = new DynamoDbMock(validators, expectedDbResults);
 
-                if(params.Key.SK.S.endsWith("#01")) {
-                    expect(params.Key.SK.S).to.be.oneOf(testValues.dbRangeKeysCat01)
-                    expect(params.ExpressionAttributeValues[":sum"].N).to.be.equals("-2");
-                    expect(params.ExpressionAttributeValues[":count"].N).to.be.equals("-1");
-                    expect(params.UpdateExpression).to.be.equals("ADD #count :count,#sum :sum ");
-                }
-
-                if(params.Key.SK.S.endsWith("#02")) {
-                    expect(params.Key.SK.S).to.be.oneOf(testValues.dbRangeKeysCat02)
-                    expect(params.ExpressionAttributeValues[":sum"].N).to.be.equals("2");
-                    expect(params.ExpressionAttributeValues[":count"].N).to.be.equals("1");
-                    expect(params.UpdateExpression).to.be.equals("ADD #count :count,#sum :sum ");
-                }
+            const validatePutEventParams = (params) => {
+                expect(params.Entries[0].Source).to.be.equal(updateMetricsTestValues.categoryUpdateVersionEvent.Source);
+                expect(params.Entries[0].DetailType).to.be.equal(updateMetricsTestValues.categoryUpdateVersionEvent.DetailType);
+                expect(params.Entries[0].Detail).to.be.equal(updateMetricsTestValues.categoryUpdateVersionEvent.Detail);
             }
+            const eventBridgeMock = new EventBridgeMock([validatePutEventParams]);
 
-            const dynamoDbMock = new DynamoDbMock(new Array(6).fill(validateParams), new Array(6).fill(expectedUpdateResults));
-
-            const promise = updateMetrics(dynamoDbMock, testValues.categoryUpdateEvent);
+            const promise = updateMetrics(event, dynamoDbMock, eventBridgeMock);
 
             return expect(promise).to.eventually.be.fulfilled;
         });
 
         it('should update metrics after transaction category and value updated', () => {
+            const event = updateMetricsTestValues.categoryAndValueUpdateEvent;
 
-            const validateParams = params => {
-                expect(params.ExpressionAttributeNames["#count"]).to.be.equals("count");
-                expect(params.ExpressionAttributeNames["#sum"]).to.be.equals("sum");
+            const validateParams = generateParamsValidator(updateMetricsTestValues.categoryAndValueUpdateQueryParams);
+            const validators = validateParams.concat([validateUpdateItemParams]);
+            const expectedDbResults = updateMetricsTestValues.categoryAndValueUpdateResult.concat([testValues.versionUpdateResult]);
+            const dynamoDbMock = new DynamoDbMock(validators, expectedDbResults);
 
-                if(params.Key.SK.S.endsWith("#01")) {
-                    expect(params.Key.SK.S).to.be.oneOf(testValues.dbRangeKeysCat01)
-                    expect(params.ExpressionAttributeValues[":sum"].N).to.be.equals("-2");
-                    expect(params.ExpressionAttributeValues[":count"].N).to.be.equals("-1");
-                    expect(params.UpdateExpression).to.be.equals("ADD #count :count,#sum :sum ");
-                }
-
-                if(params.Key.SK.S.endsWith("#02")) {
-                    expect(params.Key.SK.S).to.be.oneOf(testValues.dbRangeKeysCat02)
-                    expect(params.ExpressionAttributeValues[":sum"].N).to.be.equals("5");
-                    expect(params.ExpressionAttributeValues[":count"].N).to.be.equals("1");
-                    expect(params.UpdateExpression).to.be.equals("ADD #count :count,#sum :sum ");
-                }
+            const validatePutEventParams = (params) => {
+                expect(params.Entries[0].Source).to.be.equal(updateMetricsTestValues.categoryAndValueUpdateVersionEvent.Source);
+                expect(params.Entries[0].DetailType).to.be.equal(updateMetricsTestValues.categoryAndValueUpdateVersionEvent.DetailType);
+                expect(params.Entries[0].Detail).to.be.equal(updateMetricsTestValues.categoryAndValueUpdateVersionEvent.Detail);
             }
+            const eventBridgeMock = new EventBridgeMock([validatePutEventParams]);
 
-            const dynamoDbMock = new DynamoDbMock(new Array(6).fill(validateParams), new Array(6).fill(expectedUpdateResults));
-
-            const promise = updateMetrics(dynamoDbMock, testValues.categoryAndValueUpdateEvent);
+            const promise = updateMetrics(event, dynamoDbMock, eventBridgeMock);
 
             return expect(promise).to.eventually.be.fulfilled;
         });
 
         it('should update metrics after multiple transactions categoryId has been updated', () => {
+            const event = updateMetricsTestValues.multipleCategoriesUpdateEvent;
 
-            const validateParams = params => {
-                expect(params.ExpressionAttributeNames["#count"]).to.be.equals("count");
-                expect(params.ExpressionAttributeNames["#sum"]).to.be.equals("sum");
+            const validateParams = generateParamsValidator(updateMetricsTestValues.multipleCategoriesUpdateQueryParams);
+            const validators = validateParams.concat([validateUpdateItemParams]);
+            const expectedDbResults = updateMetricsTestValues.multipleCategoriesUpdateResult.concat([testValues.versionUpdateResult]);
+            const dynamoDbMock = new DynamoDbMock(validators, expectedDbResults);
 
-                if(params.Key.SK.S.endsWith("#01")) {
-                    expect(params.Key.SK.S).to.be.oneOf(testValues.dbRangeKeysCat01)
-                    expect(params.ExpressionAttributeValues[":sum"].N).to.be.equals("-5");
-                    expect(params.ExpressionAttributeValues[":count"].N).to.be.equals("-2");
-                    expect(params.UpdateExpression).to.be.equals("ADD #count :count,#sum :sum ");
-                }
-
-                if(params.Key.SK.S.endsWith("#02")) {
-                    expect(params.Key.SK.S).to.be.oneOf(testValues.dbRangeKeysCat02)
-                    expect(params.ExpressionAttributeValues[":sum"].N).to.be.equals("5");
-                    expect(params.ExpressionAttributeValues[":count"].N).to.be.equals("2");
-                    expect(params.UpdateExpression).to.be.equals("ADD #count :count,#sum :sum ");
-                }
+            const validatePutEventParams = (params) => {
+                expect(params.Entries[0].Source).to.be.equal(updateMetricsTestValues.multipleCategoriesUpdateVersionEvent.Source);
+                expect(params.Entries[0].DetailType).to.be.equal(updateMetricsTestValues.multipleCategoriesUpdateVersionEvent.DetailType);
+                expect(params.Entries[0].Detail).to.be.equal(updateMetricsTestValues.multipleCategoriesUpdateVersionEvent.Detail);
             }
+            const eventBridgeMock = new EventBridgeMock([validatePutEventParams]);
 
-            const dynamoDbMock = new DynamoDbMock(new Array(6).fill(validateParams), new Array(6).fill(expectedUpdateResults));
-
-            const promise = updateMetrics(dynamoDbMock, testValues.multipleCategoriesUpdate);
+            const promise = updateMetrics(event, dynamoDbMock, eventBridgeMock);
 
             return expect(promise).to.eventually.be.fulfilled;
         });
@@ -158,7 +139,7 @@ describe('MetricsUpdateHandler unit tests', () => {
                 expect(params.KeyConditionExpression).to.be.equals("PK = :pk AND begins_with(SK, :sk)");
             };
 
-            const deleteMetricsValidators = testValues.retrieveMetricsResult.Items.map((item, index) => {
+            const deleteMetricsValidators = recalculateMetricsTestValues.retrieveMetricsResult.Items.map((item, index) => {
                 return (params) => {
                     expect(params.Key.PK).to.be.deep.equals(item.PK, `Validating PK for item ${index}: ${item.PK}`);
                     expect(params.Key.SK).to.be.deep.equals(item.SK, `Validating SK for item ${index}: ${item.SK}`);
@@ -172,7 +153,7 @@ describe('MetricsUpdateHandler unit tests', () => {
                 expect(params.KeyConditionExpression).to.be.equal("PK = :pk AND SK BETWEEN :sk_start AND :sk_end");
             };
 
-            const metricsUpdateValidators = testValues.metricUpdateItemsResults.map((item, index) => {
+            const metricsUpdateValidators = recalculateMetricsTestValues.metricUpdateItemsResults.map((item, index) => {
                 return (params) => {
                     expect(params.Item).to.be.deep.equals(item.Attributes, `Validating item ${index}`);
                 }
@@ -182,14 +163,14 @@ describe('MetricsUpdateHandler unit tests', () => {
                 .concat(deleteMetricsValidators)
                 .concat([transactionQueryValidator])
                 .concat(metricsUpdateValidators);
-            const results = [testValues.retrieveMetricsResult]
-                .concat(testValues.deleteMetricsResults)
-                .concat([testValues.queryTransactionsResult])
-                .concat(testValues.metricUpdateItemsResults);
+            const results = [recalculateMetricsTestValues.retrieveMetricsResult]
+                .concat(recalculateMetricsTestValues.deleteMetricsResults)
+                .concat([recalculateMetricsTestValues.queryTransactionsResult])
+                .concat(recalculateMetricsTestValues.metricUpdateItemsResults);
 
             const dynamoDbMock = new DynamoDbMock(validators, results);
 
-            const promise = recalculateMetrics(dynamoDbMock, testValues.recalculateMetricsEvent);
+            const promise = recalculateMetrics(dynamoDbMock, recalculateMetricsTestValues.recalculateMetricsEvent);
 
             return expect(promise).to.be.fulfilled;
         });

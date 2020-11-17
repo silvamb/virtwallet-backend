@@ -1,11 +1,13 @@
 const AWS = require('aws-sdk');
 const categoryHandler = require('./categoryHandler');
+const dynamoDB = new AWS.DynamoDB();
+const eventBridge = new AWS.EventBridge();
 
 exports.handle = async event => {
     console.log(event);
 
     try {
-        const data = await categoryHandler.handle(event, new AWS.DynamoDB());
+        const data = await categoryHandler.handle(event, dynamoDB, eventBridge);
         return new Response(data);
     } catch(err) {
         console.log(err);

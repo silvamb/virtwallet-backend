@@ -1,6 +1,7 @@
 const category = require('libs/category');
+const { createVersionForCreatedItems, publishChangeSet } = require('libs/version');
 
-exports.handle = async (event, dynamodb) => {
+exports.handle = async (event, dynamodb, eventbridge) => {
     // FIX ME change for a utility function
     const accountId = event.pathParameters ? event.pathParameters.accountId : undefined;
     const categoryId = event.pathParameters ? event.pathParameters.categoryId : undefined;
@@ -12,22 +13,28 @@ exports.handle = async (event, dynamodb) => {
         throw new Error(`Method ${event.httpMethod} for resource ${event.resource} not implemented yet`);
     }
 
-    return await operationHandler(event, dynamodb);
+    return await operationHandler(event, dynamodb, eventbridge);
 };
 
 const listCategories = (event, dynamodb) => {
-    //const clientId = event.requestContext.authorizer.claims.aud;
     const accountId = event.pathParameters.accountId;
 
     return category.list(dynamodb, accountId);
 }
 
-const createCategory = (event, dynamodb) => {
-    //const clientId = event.requestContext.authorizer.claims.aud;
+const createCategory = async (event, dynamodb, eventbridge) => {
     const accountId = event.pathParameters.accountId;
     const categoriesToAdd = JSON.parse(event.body);
 
-    return category.create(dynamodb, accountId, categoriesToAdd);
+    const createCategoryResults = await category.create(dynamodb, accountId, categoriesToAdd);
+
+    const changeSet = await createVersionForCreatedItems({dynamodb, accountId, results: createCategoryResults});
+
+    if(changeSet) {
+        await publishChangeSet(eventbridge, changeSet);
+    }
+
+    return createCategoryResults;
 }
 
 const getCategory = (event, dynamodb) => {

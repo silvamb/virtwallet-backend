@@ -36,6 +36,15 @@ const validateParams = (params) => {
     expect(params.KeyConditionExpression).to.be.equal("PK = :pk AND begins_with(SK, :sk)");
 };
 
+
+const validateUpdateVersionParams = (params) => {
+    expect(params.Key.PK.S).to.be.equal(`ACCOUNT#${testValues.ACCOUNT_ID}`);
+    expect(params.Key.SK.S).to.be.equal("METADATA");
+    expect(params.ExpressionAttributeNames["#version"]).to.be.equals("version");
+    expect(params.ExpressionAttributeValues[":version"].N).to.be.equals("1");
+    expect(params.UpdateExpression).to.be.equals("ADD #version :version ");
+};
+
 const expectedPutEventResult = {
     FailedEntryCount: 0, 
     Entries: [{
@@ -108,7 +117,7 @@ describe('TransactionClassifierHandler unit tests', () => {
                         type: "GSD",
                         balance: "4000",
                         balanceType: "Debit",
-                        includedBy: "10v21l6b17g3t27sfbe38b0i8n",
+                        includedBy: "ef471999-eb8f-5bc5-b39d-037e99f341c4",
                         version: 1,
                         keyword: "MyKeyword"
                     }
@@ -147,7 +156,7 @@ describe('TransactionClassifierHandler unit tests', () => {
                         type: "GSD",
                         balance: "4000",
                         balanceType: "Debit",
-                        includedBy: "10v21l6b17g3t27sfbe38b0i8n",
+                        includedBy: "ef471999-eb8f-5bc5-b39d-037e99f341c4",
                         version: 1,
                         keyword: "AnotherKeyword"
                     }
@@ -186,7 +195,7 @@ describe('TransactionClassifierHandler unit tests', () => {
                         type: "GSD",
                         balance: "4000",
                         balanceType: "Debit",
-                        includedBy: "10v21l6b17g3t27sfbe38b0i8n",
+                        includedBy: "ef471999-eb8f-5bc5-b39d-037e99f341c4",
                         version: 1,
                         keyword: "AnotherKeyword"
                     }
@@ -229,7 +238,7 @@ describe('TransactionClassifierHandler unit tests', () => {
                         type: "GSD",
                         balance: "4000",
                         balanceType: "Debit",
-                        includedBy: "10v21l6b17g3t27sfbe38b0i8n",
+                        includedBy: "ef471999-eb8f-5bc5-b39d-037e99f341c4",
                         version: 1,
                         keyword: "AnotherKeyword"
                     }
@@ -243,7 +252,7 @@ describe('TransactionClassifierHandler unit tests', () => {
     });
 
     describe('reclassify transaction tests', () => {
-        it('should reclassify the transactions', () => {
+        it('should reclassify the transactions with changes', () => {
             const validateTransactionQuery = params => {
                 expect(params.ExpressionAttributeValues[":pk"].S).to.be.equal("ACCOUNT#4801b837-18c0-4277-98e9-ba57130edeb3");
                 expect(params.ExpressionAttributeValues[":sk_start"].S).to.be.equal("TX#0001#2020-03-01");
@@ -276,6 +285,10 @@ describe('TransactionClassifierHandler unit tests', () => {
                     {
                         validateFunction: validateUpdateItem,
                         returnValues: testValues.updateTransactionResult
+                    },
+                    {
+                        validateFunction: validateUpdateVersionParams,
+                        returnValues: testValues.versionUpdateResult
                     }
                 ]
             };
@@ -291,10 +304,20 @@ describe('TransactionClassifierHandler unit tests', () => {
                 expect(detail.changes[0].new.categoryId).to.be.equal("01");
             };
 
+            const validatePutVersionEventParams = (params) => {
+                expect(params.Entries[0].Source).to.be.equal(testValues.expectedUpdateVersionEvent.Source);
+                expect(params.Entries[0].DetailType).to.be.equal(testValues.expectedUpdateVersionEvent.DetailType);
+                expect(params.Entries[0].Detail).to.be.equal(testValues.expectedUpdateVersionEvent.Detail);
+            }
+
             const eventBridgeMockConfig = {
                 putEvents: [
                     {
                         validateFunction: validateEvent,
+                        returnValues: expectedPutEventResult
+                    },
+                    {
+                        validateFunction: validatePutVersionEventParams,
                         returnValues: expectedPutEventResult
                     }
                 ]
@@ -306,15 +329,7 @@ describe('TransactionClassifierHandler unit tests', () => {
 
             const promise = transactionClassifierHandler.reclassifyTransactions(testValues.reclassifyTxEvent);
 
-            const expectedResult = [{
-                txId: "202003010001",
-                txDate: "2020-03-01",
-                oldCategoryId: "10",
-                newCategoryId: "01",
-                error: null
-            }];
-
-            return expect(promise).to.eventually.be.deep.equals(expectedResult);
+            return expect(promise).to.eventually.be.deep.equals(testValues.expectedUpdateResult);
         });
 
         it('should reclassify the transactions with no changes', () => {
@@ -382,6 +397,10 @@ describe('TransactionClassifierHandler unit tests', () => {
                     {
                         validateFunction: validateUpdateItem,
                         returnValues: testValues.updateTransactionResult
+                    },
+                    {
+                        validateFunction: validateUpdateVersionParams,
+                        returnValues: testValues.versionUpdateResult
                     }
                 ]
             };
@@ -397,10 +416,20 @@ describe('TransactionClassifierHandler unit tests', () => {
                 expect(detail.changes[0].new.categoryId).to.be.equal("01");
             };
 
+            const validatePutVersionEventParams = (params) => {
+                expect(params.Entries[0].Source).to.be.equal(testValues.expectedUpdateVersionEvent.Source);
+                expect(params.Entries[0].DetailType).to.be.equal(testValues.expectedUpdateVersionEvent.DetailType);
+                expect(params.Entries[0].Detail).to.be.equal(testValues.expectedUpdateVersionEvent.Detail);
+            }
+
             const eventBridgeMockConfig = {
                 putEvents: [
                     {
                         validateFunction: validateEvent,
+                        returnValues: expectedPutEventResult
+                    },
+                    {
+                        validateFunction: validatePutVersionEventParams,
                         returnValues: expectedPutEventResult
                     }
                 ]
@@ -414,15 +443,7 @@ describe('TransactionClassifierHandler unit tests', () => {
             event.queryStringParameters.filters = "auto";
             const promise = transactionClassifierHandler.reclassifyTransactions(event);
 
-            const expectedResult = [{
-                txId: "202003010001",
-                txDate: "2020-03-01",
-                oldCategoryId: "10",
-                newCategoryId: "01",
-                error: null
-            }];
-
-            return expect(promise).to.eventually.be.deep.equals(expectedResult);
+            return expect(promise).to.eventually.be.deep.equals(testValues.expectedUpdateResult);
         });
     });
 });

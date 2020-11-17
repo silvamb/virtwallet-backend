@@ -12,6 +12,7 @@ const fromItem = dynamodb.fromItem;
 const getPK = transaction.getPK;
 const getSK = transaction.getSK;
 const getSKAttr = transaction.getSKAttr;
+const { createVersionForCreatedItems, createVersionForUpdatedItems, publishChangeSet } = require('libs/version');
 
 class TransactionHandler {
     constructor(dynamodb, eventbridge) {
@@ -38,7 +39,15 @@ class TransactionHandler {
         const overwrite = !('overwrite' in parameters) || parameters.overwrite;
         const generateId = parameters.generateId;
 
-        return await createTransactions(this.dynamodb, clientId, accountId, walletId, transactionsToAdd, overwrite, generateId);
+        const createTransactionsResult = await createTransactions(this.dynamodb, clientId, accountId, walletId, transactionsToAdd, overwrite, generateId);
+
+        const changeSet = await createVersionForCreatedItems({dynamodb: this.dynamodb, accountId, results: createTransactionsResult});
+
+        if(changeSet) {
+            await publishChangeSet(this.eventbridge, changeSet);
+        }
+
+        return createTransactionsResult;
     }
 
     async list(parameters) {
@@ -98,6 +107,12 @@ class TransactionHandler {
 
         if(updateResult.success && isChangeNotifiable(updatedAttributes)) {
             await publishUpdatedTransaction(this.eventbridge, parameters, updateResult.data.Attributes);
+        }
+
+        const versionedChangeSet = await createVersionForUpdatedItems({dynamodb: this.dynamodb, accountId: parameters.accountId, results: [updateResult]});
+
+        if(versionedChangeSet) {
+            await publishChangeSet(this.eventbridge, versionedChangeSet);
         }
 
         return updateResult;

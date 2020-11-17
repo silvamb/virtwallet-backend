@@ -1,4 +1,4 @@
-exports.clientId = "10v21l6b17g3t27sfbe38b0i8n";
+exports.clientId = "ef471999-eb8f-5bc5-b39d-037e99f341c4";
 exports.accountId = "4801b837-18c0-4277-98e9-ba57130edeb3";
 exports.expectedKeyword = "some_keyword";
 exports.expectedKeywordCategory = "03";
@@ -17,7 +17,7 @@ function generateCreateExpressionRuleEvent(rulesToAdd) {
     requestContext: {
       authorizer: {
         claims: {
-          aud: exports.clientId,
+          sub: exports.clientId,
         },
       },
     },
@@ -70,7 +70,7 @@ exports.listCategoryRulesEvent = {
   requestContext: {
     authorizer: {
       claims: {
-        aud: exports.clientId,
+        sub: exports.clientId,
       },
     },
   },
@@ -91,6 +91,7 @@ exports.categoryRules = {
       keyword: { S: "Some_Keyword" },
       categoryId: { S: "01" },
       name: { S: "Category Name" },
+      versionId: 1
     },
     {
       PK: { S: "ACCOUNT#4801b837-18c0-4277-98e9-ba57130edeb3" },
@@ -102,6 +103,7 @@ exports.categoryRules = {
       name: { S: "Rule01" },
       priority: { N: "10" },
       categoryId: { S: "02" },
+      versionId: 1
     },
   ],
   ScannedCount: 2,
@@ -114,22 +116,30 @@ exports.expectedRules = {
             accountId: exports.accountId,
             priority: 100,
             categoryId: '01',
-            keyword: 'Some_Keyword'
+            keyword: 'Some_Keyword',
+            versionId: 1,
         }
     ],
     expressionRules: [
         {
             ruleType: "startsWith",
             accountId: exports.accountId,
-            priority: "10",
+            priority: 10,
             categoryId: "02",
             ruleId: "01",
             name: "Rule01",
             parameter: "aword",
+            versionId: 1,
         }
     ],
 };
 
+exports.putItemResult = {
+  ConsumedCapacity: {
+      TableName: 'virtwallet-dev',
+      CapacityUnits: 1
+  } 
+}
 
 const validExpressionRuleToUpdate = {
     old: {
@@ -152,7 +162,7 @@ exports.updateExpressionRuleEvent = {
     requestContext: {
         authorizer: {
         claims: {
-            aud: exports.clientId,
+            sub: exports.clientId,
         },
         },
     },
@@ -207,7 +217,7 @@ exports.updateKeywordRuleEvent = {
   requestContext: {
       authorizer: {
       claims: {
-          aud: exports.clientId,
+          sub: exports.clientId,
       },
       },
   },
@@ -264,7 +274,7 @@ exports.invalidUpdateKeywordRuleEvent = {
   requestContext: {
       authorizer: {
       claims: {
-          aud: exports.clientId,
+          sub: exports.clientId,
       },
       },
   },
@@ -281,7 +291,7 @@ exports.deleteExpressionRuleEvent = {
   requestContext: {
       authorizer: {
       claims: {
-          aud: exports.clientId,
+          sub: exports.clientId,
       },
       },
   },
@@ -296,7 +306,7 @@ exports.deleteExpressionRuleParams = {
           S: "RULE#EXPRESSION#05"
       }
   },
-  TableName: "virtwallet"
+  TableName: "virtwallet-dev"
 }
 
 exports.deleteRuleResult = {
@@ -315,7 +325,7 @@ exports.deleteKeywordRuleEvent = {
   requestContext: {
       authorizer: {
       claims: {
-          aud: exports.clientId,
+          sub: exports.clientId,
       },
       },
   },
@@ -330,5 +340,153 @@ exports.deleteKeywordRuleParams = {
           S: "RULE#KEYWORD#My Keyword"
       }
   },
-  TableName: "virtwallet"
+  TableName: "virtwallet-dev"
+}
+
+exports.versionUpdateResult = {
+  Attributes: {
+      version: {"N": "7"}
+  }
+}
+
+exports.DynamoDbMock = class {
+
+  constructor(paramsValidators = [], returnValues = [exports.putItemResult]) {
+      this.paramsValidators = paramsValidators.reverse();
+      this.returnValues = returnValues.reverse();
+      this.query = this.mock;
+      this.batchWriteItems = this.mock;
+      this.putItem = this.mock;
+      this.deleteItem = this.mock;
+      this.updateItem = this.mock;
+  }
+
+  mock(params) {
+      const validator = this.paramsValidators.pop();
+
+      if(!validator) {
+        throw new Error(`Unexpected call with params: ${JSON.stringify(params)}`);
+      }
+
+      validator(params);
+
+      return {
+          promise: () => Promise.resolve(this.returnValues.pop())
+      }
+  }
+}
+
+exports.expectedNewKeywordVersionEvent = {
+  Source:"virtwallet",
+  DetailType: "new account version",
+  Detail: JSON.stringify({
+      accountId: this.accountId,
+      version: 7,
+      changeSet: [{
+          type: "CategoryRule",
+          PK: `ACCOUNT#${this.accountId}`,
+          SK: `RULE#KEYWORD#${this.expectedKeyword}`,
+          op: "Add"
+      }]
+  })
+}
+
+exports.expectedNewExprRuleVersionEvent = {
+  Source:"virtwallet",
+  DetailType: "new account version",
+  Detail: JSON.stringify({
+      accountId: this.accountId,
+      version: 7,
+      changeSet: [{
+          type: "CategoryRule",
+          PK: `ACCOUNT#${this.accountId}`,
+          SK: `RULE#EXPRESSION#02`,
+          op: "Add"
+      }]
+  })
+}
+
+exports.expectedUpdateKeywordVersionEvent = {
+  Source:"virtwallet",
+  DetailType: "new account version",
+  Detail: JSON.stringify({
+      accountId: this.accountId,
+      version: 7,
+      changeSet: [{
+          type: "CategoryRule",
+          PK: `ACCOUNT#${this.accountId}`,
+          SK: `RULE#KEYWORD#MyKeyword`,
+          op: "Update"
+      }]
+  })
+}
+
+exports.expectedUpdateExprRuleVersionEvent = {
+  Source:"virtwallet",
+  DetailType: "new account version",
+  Detail: JSON.stringify({
+      accountId: this.accountId,
+      version: 7,
+      changeSet: [{
+          type: "CategoryRule",
+          PK: `ACCOUNT#${this.accountId}`,
+          SK: `RULE#EXPRESSION#05`,
+          op: "Update"
+      }]
+  })
+}
+
+exports.expectedDeleteKeywordVersionEvent = {
+  Source:"virtwallet",
+  DetailType: "new account version",
+  Detail: JSON.stringify({
+      accountId: this.accountId,
+      version: 7,
+      changeSet: [{
+          type: "CategoryRule",
+          PK: `ACCOUNT#${this.accountId}`,
+          SK: `RULE#KEYWORD#My Keyword`,
+          op: "Delete"
+      }]
+  })
+}
+
+exports.expectedDeleteExprRuleVersionEvent = {
+  Source:"virtwallet",
+  DetailType: "new account version",
+  Detail: JSON.stringify({
+      accountId: this.accountId,
+      version: 7,
+      changeSet: [{
+          type: "CategoryRule",
+          PK: `ACCOUNT#${this.accountId}`,
+          SK: `RULE#EXPRESSION#05`,
+          op: "Delete"
+      }]
+  })
+}
+
+exports.expectedPutEventResult = {
+  FailedEntryCount: 0, 
+  Entries: [{
+      EventId: "11710aed-b79e-4468-a20b-bb3c0c3b4860"
+  }]
+};
+
+exports.EventBridgeMock = class {
+  constructor(paramsValidators = [], returnValues = [exports.expectedPutEventResult]) {
+      this.paramsValidators = paramsValidators.reverse();
+      this.returnValues = returnValues.reverse();
+  }
+
+  putEvents(params){
+      const validator = this.paramsValidators.pop();
+      validator(params);
+
+      return {
+          promise: () => {
+              return Promise.resolve(this.returnValues.pop());
+          }
+      }
+  }
 }

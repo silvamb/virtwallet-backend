@@ -5,25 +5,15 @@ const expect = chai.expect;
 
 const testValues = require('./testValues');
 const categoryRuleHandler = require('../src/categoryRuleHandler');
+const DynamoDbMock = testValues.DynamoDbMock;
+const EventBridgeMock = testValues.EventBridgeMock;
 
-// Add to a test lib
-class DynamoDbMock  {
-
-    setMock(functionName, validateFunction = () => true, expectedResult = {ConsumedCapacity: 1}) {
-
-        this[functionName] = (params) => {
-            validateFunction(params);
-
-            return {
-                promise: () => {
-                    return Promise.resolve(expectedResult);
-                }
-            }
-        }
-
-        return this;
-    }
-
+const validateUpdateItemParams = (params) => {
+    expect(params.Key.PK.S).to.be.equal(`ACCOUNT#${testValues.accountId}`);
+    expect(params.Key.SK.S).to.be.equal("METADATA");
+    expect(params.ExpressionAttributeNames["#version"]).to.be.equals("version");
+    expect(params.ExpressionAttributeValues[":version"].N).to.be.equals("1");
+    expect(params.UpdateExpression).to.be.equals("ADD #version :version ");
 };
 
 describe('CategoryRuleHandler unit tests', () => {
@@ -38,10 +28,24 @@ describe('CategoryRuleHandler unit tests', () => {
                 expect(params.Item.keyword.S).to.be.equal(testValues.expectedKeyword);
             };
 
-            const dynamoDbMock = new DynamoDbMock()
-                .setMock('putItem', expectedCreationParams);
+            const validators = [expectedCreationParams, validateUpdateItemParams];
 
-            const promise = categoryRuleHandler.handle(event, dynamoDbMock);
+            const expectedDbResults = [
+                testValues.putItemResult,
+                testValues.versionUpdateResult
+            ];
+
+            const dynamoDbMock = new DynamoDbMock(validators, expectedDbResults);
+
+            const validatePutEventParams = (params) => {
+                expect(params.Entries[0].Source).to.be.equal(testValues.expectedNewKeywordVersionEvent.Source);
+                expect(params.Entries[0].DetailType).to.be.equal(testValues.expectedNewKeywordVersionEvent.DetailType);
+                expect(params.Entries[0].Detail).to.be.equal(testValues.expectedNewKeywordVersionEvent.Detail);
+              }
+              
+            const eventBridgeMock = new EventBridgeMock([validatePutEventParams, validateUpdateItemParams]);
+
+            const promise = categoryRuleHandler.handle(event, dynamoDbMock, eventBridgeMock);
             return expect(promise).to.eventually.be.fulfilled;
         });
 
@@ -65,11 +69,25 @@ describe('CategoryRuleHandler unit tests', () => {
                 expect(params.Item.priority.N).to.be.equal(String(testValues.expectedPriority));
             };
 
-            const dynamoDbMock = new DynamoDbMock()
-                .setMock('query', expectedQueryParams, testValues.countQueryResult)
-                .setMock('putItem', expectedCreationParams);
+            const validators = [expectedQueryParams, expectedCreationParams, validateUpdateItemParams];
 
-            const promise = categoryRuleHandler.handle(event, dynamoDbMock);
+            const expectedDbResults = [
+                testValues.countQueryResult,
+                testValues.putItemResult,
+                testValues.versionUpdateResult
+            ];
+
+            const dynamoDbMock = new DynamoDbMock(validators, expectedDbResults);
+
+            const validatePutEventParams = (params) => {
+                expect(params.Entries[0].Source).to.be.equal(testValues.expectedNewExprRuleVersionEvent.Source);
+                expect(params.Entries[0].DetailType).to.be.equal(testValues.expectedNewExprRuleVersionEvent.DetailType);
+                expect(params.Entries[0].Detail).to.be.equal(testValues.expectedNewExprRuleVersionEvent.Detail);
+              }
+              
+            const eventBridgeMock = new EventBridgeMock([validatePutEventParams]);
+
+            const promise = categoryRuleHandler.handle(event, dynamoDbMock, eventBridgeMock);
 
             return expect(promise).to.eventually.be.fulfilled;
         });
@@ -83,8 +101,7 @@ describe('CategoryRuleHandler unit tests', () => {
                 expect(params.KeyConditionExpression).to.be.equal("PK = :pk AND begins_with(SK, :sk)");
             };
 
-            const dynamoDbMock = new DynamoDbMock()
-                .setMock('query', expectedQueryParams, testValues.countQueryResult);
+            const dynamoDbMock = new DynamoDbMock([expectedQueryParams], [testValues.countQueryResult]);
 
             const promise = categoryRuleHandler.handle(event, dynamoDbMock);
 
@@ -102,7 +119,7 @@ describe('CategoryRuleHandler unit tests', () => {
                 expect(params.KeyConditionExpression).to.be.equal("PK = :pk AND begins_with(SK, :sk)");
             };
 
-            const dynamoDbMock = new DynamoDbMock().setMock('query', validateParams, testValues.categoryRules);
+            const dynamoDbMock = new DynamoDbMock([validateParams], [testValues.categoryRules]);
 
             const promise = categoryRuleHandler.handle(event, dynamoDbMock);
 
@@ -118,9 +135,24 @@ describe('CategoryRuleHandler unit tests', () => {
                 expect(params).to.be.deep.equals(testValues.updateExpressionRuleParams);
             }
 
-            const dynamoDbMock = new DynamoDbMock().setMock('updateItem', validateParams, testValues.expressionRuleUpdateResult);
+            const validators = [validateParams, validateUpdateItemParams];
 
-            const promise = categoryRuleHandler.handle(event, dynamoDbMock);
+            const expectedDbResults = [
+                testValues.expressionRuleUpdateResult,
+                testValues.versionUpdateResult
+            ];
+
+            const dynamoDbMock = new DynamoDbMock(validators, expectedDbResults);
+
+            const validatePutEventParams = (params) => {
+                expect(params.Entries[0].Source).to.be.equal(testValues.expectedUpdateExprRuleVersionEvent.Source);
+                expect(params.Entries[0].DetailType).to.be.equal(testValues.expectedUpdateExprRuleVersionEvent.DetailType);
+                expect(params.Entries[0].Detail).to.be.equal(testValues.expectedUpdateExprRuleVersionEvent.Detail);
+              }
+              
+            const eventBridgeMock = new EventBridgeMock([validatePutEventParams]);
+
+            const promise = categoryRuleHandler.handle(event, dynamoDbMock, eventBridgeMock);
 
             return expect(promise).to.eventually.be.fulfilled;
         });
@@ -132,9 +164,24 @@ describe('CategoryRuleHandler unit tests', () => {
                 expect(params).to.be.deep.equals(testValues.updateKeywordRuleEvent);
             }
 
-            const dynamoDbMock = new DynamoDbMock().setMock('updateItem', validateParams, testValues.keywordRuleUpdateResult);
+            const validators = [validateParams, validateUpdateItemParams];
 
-            const promise = categoryRuleHandler.handle(event, dynamoDbMock);
+            const expectedDbResults = [
+                testValues.keywordRuleUpdateResult,
+                testValues.versionUpdateResult
+            ];
+
+            const dynamoDbMock = new DynamoDbMock(validators, expectedDbResults);
+
+            const validatePutEventParams = (params) => {
+                expect(params.Entries[0].Source).to.be.equal(testValues.expectedUpdateKeywordVersionEvent.Source);
+                expect(params.Entries[0].DetailType).to.be.equal(testValues.expectedUpdateKeywordVersionEvent.DetailType);
+                expect(params.Entries[0].Detail).to.be.equal(testValues.expectedUpdateKeywordVersionEvent.Detail);
+              }
+              
+            const eventBridgeMock = new EventBridgeMock([validatePutEventParams]);
+
+            const promise = categoryRuleHandler.handle(event, dynamoDbMock, eventBridgeMock);
 
             return expect(promise).to.eventually.be.fulfilled;
         });
@@ -156,9 +203,24 @@ describe('CategoryRuleHandler unit tests', () => {
                 expect(params).to.be.deep.equals(testValues.deleteExpressionRuleParams);
             }
 
-            const dynamoDbMock = new DynamoDbMock().setMock('deleteItem', validateParams, testValues.deleteRuleResult);
+            const validators = [validateParams, validateUpdateItemParams];
 
-            const promise = categoryRuleHandler.handle(event, dynamoDbMock);
+            const expectedDbResults = [
+                testValues.deleteRuleResult,
+                testValues.versionUpdateResult
+            ];
+
+            const dynamoDbMock = new DynamoDbMock(validators, expectedDbResults);
+
+            const validatePutEventParams = (params) => {
+                expect(params.Entries[0].Source).to.be.equal(testValues.expectedDeleteExprRuleVersionEvent.Source);
+                expect(params.Entries[0].DetailType).to.be.equal(testValues.expectedDeleteExprRuleVersionEvent.DetailType);
+                expect(params.Entries[0].Detail).to.be.equal(testValues.expectedDeleteExprRuleVersionEvent.Detail);
+              }
+              
+            const eventBridgeMock = new EventBridgeMock([validatePutEventParams]);
+
+            const promise = categoryRuleHandler.handle(event, dynamoDbMock, eventBridgeMock);
 
             return expect(promise).to.eventually.be.fulfilled;
         });
@@ -170,10 +232,24 @@ describe('CategoryRuleHandler unit tests', () => {
                 expect(params).to.be.deep.equals(testValues.deleteKeywordRuleParams);
             }
 
-            const dynamoDbMock = new DynamoDbMock().setMock('deleteItem', validateParams, testValues.deleteRuleResult);
+            const validators = [validateParams, validateUpdateItemParams];
 
-            const promise = categoryRuleHandler.handle(event, dynamoDbMock);
+            const expectedDbResults = [
+                testValues.deleteRuleResult,
+                testValues.versionUpdateResult
+            ];
 
+            const dynamoDbMock = new DynamoDbMock(validators, expectedDbResults);
+
+            const validatePutEventParams = (params) => {
+                expect(params.Entries[0].Source).to.be.equal(testValues.expectedDeleteKeywordVersionEvent.Source);
+                expect(params.Entries[0].DetailType).to.be.equal(testValues.expectedDeleteKeywordVersionEvent.DetailType);
+                expect(params.Entries[0].Detail).to.be.equal(testValues.expectedDeleteKeywordVersionEvent.Detail);
+              }
+              
+            const eventBridgeMock = new EventBridgeMock([validatePutEventParams]);
+
+            const promise = categoryRuleHandler.handle(event, dynamoDbMock, eventBridgeMock);
             return expect(promise).to.eventually.be.fulfilled;
         });
     });

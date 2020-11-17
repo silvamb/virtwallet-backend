@@ -1,11 +1,13 @@
+exports.ACCOUNT_ID = "a03af6a8-e246-410a-8ca5-bfab980648cc";
+
 exports.expectedAccount = {
     Count: 1,
     Items: [
         {
-            PK: {"S": "USER#10v21l6b17g3t27sfbe38b0i8n"},
-            SK: {"S": "ACCOUNT#10v21l6b17g3t27sfbe38b0i8n#ad7d4de0-184a-4d3d-a4c8-68d5ba87b87f"},
+            PK: {"S": "USER#ef471999-eb8f-5bc5-b39d-037e99f341c4"},
+            SK: {"S": "ACCOUNT#ef471999-eb8f-5bc5-b39d-037e99f341c4#ad7d4de0-184a-4d3d-a4c8-68d5ba87b87f"},
             accountId:  {"S": "ad7d4de0-184a-4d3d-a4c8-68d5ba87b87f"},
-            ownerId:  {"S": "10v21l6b17g3t27sfbe38b0i8n"},
+            ownerId:  {"S": "ef471999-eb8f-5bc5-b39d-037e99f341c4"},
             name: {"S": "Account Name"},
             description: {"S": "Account Description"}
         }
@@ -115,7 +117,7 @@ const transactionItems = [
         balance: { "N": "4000" },
         balanceType: { "S": "Debit" },
         includedBy: { "S": "NOT_DEFINED"},
-        version: { "N": 1 },
+        versionId: { "N": 1 },
         categoryId: { "S": "04"},
         keyword: { "S": "Transaction1"},
         source: { "S": "myfile.csv"},
@@ -136,7 +138,7 @@ const transactionItems = [
         balance: { "N": "1000" },
         balanceType: { "S": "Debit" },
         includedBy: { "S": "NOT_DEFINED"},
-        version: { "N": 1 },
+        versionId: { "N": 1 },
         categoryId: { "S": "06"},
         keyword: { "S": "Transaction2"},
         source: { "S": "myfile.csv"},
@@ -149,7 +151,7 @@ const transactionItems = [
 exports.putItemParamsForTx1 = {
     Item: transactionItems[0],
     ReturnConsumedCapacity: "TOTAL",
-    TableName: 'virtwallet',
+    TableName: 'virtwallet-dev',
     ReturnValues: "ALL_OLD",
     ConditionExpression: 'attribute_not_exists(PK)'
 };
@@ -157,7 +159,7 @@ exports.putItemParamsForTx1 = {
 exports.putItemTransaction2 = {
     Item: transactionItems[1],
     ReturnConsumedCapacity: "TOTAL",
-    TableName: 'virtwallet',
+    TableName: 'virtwallet-dev',
     ReturnValues: "ALL_OLD",
     ConditionExpression: 'attribute_not_exists(PK)'
 };
@@ -179,10 +181,10 @@ exports.expectedAccountWithStartDate = {
     Count: 1,
     Items: [
         {
-            PK: {"S": "USER#10v21l6b17g3t27sfbe38b0i8n"},
-            SK: {"S": "ACCOUNT#10v21l6b17g3t27sfbe38b0i8n#ad7d4de0-184a-4d3d-a4c8-68d5ba87b87f"},
+            PK: {"S": "USER#ef471999-eb8f-5bc5-b39d-037e99f341c4"},
+            SK: {"S": "ACCOUNT#ef471999-eb8f-5bc5-b39d-037e99f341c4#ad7d4de0-184a-4d3d-a4c8-68d5ba87b87f"},
             accountId:  {"S": "ad7d4de0-184a-4d3d-a4c8-68d5ba87b87f"},
-            ownerId:  {"S": "10v21l6b17g3t27sfbe38b0i8n"},
+            ownerId:  {"S": "ef471999-eb8f-5bc5-b39d-037e99f341c4"},
             name: {"S": "Account Name"},
             description: {"S": "Account Description"},
             monthStartDateRule: {"S": JSON.stringify({
@@ -200,10 +202,10 @@ exports.expectedAccountWithManuallySetStartDate = {
     Count: 1,
     Items: [
         {
-            PK: {"S": "USER#10v21l6b17g3t27sfbe38b0i8n"},
-            SK: {"S": "ACCOUNT#10v21l6b17g3t27sfbe38b0i8n#ad7d4de0-184a-4d3d-a4c8-68d5ba87b87f"},
+            PK: {"S": "USER#ef471999-eb8f-5bc5-b39d-037e99f341c4"},
+            SK: {"S": "ACCOUNT#ef471999-eb8f-5bc5-b39d-037e99f341c4#ad7d4de0-184a-4d3d-a4c8-68d5ba87b87f"},
             accountId:  {"S": "ad7d4de0-184a-4d3d-a4c8-68d5ba87b87f"},
-            ownerId:  {"S": "10v21l6b17g3t27sfbe38b0i8n"},
+            ownerId:  {"S": "ef471999-eb8f-5bc5-b39d-037e99f341c4"},
             name: {"S": "Account Name"},
             description: {"S": "Account Description"},
             monthStartDateRule: {"S": JSON.stringify({
@@ -222,3 +224,64 @@ exports.expectedAccountWithManuallySetStartDate = {
     ],
     ScannedCount: 2
 };
+
+exports.EventBridgeMock = class {
+    constructor(paramsValidators = [], returnValues = []) {
+        this.paramsValidators = paramsValidators.reverse();
+        this.returnValues = returnValues.reverse();
+    }
+
+    putEvents(params){
+        const validator = this.paramsValidators.pop();
+        validator(params);
+
+        return {
+            promise: () => {
+                const returnValue = this.returnValues.pop() || exports.expectedPutEventResult;
+
+                return Promise.resolve(returnValue);
+            }
+        }
+    }
+}
+
+exports.versionUpdateResult = {
+    Attributes: {
+        accountId: this.ACCOUNT_ID,
+        version: {"N": "7"}
+    }
+}
+
+exports.createSingleTransactionUpdateVersionEvent = {
+    Source:"virtwallet",
+    DetailType: "new account version",
+    Detail: JSON.stringify({
+        accountId: this.ACCOUNT_ID,
+        version: 7,
+        changeSet: this.singleTransactionsEvent.transactions.map(transaction => {
+            return  {
+                type: "Transaction",
+                PK: `ACCOUNT#${this.ACCOUNT_ID}`,
+                SK: `TX#0001#${transaction.txDate}#${transaction.txId}`,
+                op: "Add"
+            }
+        })
+    })
+}
+
+exports.createMultipleTransactionUpdateVersionEvent = {
+    Source:"virtwallet",
+    DetailType: "new account version",
+    Detail: JSON.stringify({
+        accountId: this.ACCOUNT_ID,
+        version: 7,
+        changeSet: this.multiTransactionsEvent.transactions.map(transaction => {
+            return  {
+                type: "Transaction",
+                PK: `ACCOUNT#${this.ACCOUNT_ID}`,
+                SK: `TX#0001#${transaction.txDate}#${transaction.txId}`,
+                op: "Add"
+            }
+        })
+    })
+}

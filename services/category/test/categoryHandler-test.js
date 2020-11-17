@@ -4,347 +4,152 @@ chai.use(chaiAsPromised);
 const expect = chai.expect;
 
 const categoryHandler = require("../src/categoryHandler");
+const testValues = require('./testValues');
+const DynamoDbMock = testValues.DynamoDbMock;
+const EventBridgeMock = testValues.EventBridgeMock;
 
-// Add to a test lib
-class DynamoDbMock {
-    setMock(
-        functionName,
-        validateFunction = () => true,
-        expectedResult = { ConsumedCapacity: 1 }
-    ) {
-        this[functionName] = (params) => {
-            validateFunction(params);
+const validateCategoryQueryParams = (params) => {
+    expect(params.ExpressionAttributeValues[":pk"].S).to.be.equals(`ACCOUNT#${testValues.ACCOUNT_ID}`);
+    expect(params.ExpressionAttributeValues[":sk"].S).to.be.equals("CATEGORY#");
+    expect(params.KeyConditionExpression).to.be.equals("PK = :pk AND begins_with(SK, :sk)");
+};
 
-            return {
-                promise: () => {
-                    return Promise.resolve(expectedResult);
-                },
-            };
-        };
-
-        return this;
-    }
-}
+const validateUpdateItemParams = (params) => {
+    expect(params.Key.PK.S).to.be.equal(`ACCOUNT#${testValues.ACCOUNT_ID}`);
+    expect(params.Key.SK.S).to.be.equal("METADATA");
+    expect(params.ExpressionAttributeNames["#version"]).to.be.equals("version");
+    expect(params.ExpressionAttributeValues[":version"].N).to.be.equals("1");
+    expect(params.UpdateExpression).to.be.equals("ADD #version :version ");
+};
 
 describe("CategoryHandler unit tests", () => {
     describe("create category tests", () => {
         it("should create a single category with success", () => {
-            const expectedCategoryName = "Category Name";
-            const expectedCategoryDesc = "Category Description";
 
-            const categoriesToAdd = [
-                {
-                    name: expectedCategoryName,
-                    description: expectedCategoryDesc,
-                },
-            ];
-
-            const clientId = "10v21l6b17g3t27sfbe38b0i8n";
-            const accountId = "4801b837-18c0-4277-98e9-ba57130edeb3";
-
-            const event = {
-                resource: "/account/{accountId}/category",
-                httpMethod: "POST",
-                pathParameters: { accountId: accountId },
-                body: JSON.stringify(categoriesToAdd),
-                requestContext: {
-                    authorizer: {
-                        claims: {
-                            aud: clientId,
-                        },
-                    },
-                },
-            };
-
-            const expectedQueryParams = (params) => {
-                expect(params.ExpressionAttributeValues[":pk"].S).to.be.equal(
-                    "ACCOUNT#4801b837-18c0-4277-98e9-ba57130edeb3"
-                );
-                expect(params.ExpressionAttributeValues[":sk"].S).to.be.equal(
-                    "CATEGORY#"
-                );
-                expect(params.KeyConditionExpression).to.be.equal(
-                    "PK = :pk AND begins_with(SK, :sk)"
-                );
-            };
-
-            const expectedQueryResult = {
-                Count: 0,
-                ScannedCount: 0,
-            };
-
-            const expectedCreationParams = (params) => {
+            const validatePutItemParams = (params) => {
                 expect(params.Item.categoryId.S).to.be.equal("01");
-                expect(params.Item.accountId.S).to.be.equal(accountId);
-                expect(params.Item.name.S).to.be.equal(expectedCategoryName);
-                expect(params.Item.description.S).to.be.equal(
-                    expectedCategoryDesc
-                );
+                expect(params.Item.accountId.S).to.be.equal(testValues.ACCOUNT_ID);
+                expect(params.Item.name.S).to.be.equal("Category Name");
+                expect(params.Item.description.S).to.be.equal("Category Description");
             };
 
-            const dynamoDbMock = new DynamoDbMock()
-                .setMock("query", expectedQueryParams, expectedQueryResult)
-                .setMock("putItem", expectedCreationParams);
+            const validatePutEventParams = (params) => {
+                expect(params.Entries[0].Source).to.be.equal(testValues.expectedVersionEvent.Source);
+                expect(params.Entries[0].DetailType).to.be.equal(testValues.expectedVersionEvent.DetailType);
+                expect(params.Entries[0].Detail).to.be.equal(testValues.expectedVersionEvent.Detail);
+            }
 
-            const promise = categoryHandler.handle(event, dynamoDbMock);
-            return expect(promise).to.eventually.be.fulfilled;
+            const validators = [validateCategoryQueryParams, validatePutItemParams, validateUpdateItemParams];
+            const results = [testValues.emptyQueryResult, testValues.putItemResult, testValues.versionUpdateResult];
+
+            const dynamoDbMock = new DynamoDbMock(validators, results);
+            const eventBridgeMock = new EventBridgeMock([validatePutEventParams], [testValues.expectedPutEventResult]);
+
+            const promise = categoryHandler.handle(testValues.createCategoryEvent, dynamoDbMock, eventBridgeMock);
+
+            return expect(promise).to.eventually.be.deep.equals(testValues.expectedSingleCategoryResult);
         });
 
         it("should create 2 categories with success", () => {
-            const expectedCategoryName = "Category Name";
-            const expectedCategoryDesc = "Category Description";
 
-            const categoriesToAdd = [
-                {
-                    name: expectedCategoryName,
-                    description: expectedCategoryDesc,
-                },
-                {
-                    name: expectedCategoryName,
-                    description: expectedCategoryDesc,
-                },
-            ];
-
-            const clientId = "10v21l6b17g3t27sfbe38b0i8n";
-            const accountId = "4801b837-18c0-4277-98e9-ba57130edeb3";
-
-            const event = {
-                resource: "/account/{accountId}/category",
-                httpMethod: "POST",
-                pathParameters: { accountId: accountId },
-                body: JSON.stringify(categoriesToAdd),
-                requestContext: {
-                    authorizer: {
-                        claims: {
-                            aud: clientId,
-                        },
-                    },
-                },
+            const validatePutItem01Params = (params) => {
+                expect(params.Item.categoryId.S).to.be.equal("01");
+                expect(params.Item.accountId.S).to.be.equal(testValues.ACCOUNT_ID);
+                expect(params.Item.name.S).to.be.equal("Category 1 Name");
+                expect(params.Item.description.S).to.be.equal("Category 1 Description");
             };
 
-            const expectedQueryParams = (params) => {
-                expect(params.ExpressionAttributeValues[":pk"].S).to.be.equal(
-                    "ACCOUNT#4801b837-18c0-4277-98e9-ba57130edeb3"
-                );
-                expect(params.ExpressionAttributeValues[":sk"].S).to.be.equal(
-                    "CATEGORY#"
-                );
-                expect(params.KeyConditionExpression).to.be.equal(
-                    "PK = :pk AND begins_with(SK, :sk)"
-                );
+            const validatePutItem02Params = (params) => {
+                expect(params.Item.categoryId.S).to.be.equal("02");
+                expect(params.Item.accountId.S).to.be.equal(testValues.ACCOUNT_ID);
+                expect(params.Item.name.S).to.be.equal("Category 2 Name");
+                expect(params.Item.description.S).to.be.equal("Category 2 Description");
             };
 
-            const expectedQueryResult = {
-                Count: 0,
-                ScannedCount: 0,
-            };
+            const validatePutEventParams = (params) => {
+                expect(params.Entries[0].Source).to.be.equal(testValues.expectedVersionEventMultipleCat.Source);
+                expect(params.Entries[0].DetailType).to.be.equal(testValues.expectedVersionEventMultipleCat.DetailType);
+                expect(params.Entries[0].Detail).to.be.equal(testValues.expectedVersionEventMultipleCat.Detail);
+            }
 
-            const expectedCreationParams = (params) => {
-                expect(params.Item.categoryId.S).to.be.oneOf(["01", "02"]);
-                expect(params.Item.accountId.S).to.be.equal(accountId);
-                expect(params.Item.name.S).to.be.equal(expectedCategoryName);
-                expect(params.Item.description.S).to.be.equal(
-                    expectedCategoryDesc
-                );
-            };
+            const validators = [validateCategoryQueryParams, validatePutItem01Params, validatePutItem02Params, validateUpdateItemParams];
+            const results = [testValues.emptyQueryResult, testValues.putItemResult, testValues.putItemResult, testValues.versionUpdateResult];
 
-            const dynamoDbMock = new DynamoDbMock()
-                .setMock("query", expectedQueryParams, expectedQueryResult)
-                .setMock("putItem", expectedCreationParams, {
-                    ConsumedCapacity: 2,
-                });
+            const dynamoDbMock = new DynamoDbMock(validators, results);
+            const eventBridgeMock = new EventBridgeMock([validatePutEventParams], [testValues.expectedPutEventResult]);
 
-            const promise = categoryHandler.handle(event, dynamoDbMock);
-            return expect(promise).to.eventually.be.fulfilled;
+            const promise = categoryHandler.handle(testValues.createTwoCategoriesEvent, dynamoDbMock, eventBridgeMock);
+
+            return expect(promise).to.eventually.be.deep.equals(testValues.expectedMultipleCategoryResult);
         });
     });
 
     describe("list categories test", () => {
         it("should list categories from an user", () => {
-            const clientId = "10v21l6b17g3t27sfbe38b0i8n";
-            const accountId = "4801b837-18c0-4277-98e9-ba57130edeb3";
 
-            const event = {
-                resource: "/account/{accountId}/category",
-                httpMethod: "GET",
-                pathParameters: { accountId: accountId },
-                body: null,
-                requestContext: {
-                    authorizer: {
-                        claims: {
-                            aud: clientId,
-                        },
-                    },
-                },
+            const validateQueryParams = (params) => {
+                expect(params.ExpressionAttributeValues[":pk"].S).to.be.equal("ACCOUNT#4801b837-18c0-4277-98e9-ba57130edeb3");
+                expect(params.ExpressionAttributeValues[":sk"].S).to.be.equal("CATEGORY#");
+                expect(params.KeyConditionExpression).to.be.equal("PK = :pk AND begins_with(SK, :sk)");
             };
 
-            const validateParams = (params) => {
-                expect(params.ExpressionAttributeValues[":pk"].S).to.be.equal(
-                    "ACCOUNT#4801b837-18c0-4277-98e9-ba57130edeb3"
-                );
-                expect(params.ExpressionAttributeValues[":sk"].S).to.be.equal(
-                    "CATEGORY#"
-                );
-                expect(params.KeyConditionExpression).to.be.equal(
-                    "PK = :pk AND begins_with(SK, :sk)"
-                );
-            };
+            const validators = [validateQueryParams];
+            const results = [testValues.queryResult];
 
-            const expectedResult = {
-                Count: 1,
-                Items: [
-                    {
-                        PK: {
-                            S: "ACCOUNT#4801b837-18c0-4277-98e9-ba57130edeb3",
-                        },
-                        SK: { S: "CATEGORY#01" },
-                        accountId: {
-                            S: "4801b837-18c0-4277-98e9-ba57130edeb3",
-                        },
-                        categoryId: { S: "01" },
-                        name: { S: "Category Name" },
-                        description: { S: "Category Description" },
-                    },
-                ],
-                ScannedCount: 1,
-            };
+            const dynamoDbMock = new DynamoDbMock(validators, results);
 
-            const dynamoDbMock = new DynamoDbMock().setMock(
-                "query",
-                validateParams,
-                expectedResult
-            );
+            const promise = categoryHandler.handle(testValues.listCategoriesEvent, dynamoDbMock);
 
-            const promise = categoryHandler.handle(event, dynamoDbMock);
-
-            const expectedList = {
-                accountId: accountId,
-                categoryId: "01",
-                name: "Category Name",
-                description: "Category Description",
-            };
-
-            return expect(promise).to.eventually.deep.include(expectedList);
+            return expect(promise).to.eventually.be.deep.equals(testValues.expectedList);
         });
     });
 
     describe("get category test", () => {
         it("should get an category from an user and account", () => {
-            const clientId = "10v21l6b17g3t27sfbe38b0i8n";
-            const accountId = "4801b837-18c0-4277-98e9-ba57130edeb3";
-            const categoryId = "05";
-
-            const event = {
-                resource: "/account/{accountId}/category/{categoryId}",
-                httpMethod: "GET",
-                pathParameters: {
-                    accountId: accountId,
-                    categoryId: categoryId,
-                },
-                body: null,
-                requestContext: {
-                    authorizer: {
-                        claims: {
-                            aud: clientId,
-                        },
-                    },
-                },
-            };
-
-            const validateParams = (params) => {
+            const validateQueryParams = (params) => {
                 expect(params.ExpressionAttributeValues[":pk"].S).to.be.equal(
-                    `ACCOUNT#${accountId}`
+                    `ACCOUNT#${testValues.ACCOUNT_ID}`
                 );
                 expect(params.ExpressionAttributeValues[":sk"].S).to.be.equal(
-                    `CATEGORY#${categoryId}`
+                    `CATEGORY#${testValues.CATEGORY_ID}`
                 );
                 expect(params.KeyConditionExpression).to.be.equal(
                     "PK = :pk AND SK =:sk"
                 );
             };
 
-            const expectedResult = {
-                Count: 1,
-                Items: [
-                    {
-                        PK: { S: `ACCOUNT#${accountId}` },
-                        SK: { S: `CATEGORY#${categoryId}` },
-                        accountId: { S: accountId },
-                        categoryId: { S: categoryId },
-                        name: { S: "Category Name" },
-                        description: { S: "Category Description" },
-                    },
-                ],
-                ScannedCount: 1,
-            };
+            const validators = [validateQueryParams];
+            const results = [testValues.queryResult];
 
-            const dynamoDbMock = new DynamoDbMock().setMock(
-                "query",
-                validateParams,
-                expectedResult
-            );
+            const dynamoDbMock = new DynamoDbMock(validators, results);
 
-            const promise = categoryHandler.handle(event, dynamoDbMock);
+            const promise = categoryHandler.handle(testValues.getCategoryEvent, dynamoDbMock);
 
-            const expectedCategory = {
-                accountId: accountId,
-                categoryId: categoryId,
-                name: "Category Name",
-                description: "Category Description",
-            };
-
-            return expect(promise).to.eventually.become(expectedCategory);
+            return expect(promise).to.eventually.become(testValues.expectedList[0]);
         });
 
         it("should return error when category id not found", () => {
-            const clientId = "10v21l6b17g3t27sfbe38b0i8n";
-            const accountId = "4801b837-18c0-4277-98e9-ba57130edeb3";
-            const categoryId = "05";
 
-            const event = {
-                resource: "/account/{accountId}/category/{categoryId}",
-                httpMethod: "GET",
-                pathParameters: {
-                    accountId: accountId,
-                    categoryId: categoryId,
-                },
-                body: null,
-                requestContext: {
-                    authorizer: {
-                        claims: {
-                            aud: clientId,
-                        },
-                    },
-                },
-            };
-
-            const validateParams = (params) => {
+            const validateQueryParams = (params) => {
                 expect(params.ExpressionAttributeValues[":pk"].S).to.be.equal(
-                    `ACCOUNT#${accountId}`
+                    `ACCOUNT#${testValues.ACCOUNT_ID}`
                 );
                 expect(params.ExpressionAttributeValues[":sk"].S).to.be.equal(
-                    `CATEGORY#${categoryId}`
+                    `CATEGORY#${testValues.CATEGORY_ID}`
                 );
                 expect(params.KeyConditionExpression).to.be.equal(
                     "PK = :pk AND SK =:sk"
                 );
             };
 
-            const expectedResult = {
-                Count: 0,
-                Items: [],
-                ScannedCount: 0,
-            };
+            const validators = [validateQueryParams];
+            const results = [testValues.emptyQueryResult];
 
-            const dynamoDbMock = new DynamoDbMock().setMock(
-                "query",
-                validateParams,
-                expectedResult
-            );
+            const dynamoDbMock = new DynamoDbMock(validators, results);
 
-            const promise = categoryHandler.handle(event, dynamoDbMock);
+            const promise = categoryHandler.handle(testValues.getCategoryEvent, dynamoDbMock);
 
-            return expect(promise).to.eventually.be.rejectedWith(Error, `Category with id ${categoryId} not found`);
+            return expect(promise).to.eventually.be.rejectedWith(Error, `Category with id ${testValues.CATEGORY_ID} not found`);
         });
     });
 });

@@ -25,45 +25,45 @@ class DynamoDbMock  {
 
 };
 
-class EventBridgeMock {
-    constructor(expectedTransactions) {
-        this.expectedTransactions = expectedTransactions;
-    }
+const EventBridgeMock = values.EventBridgeMock;
 
-    putEvents(params){
-        expect(params.Entries[0].Source).to.be.equal("virtwallet");
-        expect(params.Entries[0].DetailType).to.be.equal("transactions created");
-        const detail = JSON.parse(params.Entries[0].Detail);
-        expect(detail).to.be.deep.equals(this.expectedTransactions);
+const validateUpdateVersionParams = (params) => {
+    expect(params.Key.PK.S).to.be.equal(`ACCOUNT#${values.ACCOUNT_ID}`);
+    expect(params.Key.SK.S).to.be.equal("METADATA");
+    expect(params.ExpressionAttributeNames["#version"]).to.be.equals("version");
+    expect(params.ExpressionAttributeValues[":version"].N).to.be.equals("1");
+    expect(params.UpdateExpression).to.be.equals("ADD #version :version ");
+};
 
-        return {
-            promise: () => {
-                return Promise.resolve(values.expectedPutEventResult);
-            }
-        }
-    }
-}
 
 describe('TransactionLoaderHandler unit tests', () => {
     it('should process single transaction with success', () => {
         const validateFunction = (params) => {
-            for(let attr in values.putItemParamsForTx1.Item) {
-                for(let value in attr) {
-                    const expectedValue = values.putItemParamsForTx1.Item[attr][value];
-                    expect(params.Item[attr][value]).to.be.equal(expectedValue);
-                }
-            }
             expect(params.ReturnConsumedCapacity).to.be.equals(values.putItemParamsForTx1.ReturnConsumedCapacity);
             expect(params.TableName).to.be.equals(values.putItemParamsForTx1.TableName);
             expect(params.ReturnValues).to.be.equals(values.putItemParamsForTx1.ReturnValues);
             expect(params.ConditionExpression).to.be.equals(values.putItemParamsForTx1.ConditionExpression);
         }
-        console.log(">>>>>>>>>> values.expectedAccount", values.expectedAccount);
+
         const dynamoDbMock = new DynamoDbMock()
             .setMock('query', {expectedResult: Object.assign({}, values.expectedAccount)})
-            .setMock('putItem', { validateFunction });
+            .setMock('putItem', { validateFunction })
+            .setMock('updateItem', { validateFunction: validateUpdateVersionParams, expectedResult: values.versionUpdateResult });
 
-        const eventBridgeMock = new EventBridgeMock(values.singleTransactionsCreatedEvent);
+        const validateEvent = (params) => {
+            expect(params.Entries[0].Source).to.be.equal("virtwallet");
+            expect(params.Entries[0].DetailType).to.be.equal("transactions created");
+            const detail = JSON.parse(params.Entries[0].Detail);
+            expect(detail).to.be.deep.equals(values.singleTransactionsCreatedEvent);
+        }
+
+        const validatePutVersionEventParams = (params) => {
+            expect(params.Entries[0].Source).to.be.equal(values.createSingleTransactionUpdateVersionEvent.Source);
+            expect(params.Entries[0].DetailType).to.be.equal(values.createSingleTransactionUpdateVersionEvent.DetailType);
+            expect(params.Entries[0].Detail).to.be.equal(values.createSingleTransactionUpdateVersionEvent.Detail);
+        };
+
+        const eventBridgeMock = new EventBridgeMock([validateEvent, validatePutVersionEventParams]);
         const promise = processEvent(dynamoDbMock, eventBridgeMock, values.singleTransactionsEvent);
 
         return expect(promise).to.eventually.be.fulfilled;
@@ -72,9 +72,23 @@ describe('TransactionLoaderHandler unit tests', () => {
     it('should process two transactions with success', () => {
         const dynamoDbMock = new DynamoDbMock()
             .setMock('query', {expectedResult: Object.assign({}, values.expectedAccount)})
-            .setMock('putItem', {});
-        console.log(">>>>>>>>>> values.expectedAccount", values.expectedAccount);
-        const eventBridgeMock = new EventBridgeMock(values.multiTransactionsCreatedEvent);
+            .setMock('putItem', {})
+            .setMock('updateItem', { validateFunction: validateUpdateVersionParams, expectedResult: values.versionUpdateResult });
+
+        const validateEvent = (params) => {
+            expect(params.Entries[0].Source).to.be.equal("virtwallet");
+            expect(params.Entries[0].DetailType).to.be.equal("transactions created");
+            const detail = JSON.parse(params.Entries[0].Detail);
+            expect(detail).to.be.deep.equals(values.multiTransactionsCreatedEvent);
+        }
+
+        const validatePutVersionEventParams = (params) => {
+            expect(params.Entries[0].Source).to.be.equal(values.createMultipleTransactionUpdateVersionEvent.Source);
+            expect(params.Entries[0].DetailType).to.be.equal(values.createMultipleTransactionUpdateVersionEvent.DetailType);
+            expect(params.Entries[0].Detail).to.be.equal(values.createMultipleTransactionUpdateVersionEvent.Detail);
+        };
+
+        const eventBridgeMock = new EventBridgeMock([validateEvent, validatePutVersionEventParams]);
         const promise = processEvent(dynamoDbMock, eventBridgeMock, values.multiTransactionsEvent);
         return expect(promise).to.eventually.be.fulfilled;
     });
