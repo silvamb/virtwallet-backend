@@ -12,7 +12,8 @@
     "chai": "^4.2.0",
     "chai-as-promised": "^7.1.1",
     "mocha": "^7.0.0",
-    "serverless-iam-roles-per-function": "^2.0.2"
+    "serverless-iam-roles-per-function": "^2.0.2",
+    "lodash": ">=4.17.19"
   },
   "scripts": {
     "test": "mocha ./test/*-test.js"

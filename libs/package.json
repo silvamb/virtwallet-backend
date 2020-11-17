@@ -6,7 +6,7 @@
     "author": "Matheus Silva <crush.comp04@gmail.com>",
     "license": "GPLv3",
     "dependencies": {
-        "moment": "^2.27.0",
+        "moment": "^2.29.1",
         "uuid": "^3.3.3"
     }
 }
