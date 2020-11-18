@@ -31,6 +31,10 @@ describe("CategoryHandler unit tests", () => {
                 expect(params.Item.accountId.S).to.be.equal(testValues.ACCOUNT_ID);
                 expect(params.Item.name.S).to.be.equal("Category Name");
                 expect(params.Item.description.S).to.be.equal("Category Description");
+                expect(params.Item.budget.S).to.be.equal(JSON.stringify({
+                    type: "MONTHLY",
+                    value: 250
+                }));
             };
 
             const validatePutEventParams = (params) => {
