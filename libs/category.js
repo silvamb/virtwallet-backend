@@ -8,7 +8,8 @@ const attrTypeMap = new Map([
     ["categoryId", dynamodb.StringAttributeType],
     ["name", dynamodb.StringAttributeType],
     ["description", dynamodb.StringAttributeType],
-    ["versionId", dynamodb.NumberAttributeType]
+    ["versionId", dynamodb.NumberAttributeType],
+    ["budget", dynamodb.JSONAttributeType]
 ]);
 
 const getPK = (accountId) => `ACCOUNT#${accountId}`;
@@ -33,6 +34,7 @@ class Category {
         this.name = "";
         this.description = "";
         this.versionId = 1;
+        this.budget = new Budget();
     }
 
     getHash() {
@@ -90,6 +92,15 @@ class CategoryList {
     }
 }
 
+const BUDGET_TYPES = ["MONTHLY", "BIMONTHLY", "YEARLY"];
+
+class Budget {
+    constructor({type = BUDGET_TYPES[0], value = 0.0} = {}) {
+        this.type = type
+        this.value = value;
+    }
+}
+
 /**
  * Creates the provided categories and persists them.
  * 
@@ -113,6 +124,7 @@ exports.create = async(dynamodb, accountId, categoriesToAdd) =>  {
         category.categoryId = String(nextCategoryId + index).padStart(2, '0');
         category.name = categoryDetails.name;
         category.description = categoryDetails.description;
+        category.budget = new Budget(categoryDetails.budget || {});
 
         return category;
     });

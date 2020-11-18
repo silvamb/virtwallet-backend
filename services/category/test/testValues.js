@@ -11,6 +11,10 @@ exports.createCategoryEvent = {
         {
             name: "Category Name",
             description: "Category Description",
+            budget: {
+                type: "MONTHLY",
+                value: 250
+            }
         },
     ]),
     requestContext: {
@@ -109,7 +113,8 @@ exports.queryResult = {
             categoryId: { S: "01" },
             name: { S: "Category Name" },
             description: { S: "Category Description" },
-            versionId: 1
+            versionId: 1,
+            budget: {S: JSON.stringify({type: "MONTHLY", value: 65.8})}
         },
     ],
     ScannedCount: 1,
@@ -120,6 +125,10 @@ exports.expectedList = [{
     categoryId: "01",
     name: "Category Name",
     description: "Category Description",
+    budget: {
+        type: "MONTHLY",
+        value: 65.8
+    },
     versionId: 1
 }]
 
@@ -129,7 +138,11 @@ exports.expectedSingleCategoryResult = [{
         categoryId: "01",
         name: "Category Name",
         description: "Category Description",
-        versionId: 1
+        versionId: 1,
+        budget: {
+            type: "MONTHLY",
+            value: 250
+        },
     }
 }]
 
@@ -140,7 +153,11 @@ exports.expectedMultipleCategoryResult = [
             categoryId: "01",
             name: "Category 1 Name",
             description: "Category 1 Description",
-            versionId: 1
+            versionId: 1,
+            budget: {
+                type: "MONTHLY",
+                value: 0
+            },
         }
     },
     {
@@ -149,7 +166,11 @@ exports.expectedMultipleCategoryResult = [
             categoryId: "02",
             name: "Category 2 Name",
             description: "Category 2 Description",
-            versionId: 1
+            versionId: 1,
+            budget: {
+                type: "MONTHLY",
+                value: 0
+            },
         }
     }
 ]
