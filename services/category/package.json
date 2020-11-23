@@ -13,7 +13,7 @@
     "chai-as-promised": "^7.1.1",
     "lodash": ">=4.17.19",
     "mocha": "^7.2.0",
-    "serverless-iam-roles-per-function": "^2.0.2"
+    "serverless-iam-roles-per-function": "^3.0.0-d84bffd"
   },
   "scripts": {
     "test": "mocha ./test/*-test.js"
