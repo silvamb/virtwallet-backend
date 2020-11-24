@@ -18,7 +18,10 @@ const attrTypeMap = new Map([
     ["versionId", dynamodb.NumberAttributeType]
 ]);
 
-
+const updatableAttributes = new Set([
+    "name",
+    "description",
+]);
 
 const getPK = (accountId) => `ACCOUNT#${accountId}`;
 const getSK = (accountId, walletId) => {
@@ -40,9 +43,9 @@ const isTypeValid = (type) => {
 
 class Wallet {
 
-    constructor() {
-        this.accountId = "";
-        this.walletId = "";
+    constructor(accountId = "", walletId = "") {
+        this.accountId = accountId;
+        this.walletId = walletId;
         this.ownerId = "";
         this.name = "";
         this.description = "";
@@ -76,9 +79,7 @@ exports.create = async (dynamodb, clientId, accountId, walletDetails) => {
     const walletId = String(nextWalletId).padStart(4, '0');
     console.log(`Creating new wallet ${walletId} for user ${clientId} and account ${accountId}.`);
 
-    const wallet = new Wallet();
-    wallet.walletId = walletId;
-    wallet.accountId = accountId;
+    const wallet = new Wallet(accountId, walletId);
     wallet.ownerId = clientId;
     wallet.name = walletDetails.name;
     wallet.description = walletDetails.description;
@@ -131,6 +132,40 @@ exports.retrieve = async (dynamodb, accountId, walletId) => {
     const wallet = fromItem(queryData.Items[0], new Wallet()); 
 
     return wallet;
+}
+
+exports.update = async (dynamodb, walletToUpdate, attributesToUpdate) => {
+    if(!dynamodb || !walletToUpdate || !attributesToUpdate) {
+        throw new Error("Missing mandatory parameters");
+    }
+
+    const dbClient = new DynamoDb(dynamodb);
+
+    if(!walletToUpdate instanceof Wallet) {
+        throw new Error("Invalid format, expecting a Wallet"); 
+    }
+
+    for(let attribute in attributesToUpdate) {
+        if(!walletToUpdate.hasOwnProperty(attribute)) {
+            throw new Error(`'${attribute}' is not a valid Wallet attribute`);
+        }
+
+        if(!updatableAttributes.has(attribute)) {
+            throw new Error(`Wallet attribute '${attribute}' is not updatable`);
+        }
+    }
+
+    const updateItemResult = await dbClient.updateItem(walletToUpdate, attributesToUpdate);
+
+    if(updateItemResult.success) {
+        return {
+            data: fromItem(updateItemResult.data.Attributes, new Wallet())
+        }
+    } else {
+        return {
+            err: updateItemResult.data
+        }
+    }
 }
 
 exports.Wallet = Wallet;

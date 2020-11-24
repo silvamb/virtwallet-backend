@@ -50,6 +50,33 @@ exports.getWalletsEvent = {
     }
 };
 
+exports.updateWalletEventBody = {
+    old: {
+        "name": "oldName",
+        "description": "oldDesc"
+    },
+    new: {
+        "name": "newName",
+        "description": "newDesc"
+    }
+};
+
+exports.updateWalletEvent = {
+    httpMethod: 'PUT',
+    requestContext: {
+        authorizer: {
+            claims: {
+                sub: this.CLIENT_ID
+            }
+        }
+    },
+    pathParameters: {
+        accountId: this.ACCOUNT_ID,
+        walletId: this.WALLET_ID
+    },
+    body: JSON.stringify(this.updateWalletEventBody),
+};
+
 exports.expectedWalletCountQueryResult = {
     Count: 1,
     ScannedCount: 1
@@ -80,11 +107,29 @@ exports.expectedListWalletsResult = {
     ScannedCount: 1
 };
 
+exports.updateWalletResult = {
+    Attributes: {
+        PK: {
+            S: `ACCOUNT#${this.ACCOUNT_ID}`,
+        },
+        SK: { S: `WALLET#${this.ACCOUNT_ID}#${this.WALLET_ID}` },
+        accountId: {
+            S: this.ACCOUNT_ID,
+        },
+        walletId: { S: this.WALLET_ID },
+        ownerId:  {S: this.CLIENT_ID},
+        type: {S: "checking_account"},
+        name: { S: "newName" },
+        description: { S: "newDesc" },
+        versionId: { N: "2" },
+    }
+};
+
 exports.versionUpdateResult = {
     Attributes: {
         version: {"N": "7"}
     }
-  }
+}
 
 exports.DynamoDbMock = class {
 
@@ -124,6 +169,21 @@ exports.expectedNewWalletVersionEvent = {
             PK: `ACCOUNT#${this.ACCOUNT_ID}`,
             SK: `WALLET#${this.ACCOUNT_ID}#${this.WALLET_ID}`,
             op: "Add"
+        }]
+    })
+}
+
+exports.expectedUpdateWalletVersionEvent = {
+    Source:"virtwallet",
+    DetailType: "new account version",
+    Detail: JSON.stringify({
+        accountId: this.ACCOUNT_ID,
+        version: 7,
+        changeSet: [{
+            type: "Wallet",
+            PK: `ACCOUNT#${this.ACCOUNT_ID}`,
+            SK: `WALLET#${this.ACCOUNT_ID}#${this.WALLET_ID}`,
+            op: "Update"
         }]
     })
 }
