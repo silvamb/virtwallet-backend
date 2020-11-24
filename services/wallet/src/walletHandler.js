@@ -1,5 +1,5 @@
 const wallet = require('libs/wallet');
-const { createVersionForCreatedItems, publishChangeSet } = require('libs/version');
+const { createVersionForCreatedItems, createVersionForUpdatedItems, publishChangeSet } = require('libs/version');
 
 class WalletHandler {
 
@@ -49,7 +49,54 @@ class WalletHandler {
     }
 
     async update(event) {
-        throw new Error("Operation WalletHandler.update not implemented yet");
+        const accountId = event.pathParameters.accountId;
+        const walletId = event.pathParameters.walletId;
+
+        if(!accountId || !walletId || walletId === "") {
+            throw new Error("Invalid path parameters");
+        }
+
+        const changeSet = JSON.parse(event.body);
+        const oldAttributes = changeSet.old;
+        const attributesToUpdate = changeSet.new;
+
+        if(!oldAttributes || !attributesToUpdate) {
+            throw new Error("Event body invalid for Wallet update");
+        }
+
+        console.log("Updating wallet [", walletId, "] attributes from", oldAttributes, "to", attributesToUpdate);
+        const walletToUpdate = new wallet.Wallet(accountId, walletId);
+
+        for(let attribute in oldAttributes) {
+            if(walletToUpdate.hasOwnProperty(attribute) 
+                && (oldAttributes[attribute] === null || typeof(walletToUpdate[attribute]) === typeof(oldAttributes[attribute]))) {
+                walletToUpdate[attribute] = oldAttributes[attribute];
+            } else {
+                throw new Error(`Old attribute '${attribute}' is not a valid Wallet attribute`);
+            }
+        }
+
+        // Check if some update attribute doesn't have the old value
+        for(let updatedAttribute in attributesToUpdate) {
+            if(!oldAttributes.hasOwnProperty(updatedAttribute)) {
+                throw new Error(`Missing old value for attribute '${updatedAttribute}'`);
+            }
+
+            if(!walletToUpdate.hasOwnProperty(updatedAttribute)
+                || typeof(walletToUpdate[updatedAttribute]) !== typeof(attributesToUpdate[updatedAttribute])) {
+                throw new Error(`New attribute '${updatedAttribute}' is not a valid Wallet attribute`);
+            }
+        }
+
+        const updateWalletResult = await wallet.update(this.dynamodb, walletToUpdate, attributesToUpdate);
+
+        const versionedChangeSet = await createVersionForUpdatedItems({dynamodb: this.dynamodb, accountId, results: [updateWalletResult]});
+
+        if(versionedChangeSet) {
+            await publishChangeSet(this.eventbridge, versionedChangeSet);
+        }
+
+        return updateWalletResult;
     }
 
     async delete(event) {

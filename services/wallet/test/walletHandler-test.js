@@ -15,7 +15,7 @@ const validateVersionUpdateItemParams = (params) => {
     expect(params.Key.SK.S).to.be.equal("METADATA");
     expect(params.ExpressionAttributeNames["#version"]).to.be.equals("version");
     expect(params.ExpressionAttributeValues[":version"].N).to.be.equals("1");
-    expect(params.UpdateExpression).to.be.equals("ADD #version :version ");
+    expect(params.UpdateExpression).to.be.equals("ADD #version :version");
 };
 
 describe('WalletHandler unit tests', () => {
@@ -91,5 +91,50 @@ describe('WalletHandler unit tests', () => {
         const promise = walletHandler.get(testValues.getWalletsEvent);
 
         return expect(promise).to.eventually.become(testValues.expectedWallet);
+    });
+
+    describe("update wallet tests", () => {
+        it("should update a wallet name and description", () => {
+            const event = testValues.updateWalletEvent;
+
+            const validateParams = params => {
+                expect(params.Key.PK.S).to.equals(`ACCOUNT#${testValues.ACCOUNT_ID}`);
+                expect(params.Key.SK.S).to.equals(`WALLET#${testValues.ACCOUNT_ID}#${testValues.WALLET_ID}`);
+                expect(params.ExpressionAttributeNames["#name"]).to.be.equals("name");
+                expect(params.ExpressionAttributeNames["#description"]).to.be.equals("description");
+                expect(params.ExpressionAttributeNames["#versionId"]).to.be.equals("versionId");
+                expect(params.ExpressionAttributeValues[":name"].S).to.be.equals("newName");
+                expect(params.ExpressionAttributeValues[":description"].S).to.be.equals("newDesc");
+                expect(params.ExpressionAttributeValues[":old_name"].S).to.be.equals("oldName");
+                expect(params.ExpressionAttributeValues[":old_description"].S).to.be.equals("oldDesc");
+                expect(params.ExpressionAttributeValues[":versionId"].N).to.be.equals("1");
+                expect(params.UpdateExpression).to.be.equals("ADD #versionId :versionId SET #name = :name,#description = :description");
+                expect(params.ConditionExpression).to.be.equals("#name = :old_name AND #description = :old_description");
+            }
+
+            const validators = [validateParams, validateVersionUpdateItemParams];
+
+            const expectedDbResults = [
+                testValues.updateWalletResult,
+                testValues.versionUpdateResult
+            ];
+
+            const dynamoDbMock = new DynamoDbMock(validators, expectedDbResults);
+
+            const validatePutEventParams = (params) => {
+                expect(params.Entries[0].Source).to.be.equal(testValues.expectedUpdateWalletVersionEvent.Source);
+                expect(params.Entries[0].DetailType).to.be.equal(testValues.expectedUpdateWalletVersionEvent.DetailType);
+                expect(params.Entries[0].Detail).to.be.equal(testValues.expectedUpdateWalletVersionEvent.Detail);
+              }
+              
+            const eventBridgeMock = new EventBridgeMock([validatePutEventParams]);
+
+            const walletHandler = new WalletHandler(dynamoDbMock, eventBridgeMock);
+            const promise = walletHandler.update(testValues.updateWalletEvent);
+
+            promise.then(data => console.log(data));
+
+            return expect(promise).to.eventually.haveOwnProperty('data');
+        });
     });
 });
