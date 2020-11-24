@@ -1,5 +1,7 @@
 service: virtwallet-data-exporter
 
+frameworkVersion: 1.83.1
+
 provider:
   name: aws
   runtime: nodejs12.x
