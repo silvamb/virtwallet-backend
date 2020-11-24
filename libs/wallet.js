@@ -15,7 +15,8 @@ const attrTypeMap = new Map([
     ["name", dynamodb.StringAttributeType],
     ["description", dynamodb.StringAttributeType],
     ["type", dynamodb.StringAttributeType],
-    ["versionId", dynamodb.NumberAttributeType]
+    ["versionId", dynamodb.NumberAttributeType],
+    ["balance", dynamodb.NumberAttributeType]
 ]);
 
 
@@ -48,6 +49,7 @@ class Wallet {
         this.description = "";
         this.type = "";
         this.versionId = 1;
+        this.balance = 0;
     }
 
     getHash() {
@@ -83,6 +85,7 @@ exports.create = async (dynamodb, clientId, accountId, walletDetails) => {
     wallet.name = walletDetails.name;
     wallet.description = walletDetails.description;
     wallet.type = walletDetails.type;
+    wallet.balance = walletDetails.balance || 0;
 
     console.log(`New wallet created: ${JSON.stringify(wallet)}`);
 

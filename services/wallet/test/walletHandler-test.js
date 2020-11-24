@@ -15,7 +15,7 @@ const validateVersionUpdateItemParams = (params) => {
     expect(params.Key.SK.S).to.be.equal("METADATA");
     expect(params.ExpressionAttributeNames["#version"]).to.be.equals("version");
     expect(params.ExpressionAttributeValues[":version"].N).to.be.equals("1");
-    expect(params.UpdateExpression).to.be.equals("ADD #version :version ");
+    expect(params.UpdateExpression).to.be.equals("ADD #version :version");
 };
 
 describe('WalletHandler unit tests', () => {

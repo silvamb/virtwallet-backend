@@ -17,7 +17,8 @@ exports.newWalletEvent = {
     body: JSON.stringify({
         name: "Wallet Name",
         description: "Wallet Description",
-        type: "checking_account"
+        type: "checking_account",
+        balance: 1234
     })
 };
 
@@ -74,7 +75,8 @@ exports.expectedListWalletsResult = {
             type: {"S": "checking_account"},
             name: {"S": "Wallet Name"},
             description: {"S": "Wallet Description"},
-            versionId: {"N": "1"}
+            versionId: {"N": "1"},
+            balance: {"N": "1234"}
         }
     ],
     ScannedCount: 1
@@ -160,5 +162,6 @@ exports.expectedWallet = {
     type: "checking_account",
     name: "Wallet Name",
     description: "Wallet Description",
-    versionId: 1
+    versionId: 1,
+    balance: 1234
 };
