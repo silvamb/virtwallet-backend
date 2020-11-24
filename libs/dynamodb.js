@@ -27,11 +27,26 @@ class AttributeType {
     }
 }
 
+const serializeVersionedJSON = (obj) => {
+    const versionId = obj.versionId || 1;
+    return JSON.stringify([versionId, obj]);
+}
+
+const deserializeVersionedJSON = (objStr) => {
+    const [versionId, obj] = JSON.parse(objStr);
+    if(!obj.versionId) {
+        obj.versionId = versionId;
+    }
+
+    return obj;
+}
+
 const StringAttributeType = new AttributeType("S");
 const NumberAttributeType = new AttributeType("N", String, Number);
 const IntegerAttributeType = new AttributeType("N", String, Number);
 const StringSetAttributeType = new AttributeType("SS", Array.from);
 const JSONAttributeType = new AttributeType("S", JSON.stringify, JSON.parse);
+const VersionedJSONAttributeType = new AttributeType("S", serializeVersionedJSON, deserializeVersionedJSON);
 
 function getKey(obj) {
     return {
@@ -64,6 +79,7 @@ function fromItem(item, obj) {
             obj[attrName] = attrType.getAttribute(item[attrName]);
         } else {
             console.log(`Attribute ${attrName} not found in item, ignoring it`);
+            obj[attrName] = undefined;
         }
     }
 
@@ -537,6 +553,7 @@ class UpdateExpressionBuilder {
         this.itemToUpdate = itemToUpdate;
         this.addExpressions = [];
         this.setExpressions = [];
+        this.removeExpressions = [];
         this.exprAttributeNames = {};
         this.exprAttributeValues = {};
         this.conditionExpressions = [];
@@ -548,6 +565,12 @@ class UpdateExpressionBuilder {
         this.exprAttributeNames[`#${attribute}`] = attribute;
 
         this.addExpressions.push(`#${attribute} :${attribute}`);
+
+        return this;
+    }
+
+    remove(attribute) {
+        this.removeExpressions.push(`#${attribute}`);
 
         return this;
     }
@@ -565,13 +588,32 @@ class UpdateExpressionBuilder {
     updateTo(attrsToUpdate) {
         const attrTypeMap = this.itemToUpdate.getAttrTypeMap();
         let oldValue;
+        // TODO Review this function, is too complex
         for(let attribute in attrsToUpdate) {
             if(this.itemToUpdate.hasOwnProperty(attribute)) {
-                this.set(attribute, attrsToUpdate[attribute]);
-
                 oldValue = this.itemToUpdate[attribute];
-                this.exprAttributeValues[`:old_${attribute}`] = attrTypeMap.get(attribute).toAttribute(oldValue);
-                this.conditionExpressions.push(`#${attribute} = :old_${attribute}`);
+
+                if(oldValue === null) {
+                    this.conditionExpressions.push(`attribute_not_exists(#${attribute})`);
+                } else if(attrTypeMap.get(attribute) === VersionedJSONAttributeType) {
+                    const oldVersion = oldValue.versionId || 1;
+                    this.exprAttributeValues[`:old_${attribute}`] = StringAttributeType.toAttribute(`[${oldVersion},`);
+                    this.conditionExpressions.push(`begins_with(#${attribute}, :old_${attribute})`);
+                } else {
+                    this.exprAttributeValues[`:old_${attribute}`] = attrTypeMap.get(attribute).toAttribute(oldValue);
+                    this.conditionExpressions.push(`#${attribute} = :old_${attribute}`);
+                }
+
+                if(attrsToUpdate[attribute] === null) {
+                    this.remove(attribute);
+                } else {
+                    if(attrTypeMap.get(attribute) === VersionedJSONAttributeType) {
+                        const oldVersion = oldValue !== null ? oldValue.versionId || 1 : 0;
+                        attrsToUpdate[attribute].versionId = oldVersion + 1;
+                    }
+
+                    this.set(attribute, attrsToUpdate[attribute]);
+                }
             }
         }
 
@@ -579,8 +621,9 @@ class UpdateExpressionBuilder {
     }
 
     build() {
-        const addExpression = this.addExpressions.length > 0 ? `ADD ${this.addExpressions.join()}` : "";
-        const setExpression = this.setExpressions.length > 0 ? `SET ${this.setExpressions.join()}` : ""
+        const addExpression = this.addExpressions.length > 0 ? `ADD ${this.addExpressions.join()}` : null;
+        const setExpression = this.setExpressions.length > 0 ? `SET ${this.setExpressions.join()}` : null;
+        const removeExpression = this.removeExpressions.length > 0 ? `REMOVE ${this.removeExpressions.join()}` : null;
 
         const updateExpression = {
             ExpressionAttributeNames: this.exprAttributeNames,
@@ -588,7 +631,7 @@ class UpdateExpressionBuilder {
             Key: getKey(this.itemToUpdate),
             ReturnValues: "ALL_NEW", 
             TableName: TABLE_NAME, 
-            UpdateExpression: `${addExpression} ${setExpression}`
+            UpdateExpression: [addExpression, setExpression, removeExpression].filter(e => e !== null).join(" ")
         }
 
         if(this.conditionExpressions.length > 0) {
@@ -620,5 +663,6 @@ exports.NumberAttributeType = NumberAttributeType;
 exports.StringSetAttributeType = StringSetAttributeType;
 exports.IntegerAttributeType = IntegerAttributeType;
 exports.JSONAttributeType = JSONAttributeType;
+exports.VersionedJSONAttributeType = VersionedJSONAttributeType;
 exports.PK = "PK";
 exports.SK = "SK";

@@ -80,6 +80,64 @@ exports.getCategoryEvent = {
     },
 };
 
+exports.updateCategoryNameEventBody = {
+    old: {
+        "name": "oldName",
+        "description": "oldDesc"
+    },
+    new: {
+        "name": "newName",
+        "description": "newDesc"
+    }
+};
+
+exports.updateCategoryNameEvent = {
+    resource: "/account/{accountId}/category/{categoryId}",
+    httpMethod: "PUT",
+    pathParameters: {
+        accountId: this.ACCOUNT_ID,
+        categoryId: "05",
+    },
+    body: JSON.stringify(this.updateCategoryNameEventBody),
+    requestContext: {
+        authorizer: {
+            claims: {
+                sub: this.CLIENT_ID,
+            },
+        },
+    },
+};
+
+exports.updateCategoryBudgetEventBody = {
+    old: {
+        budget: null
+    },
+    new: {
+        budget: {
+            type: "MONTHLY",
+            value: 65,
+            versionId: 1
+        },
+    }
+};
+
+exports.updateCategoryBudgetEvent = {
+    resource: "/account/{accountId}/category/{categoryId}",
+    httpMethod: "PUT",
+    pathParameters: {
+        accountId: this.ACCOUNT_ID,
+        categoryId: "06",
+    },
+    body: JSON.stringify(this.updateCategoryBudgetEventBody),
+    requestContext: {
+        authorizer: {
+            claims: {
+                sub: this.CLIENT_ID,
+            },
+        },
+    },
+};
+
 exports.emptyQueryResult = {
     Count: 0,
     ScannedCount: 0,
@@ -113,8 +171,8 @@ exports.queryResult = {
             categoryId: { S: "01" },
             name: { S: "Category Name" },
             description: { S: "Category Description" },
-            versionId: 1,
-            budget: {S: JSON.stringify({type: "MONTHLY", value: 65.8})}
+            versionId: { N: "1" },
+            budget: {S: JSON.stringify([1,{type: "MONTHLY", value: 65.8}])}
         },
     ],
     ScannedCount: 1,
@@ -127,24 +185,28 @@ exports.expectedList = [{
     description: "Category Description",
     budget: {
         type: "MONTHLY",
-        value: 65.8
+        value: 65.8,
+        versionId: 1
     },
     versionId: 1
 }]
 
-exports.expectedSingleCategoryResult = [{
-    data: {
-        accountId: this.ACCOUNT_ID,
-        categoryId: "01",
-        name: "Category Name",
-        description: "Category Description",
-        versionId: 1,
-        budget: {
-            type: "MONTHLY",
-            value: 250
-        },
+exports.expectedSingleCategoryResult = [
+    {
+        data: {
+            accountId: this.ACCOUNT_ID,
+            categoryId: "01",
+            name: "Category Name",
+            description: "Category Description",
+            versionId: 1,
+            budget: {
+                type: "MONTHLY",
+                value: 250,
+                versionId: 1
+            },
+        }
     }
-}]
+]
 
 exports.expectedMultipleCategoryResult = [
     {
@@ -156,7 +218,8 @@ exports.expectedMultipleCategoryResult = [
             versionId: 1,
             budget: {
                 type: "MONTHLY",
-                value: 0
+                value: 0,
+                versionId: 1
             },
         }
     },
@@ -169,11 +232,45 @@ exports.expectedMultipleCategoryResult = [
             versionId: 1,
             budget: {
                 type: "MONTHLY",
-                value: 0
+                value: 0,
+                versionId: 1
             },
         }
     }
 ]
+
+exports.expressionCategoryNameUpdateResult = {
+    "Attributes": {
+        PK: {
+            S: `ACCOUNT#${this.ACCOUNT_ID}`,
+        },
+        SK: { S: "CATEGORY#05" },
+        accountId: {
+            S: this.ACCOUNT_ID,
+        },
+        categoryId: { S: "05" },
+        name: { S: "newName" },
+        description: { S: "newDesc" },
+        versionId: 2
+    }
+};
+
+exports.expressionCategoryBudgetUpdateResult = {
+    "Attributes": {
+        PK: {
+            S: `ACCOUNT#${this.ACCOUNT_ID}`,
+        },
+        SK: { S: "CATEGORY#06" },
+        accountId: {
+            S: this.ACCOUNT_ID,
+        },
+        categoryId: { S: "06" },
+        name: { S: "Category Name" },
+        description: { S: "Category Description" },
+        versionId: 2,
+        budget: {S: JSON.stringify([1,this.updateCategoryBudgetEventBody.new.budget])}
+    }
+};
 
 exports.versionUpdateResult = {
     Attributes: {
@@ -220,6 +317,36 @@ exports.expectedVersionEventMultipleCat = {
     })
 }
 
+exports.expectedUpdatedCategoryNameEvent = {
+    Source:"virtwallet",
+    DetailType: "new account version",
+    Detail: JSON.stringify({
+        accountId: this.ACCOUNT_ID,
+        version: 5,
+        changeSet: [{
+            type: "Category",
+            PK: `ACCOUNT#${this.ACCOUNT_ID}`,
+            SK: `CATEGORY#05`,
+            op: "Update"
+        }]
+    })
+}
+
+exports.expectedUpdatedCategoryBudgetEvent = {
+    Source:"virtwallet",
+    DetailType: "new account version",
+    Detail: JSON.stringify({
+        accountId: this.ACCOUNT_ID,
+        version: 5,
+        changeSet: [{
+            type: "Category",
+            PK: `ACCOUNT#${this.ACCOUNT_ID}`,
+            SK: `CATEGORY#06`,
+            op: "Update"
+        }]
+    })
+}
+
 exports.expectedPutEventResult = {
     FailedEntryCount: 0, 
     Entries: [{
@@ -261,7 +388,8 @@ exports.EventBridgeMock = class {
 
         return {
             promise: () => {
-                return Promise.resolve(this.returnValues.pop());
+                const returnValue = this.returnValues.pop() || exports.expectedPutEventResult;
+                return Promise.resolve(returnValue);
             }
         }
     }

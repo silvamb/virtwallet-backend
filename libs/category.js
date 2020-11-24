@@ -9,7 +9,13 @@ const attrTypeMap = new Map([
     ["name", dynamodb.StringAttributeType],
     ["description", dynamodb.StringAttributeType],
     ["versionId", dynamodb.NumberAttributeType],
-    ["budget", dynamodb.JSONAttributeType]
+    ["budget", dynamodb.VersionedJSONAttributeType]
+]);
+
+const updatableAttributes = new Set([
+    "name",
+    "description",
+    "budget"
 ]);
 
 const getPK = (accountId) => `ACCOUNT#${accountId}`;
@@ -98,6 +104,7 @@ class Budget {
     constructor({type = BUDGET_TYPES[0], value = 0.0} = {}) {
         this.type = type
         this.value = value;
+        this.versionId = 1;
     }
 }
 
@@ -170,6 +177,40 @@ exports.list = async(dynamodb, accountId) => {
     console.log(`Categories retrieved for account [${accountId}]:`, categories);
 
     return categories;
+}
+
+exports.update = async (dynamodb, categoryToUpdate, attributesToUpdate) => {
+    if(!dynamodb || !categoryToUpdate || !attributesToUpdate) {
+        throw new Error("Missing mandatory parameters");
+    }
+
+    const dbClient = new DynamoDb(dynamodb);
+
+    if(!categoryToUpdate instanceof Category) {
+        throw new Error("Invalid format, expecting a Category"); 
+    }
+
+    for(let attribute in attributesToUpdate) {
+        if(!categoryToUpdate.hasOwnProperty(attribute)) {
+            throw new Error(`'${attribute}' is not a valid Category attribute`);
+        }
+
+        if(!updatableAttributes.has(attribute)) {
+            throw new Error(`Category attribute '${attribute}' is not updatable`);
+        }
+    }
+
+    const updateItemResult = await dbClient.updateItem(categoryToUpdate, attributesToUpdate);
+
+    if(updateItemResult.success) {
+        return {
+            data: fromItem(updateItemResult.data.Attributes, new Category())
+        }
+    } else {
+        return {
+            err: updateItemResult.data
+        }
+    }
 }
 
 exports.Category = Category;
