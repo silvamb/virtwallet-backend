@@ -78,6 +78,31 @@ exports.updateWalletEvent = {
     body: JSON.stringify(this.updateWalletEventBody),
 };
 
+exports.updateWalletBalanceEventBody = {
+    old: {
+        "balance": 0,
+    },
+    new: {
+        "balance": 1234,
+    }
+};
+
+exports.updateWalletBalanceEvent = {
+    httpMethod: 'PUT',
+    requestContext: {
+        authorizer: {
+            claims: {
+                sub: this.CLIENT_ID
+            }
+        }
+    },
+    pathParameters: {
+        accountId: this.ACCOUNT_ID,
+        walletId: this.WALLET_ID
+    },
+    body: JSON.stringify(this.updateWalletBalanceEventBody),
+};
+
 exports.expectedWalletCountQueryResult = {
     Count: 1,
     ScannedCount: 1
@@ -124,6 +149,26 @@ exports.updateWalletResult = {
         name: { S: "newName" },
         description: { S: "newDesc" },
         versionId: { N: "2" },
+        balance: {N: "0"}
+    }
+};
+
+exports.updateWalletBalanceResult = {
+    Attributes: {
+        PK: {
+            S: `ACCOUNT#${this.ACCOUNT_ID}`,
+        },
+        SK: { S: `WALLET#${this.ACCOUNT_ID}#${this.WALLET_ID}` },
+        accountId: {
+            S: this.ACCOUNT_ID,
+        },
+        walletId: { S: this.WALLET_ID },
+        ownerId:  {S: this.CLIENT_ID},
+        type: {S: "checking_account"},
+        name: { S: "newName" },
+        description: { S: "newDesc" },
+        versionId: { N: "2" },
+        balance: {N: "1234"}
     }
 };
 

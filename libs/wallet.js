@@ -22,6 +22,7 @@ const attrTypeMap = new Map([
 const updatableAttributes = new Set([
     "name",
     "description",
+    "balance"
 ]);
 
 const getPK = (accountId) => `ACCOUNT#${accountId}`;
