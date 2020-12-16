@@ -21,25 +21,12 @@ const expectedPutEventResult = {
 const DynamoDbMock = testValues.DynamoDbMock;
 const EventBridgeMock = testValues.EventBridgeMock;
 
-const validateTransactionUpdatedEvent = (params) => {
-    expect(params.Entries[0].Source).to.be.equal("virtwallet");
-    expect(params.Entries[0].DetailType).to.be.equal("transaction updated");
-    const detail = JSON.parse(params.Entries[0].Detail);
-    expect(detail).to.be.deep.equals(this.parameters);
-
-    return {
-        promise: () => {
-            return Promise.resolve(expectedPutEventResult);
-        }
-    }
-}
-
 const validateUpdateVersionParams = (params) => {
     expect(params.Key.PK.S).to.be.equal(`ACCOUNT#${testValues.ACCOUNT_ID}`);
     expect(params.Key.SK.S).to.be.equal("METADATA");
     expect(params.ExpressionAttributeNames["#version"]).to.be.equals("version");
     expect(params.ExpressionAttributeValues[":version"].N).to.be.equals("1");
-    expect(params.UpdateExpression).to.be.equals("ADD #version :version ");
+    expect(params.UpdateExpression).to.be.equals("ADD #version :version");
 };
 
 describe('TransactionHandler unit tests', () => {
@@ -230,16 +217,16 @@ describe('TransactionHandler unit tests', () => {
 
             const dynamoDbMock = new DynamoDbMock(dbParamsValidators, dbResults);
 
-            const validateTransactionUpdatedEventParams = (params) => {
+            const validatePutVersionEventParams = (params) => {
                 expect(params.Entries[0].Source).to.be.equal(updateTransactionsValues.notifiableAttrToUpdateTxUpdateVersionEvent.Source);
                 expect(params.Entries[0].DetailType).to.be.equal(updateTransactionsValues.notifiableAttrToUpdateTxUpdateVersionEvent.DetailType);
-                expect(params.Entries[0].Detail).to.be.equal(updateTransactionsValues.notifiableAttrToUpdateTxUpdateVersionEvent.Detail);
+                expect(params.Entries[0].Detail).to.be.deep.equal(updateTransactionsValues.notifiableAttrToUpdateTxUpdateVersionEvent.Detail);
             }
 
-            const validatePutVersionEventParams = (params) => {
+            const validateTransactionUpdatedEventParams = (params) => {
                 expect(params.Entries[0].Source).to.be.equal(updateTransactionsValues.transactionUpdatedEvent.Source);
                 expect(params.Entries[0].DetailType).to.be.equal(updateTransactionsValues.transactionUpdatedEvent.DetailType);
-                expect(params.Entries[0].Detail).to.be.equal(updateTransactionsValues.transactionUpdatedEvent.Detail);
+                expect(params.Entries[0].Detail).to.be.deep.equal(updateTransactionsValues.transactionUpdatedEvent.Detail);
             }
 
             const eventBridgeMock = new EventBridgeMock([validateTransactionUpdatedEventParams, validatePutVersionEventParams]);

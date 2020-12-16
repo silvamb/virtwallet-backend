@@ -165,8 +165,8 @@ exports.transactionUpdatedEvent = {
         referenceMonth: "2020-02",
         txId: "202002030001",
         old: {
-            categoryId: "01",
             value: 1.5,
+            categoryId: "04",
         },
         new: {
             value: 2.9

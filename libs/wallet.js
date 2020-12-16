@@ -1,7 +1,9 @@
 const dynamodb = require("./dynamodb");
 const DynamoDb = dynamodb.DynamoDb;
 const QueryBuilder = dynamodb.QueryBuilder;
+const UpdateExpressionBuilder = dynamodb.UpdateExpressionBuilder;
 const fromItem = dynamodb.fromItem;
+
 
 const CHECKING_ACCOUNT = "checking_account";
 const CREDIT_CARD = "credit_card";
@@ -15,12 +17,14 @@ const attrTypeMap = new Map([
     ["name", dynamodb.StringAttributeType],
     ["description", dynamodb.StringAttributeType],
     ["type", dynamodb.StringAttributeType],
-    ["versionId", dynamodb.NumberAttributeType]
+    ["versionId", dynamodb.NumberAttributeType],
+    ["balance", dynamodb.NumberAttributeType]
 ]);
 
 const updatableAttributes = new Set([
     "name",
     "description",
+    "balance"
 ]);
 
 const getPK = (accountId) => `ACCOUNT#${accountId}`;
@@ -51,6 +55,7 @@ class Wallet {
         this.description = "";
         this.type = "";
         this.versionId = 1;
+        this.balance = 0;
     }
 
     getHash() {
@@ -84,6 +89,7 @@ exports.create = async (dynamodb, clientId, accountId, walletDetails) => {
     wallet.name = walletDetails.name;
     wallet.description = walletDetails.description;
     wallet.type = walletDetails.type;
+    wallet.balance = walletDetails.balance || 0;
 
     console.log(`New wallet created: ${JSON.stringify(wallet)}`);
 
@@ -160,6 +166,24 @@ exports.update = async (dynamodb, walletToUpdate, attributesToUpdate) => {
     if(updateItemResult.success) {
         return {
             data: fromItem(updateItemResult.data.Attributes, new Wallet())
+        }
+    } else {
+        return {
+            err: updateItemResult.data
+        }
+    }
+}
+
+exports.updateBalance = async (dynamodb, wallet, balance) => {
+    console.log("Updating balance for account:", wallet.accountId,", wallet:", wallet.walletId, ", balance:", balance);
+    const dbClient = new DynamoDb(dynamodb);
+    
+    const updateWalletParams = new UpdateExpressionBuilder(wallet).addTo("balance", balance).addTo("versionId", 1).build();
+    const [ updateItemResult ] = await dbClient.updateItems([updateWalletParams]);
+
+    if(updateItemResult.success) {
+        return {
+            data: fromItem(updateItemResult.data.Attributes, wallet)
         }
     } else {
         return {

@@ -95,8 +95,6 @@ describe('WalletHandler unit tests', () => {
 
     describe("update wallet tests", () => {
         it("should update a wallet name and description", () => {
-            const event = testValues.updateWalletEvent;
-
             const validateParams = params => {
                 expect(params.Key.PK.S).to.equals(`ACCOUNT#${testValues.ACCOUNT_ID}`);
                 expect(params.Key.SK.S).to.equals(`WALLET#${testValues.ACCOUNT_ID}#${testValues.WALLET_ID}`);
@@ -131,6 +129,44 @@ describe('WalletHandler unit tests', () => {
 
             const walletHandler = new WalletHandler(dynamoDbMock, eventBridgeMock);
             const promise = walletHandler.update(testValues.updateWalletEvent);
+
+            promise.then(data => console.log(data));
+
+            return expect(promise).to.eventually.haveOwnProperty('data');
+        });
+
+        it("should update a wallet balance", () => {
+            const validateParams = params => {
+                expect(params.Key.PK.S).to.equals(`ACCOUNT#${testValues.ACCOUNT_ID}`);
+                expect(params.Key.SK.S).to.equals(`WALLET#${testValues.ACCOUNT_ID}#${testValues.WALLET_ID}`);
+                expect(params.ExpressionAttributeNames["#balance"]).to.be.equals("balance");
+                expect(params.ExpressionAttributeNames["#versionId"]).to.be.equals("versionId");
+                expect(params.ExpressionAttributeValues[":balance"].N).to.be.equals("1234");
+                expect(params.ExpressionAttributeValues[":old_balance"].N).to.be.equals("0");
+                expect(params.ExpressionAttributeValues[":versionId"].N).to.be.equals("1");
+                expect(params.UpdateExpression).to.be.equals("ADD #versionId :versionId SET #balance = :balance");
+                expect(params.ConditionExpression).to.be.equals("#balance = :old_balance");
+            }
+
+            const validators = [validateParams, validateVersionUpdateItemParams];
+
+            const expectedDbResults = [
+                testValues.updateWalletBalanceResult,
+                testValues.versionUpdateResult
+            ];
+
+            const dynamoDbMock = new DynamoDbMock(validators, expectedDbResults);
+
+            const validatePutEventParams = (params) => {
+                expect(params.Entries[0].Source).to.be.equal(testValues.expectedUpdateWalletVersionEvent.Source);
+                expect(params.Entries[0].DetailType).to.be.equal(testValues.expectedUpdateWalletVersionEvent.DetailType);
+                expect(params.Entries[0].Detail).to.be.equal(testValues.expectedUpdateWalletVersionEvent.Detail);
+              }
+              
+            const eventBridgeMock = new EventBridgeMock([validatePutEventParams]);
+
+            const walletHandler = new WalletHandler(dynamoDbMock, eventBridgeMock);
+            const promise = walletHandler.update(testValues.updateWalletBalanceEvent);
 
             promise.then(data => console.log(data));
 

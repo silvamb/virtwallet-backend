@@ -105,8 +105,8 @@ class TransactionHandler {
 
         console.log("Transaction updated, result:", updateResult);
 
-        if(updateResult.success && isChangeNotifiable(updatedAttributes)) {
-            await publishUpdatedTransaction(this.eventbridge, parameters, updateResult.data.Attributes);
+        if(!updateResult.err && isChangeNotifiable(updatedAttributes)) {
+            await publishUpdatedTransaction(this.eventbridge, parameters, updateResult.data);
         }
 
         const versionedChangeSet = await createVersionForUpdatedItems({dynamodb: this.dynamodb, accountId: parameters.accountId, results: [updateResult]});
@@ -140,8 +140,7 @@ class TransactionHandler {
     }
 }
 
-async function publishUpdatedTransaction(eventbridge, parameters, oldAttributes) {
-    const oldTransaction = fromItem(oldAttributes, new Transaction());
+async function publishUpdatedTransaction(eventbridge, parameters, oldTransaction) {
     const old = {
         value: oldTransaction.value,
         categoryId: oldTransaction.categoryId,
@@ -172,13 +171,6 @@ async function publishUpdatedTransaction(eventbridge, parameters, oldAttributes)
 
     const putEventResult = await eventbridge.putEvents(params).promise();
     console.log("Publishing [transaction updated] event result", putEventResult);
-}
-
-function order(first, second) {
-    const firstTx = first.dt + first.description;
-    const secondTx = second.dt + second.description;
-
-    return firstTx.localeCompare(secondTx);
 }
 
 exports.TransactionHandler = TransactionHandler;
