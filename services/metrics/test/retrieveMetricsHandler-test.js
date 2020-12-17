@@ -52,6 +52,21 @@ describe('RetrieveMetricsHandler unit tests', () => {
 
     });
 
+    it('should retrieve all metrics for an account and granularity', () => {
+        const queryParamsValidator = (params) => {
+            expect(params.ExpressionAttributeValues[":pk"].S).to.be.equals(`ACCOUNT#${testValues.ACCOUNT_ID}`);
+            expect(params.ExpressionAttributeValues[":sk"].S).to.be.equals("METRIC#0001#Y");
+            expect(params.KeyConditionExpression).to.be.equals("PK = :pk AND begins_with(SK, :sk)");
+        };
+
+        const dynamoDbMock = new DynamoDbMock(queryParamsValidator, [testValues.singleResult]);
+
+        const promise = retrieveMetrics(dynamoDbMock, testValues.getMetricsWithWalletAndGranularityEvent);
+
+        return expect(promise).to.eventually.be.deep.equals([testValues.expectedMetric]);
+
+    });
+
     it('should retrieve all metrics for an account, wallet and date', () => {
         const queryParamsValidator = (params) => {
             expect(params.ExpressionAttributeValues[":pk"].S).to.be.equals(`ACCOUNT#${testValues.ACCOUNT_ID}`);

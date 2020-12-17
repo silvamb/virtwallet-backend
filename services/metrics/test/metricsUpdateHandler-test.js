@@ -16,18 +16,17 @@ const validateUpdateItemParams = (params) => {
     expect(params.Key.SK.S).to.be.equal("METADATA");
     expect(params.ExpressionAttributeNames["#version"]).to.be.equals("version");
     expect(params.ExpressionAttributeValues[":version"].N).to.be.equals("1");
-    expect(params.UpdateExpression).to.be.equals("ADD #version :version ");
+    expect(params.UpdateExpression).to.be.equals("ADD #version :version");
 };
 
 const generateParamsValidator = (expectedParamsArr) => {
     return expectedParamsArr.map(expectedParams => {
         return params => {
-            //console.log("ACTUAL", JSON.stringify(params), "EXPECTED", JSON.stringify(expectedParams))
+            console.log("ACTUAL", JSON.stringify(params), "EXPECTED", JSON.stringify(expectedParams))
             expect(params).to.be.deep.equals(expectedParams);
         }
     });
 }
-
 describe('MetricsUpdateHandler unit tests', () => {
     describe('update metrics tests', () => {
         it('should update metrics for same day and same category', () => {

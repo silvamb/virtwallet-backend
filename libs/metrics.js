@@ -17,17 +17,26 @@ const GRANULARITY_MAP = new Map([
 ]);
 
 const getPK = accountId => `ACCOUNT#${accountId}`;
-const getSK = (walletId = "", date, categoryId) => {
+const getSK = (walletId = "", granularity, date, categoryId) => {
     let sk = `METRIC#${walletId}`;
 
+    if(granularity) {
+        sk = sk.concat(`#${granularity}`);
+    }
+
     if(date) {
-        const granularity = GRANULARITY_MAP.get(date.length);
+        const granularityFromDate = GRANULARITY_MAP.get(date.length);
 
         if(!granularity) {
-            throw new Error(`Invalid date format [${date}]`);
+            granularity = granularityFromDate;
+            sk = sk.concat(`#${granularity}#${date}`);
+        } else {
+            sk = sk.concat(`#${date}`);
         }
 
-        sk = sk.concat(`#${granularity}#${date}`);
+        if(!granularityFromDate || granularity !== granularityFromDate) {
+            throw new Error(`Invalid date format [${date}]`);
+        }
     }
 
     if(categoryId) {
@@ -53,7 +62,7 @@ class Metrics {
     }
 
     getRange() {
-        return getSK(this.walletId, this.date, this.categoryId);
+        return getSK(this.walletId, undefined, this.date, this.categoryId);
     }
 
     getAttrTypeMap() {
@@ -124,16 +133,16 @@ exports.update = async (dynamodb, metricsList) => {
     });
 }
 
-exports.retrieve = async (dynamodb, accountId, walletId, date, categoryId) => {
+exports.retrieve = async (dynamodb, accountId, walletId, granularity, date, categoryId) => {
     if(!accountId) {
         throw new Error("account parameters is mandatory");
     }
     
-    console.log("Retrieving metrics with params: ", {accountId, walletId, date, categoryId});
+    console.log("Retrieving metrics with params: ", {accountId, walletId, granularity, date, categoryId});
     const dbClient = new DynamoDb(dynamodb);
 
     const pk = getPK(accountId);
-    const sk = getSK(walletId, date, categoryId);
+    const sk = getSK(walletId, granularity, date, categoryId);
 
     const queryBuilder = new QueryBuilder(pk).sk.beginsWith(sk);
     const queryData = await dbClient.query(queryBuilder.build());

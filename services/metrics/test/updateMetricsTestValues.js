@@ -45,28 +45,28 @@ exports.sameDayAndCategoryUpdateEvent = {
 
 exports.sameDayAndCategoryUpdateQueryParams = [
     {
-        ExpressionAttributeNames: { '#count': 'count', '#sum': 'sum' },
-        ExpressionAttributeValues: { ':count': {N: "2"}, ':sum': {N: "9"}  },
+        ExpressionAttributeNames: { '#count': 'count', '#sum': 'sum', '#versionId': 'versionId' },
+        ExpressionAttributeValues: { ':count': {N: "2"}, ':sum': {N: "9"}, ':versionId': {N: 1}},
         Key: { PK: {S: "ACCOUNT#"+this.ACCOUNT_ID}, SK: {S: "METRIC#0001#Y#2020#01"} },
         ReturnValues: 'ALL_NEW',
         TableName: TABLE_NAME,
-        UpdateExpression: 'ADD #count :count,#sum :sum '
+        UpdateExpression: 'ADD #count :count,#sum :sum,#versionId :versionId'
     },
     {
-        ExpressionAttributeNames: { '#count': 'count', '#sum': 'sum' },
-        ExpressionAttributeValues: { ':count': {N: "2"}, ':sum': {N: "9"}  },
+        ExpressionAttributeNames: { '#count': 'count', '#sum': 'sum', '#versionId': 'versionId'  },
+        ExpressionAttributeValues: { ':count': {N: "2"}, ':sum': {N: "9"}, ':versionId': {N: 1}  },
         Key: { PK: {S: "ACCOUNT#"+this.ACCOUNT_ID}, SK: {S: "METRIC#0001#M#2020-02#01"} },
         ReturnValues: 'ALL_NEW',
         TableName: TABLE_NAME,
-        UpdateExpression: 'ADD #count :count,#sum :sum '
+        UpdateExpression: 'ADD #count :count,#sum :sum,#versionId :versionId'
     },
     {
-        ExpressionAttributeNames: { '#count': 'count', '#sum': 'sum' },
-        ExpressionAttributeValues: { ':count': {N: "2"}, ':sum': {N: "9"}  },
+        ExpressionAttributeNames: { '#count': 'count', '#sum': 'sum', '#versionId': 'versionId'  },
+        ExpressionAttributeValues: { ':count': {N: "2"}, ':sum': {N: "9"}, ':versionId': {N: 1}  },
         Key: { PK: {S: "ACCOUNT#"+this.ACCOUNT_ID}, SK: {S: "METRIC#0001#D#2020-02-01#01"} },
         ReturnValues: 'ALL_NEW',
         TableName: TABLE_NAME,
-        UpdateExpression: 'ADD #count :count,#sum :sum '
+        UpdateExpression: 'ADD #count :count,#sum :sum,#versionId :versionId'
     }
 ];
 
@@ -111,28 +111,28 @@ exports.valueUpdateEvent = {
 
 exports.valueUpdateQueryParams = [
     {
-        ExpressionAttributeNames: { '#count': 'count', '#sum': 'sum' },
-        ExpressionAttributeValues: { ':count': {N: "0"}, ':sum': {N: "3"}  },
+        ExpressionAttributeNames: { '#count': 'count', '#sum': 'sum', '#versionId': 'versionId' },
+        ExpressionAttributeValues: { ':count': {N: "0"}, ':sum': {N: "3"}, ':versionId': {N: 1}  },
         Key: { PK: {S: "ACCOUNT#"+this.ACCOUNT_ID}, SK: {S: "METRIC#0001#Y#2020#01"} },
         ReturnValues: 'ALL_NEW',
         TableName: TABLE_NAME,
-        UpdateExpression: 'ADD #count :count,#sum :sum '
+        UpdateExpression: 'ADD #count :count,#sum :sum,#versionId :versionId'
     },
     {
-        ExpressionAttributeNames: { '#count': 'count', '#sum': 'sum' },
-        ExpressionAttributeValues: { ':count': {N: "0"}, ':sum': {N: "3"}  },
+        ExpressionAttributeNames: { '#count': 'count', '#sum': 'sum', '#versionId': 'versionId' },
+        ExpressionAttributeValues: { ':count': {N: "0"}, ':sum': {N: "3"}, ':versionId': {N: 1}  },
         Key: { PK: {S: "ACCOUNT#"+this.ACCOUNT_ID}, SK: {S: "METRIC#0001#M#2020-03#01"} },
         ReturnValues: 'ALL_NEW',
         TableName: TABLE_NAME,
-        UpdateExpression: 'ADD #count :count,#sum :sum '
+        UpdateExpression: 'ADD #count :count,#sum :sum,#versionId :versionId'
     },
     {
-        ExpressionAttributeNames: { '#count': 'count', '#sum': 'sum' },
-        ExpressionAttributeValues: { ':count': {N: "0"}, ':sum': {N: "3"}  },
+        ExpressionAttributeNames: { '#count': 'count', '#sum': 'sum', '#versionId': 'versionId' },
+        ExpressionAttributeValues: { ':count': {N: "0"}, ':sum': {N: "3"}, ':versionId': {N: 1}  },
         Key: { PK: {S: "ACCOUNT#"+this.ACCOUNT_ID}, SK: {S: "METRIC#0001#D#2020-03-03#01"} },
         ReturnValues: 'ALL_NEW',
         TableName: TABLE_NAME,
-        UpdateExpression: 'ADD #count :count,#sum :sum '
+        UpdateExpression: 'ADD #count :count,#sum :sum,#versionId :versionId'
     },
 ];
 
@@ -177,52 +177,52 @@ exports.categoryUpdateEvent = {
 
 exports.categoryUpdateQueryParams = [
     {
-        ExpressionAttributeNames: { '#count': 'count', '#sum': 'sum' },
-        ExpressionAttributeValues: { ':count': {N: "-1"}, ':sum': {N: "-2"}  },
+        ExpressionAttributeNames: { '#count': 'count', '#sum': 'sum', '#versionId': 'versionId' },
+        ExpressionAttributeValues: { ':count': {N: "-1"}, ':sum': {N: "-2"}, ':versionId':{"N": "1"} },
         Key: { PK: {S: "ACCOUNT#"+this.ACCOUNT_ID}, SK: {S: "METRIC#0001#Y#2020#01"} },
         ReturnValues: 'ALL_NEW',
         TableName: TABLE_NAME,
-        UpdateExpression: 'ADD #count :count,#sum :sum '
+        UpdateExpression: 'ADD #count :count,#sum :sum,#versionId :versionId'
     },
     {
-        ExpressionAttributeNames: { '#count': 'count', '#sum': 'sum' },
-        ExpressionAttributeValues: { ':count': {N: "1"}, ':sum': {N: "2"}  },
+        ExpressionAttributeNames: { '#count': 'count', '#sum': 'sum', '#versionId': 'versionId' },
+        ExpressionAttributeValues: { ':count': {N: "1"}, ':sum': {N: "2"}, ':versionId': {"N": "1"} },
         Key: { PK: {S: "ACCOUNT#"+this.ACCOUNT_ID}, SK: {S: "METRIC#0001#Y#2020#02"} },
         ReturnValues: 'ALL_NEW',
         TableName: TABLE_NAME,
-        UpdateExpression: 'ADD #count :count,#sum :sum '
+        UpdateExpression: 'ADD #count :count,#sum :sum,#versionId :versionId'
     },
     {
-        ExpressionAttributeNames: { '#count': 'count', '#sum': 'sum' },
-        ExpressionAttributeValues: { ':count': {N: "-1"}, ':sum': {N: "-2"}  },
+        ExpressionAttributeNames: { '#count': 'count', '#sum': 'sum', '#versionId': 'versionId' },
+        ExpressionAttributeValues: { ':count': {N: "-1"}, ':sum': {N: "-2"}, ':versionId': {"N": "1"} },
         Key: { PK: {S: "ACCOUNT#"+this.ACCOUNT_ID}, SK: {S: "METRIC#0001#M#2020-03#01"} },
         ReturnValues: 'ALL_NEW',
         TableName: TABLE_NAME,
-        UpdateExpression: 'ADD #count :count,#sum :sum '
+        UpdateExpression: 'ADD #count :count,#sum :sum,#versionId :versionId'
     },
     {
-        ExpressionAttributeNames: { '#count': 'count', '#sum': 'sum' },
-        ExpressionAttributeValues: { ':count': {N: "1"}, ':sum': {N: "2"}  },
+        ExpressionAttributeNames: { '#count': 'count', '#sum': 'sum', '#versionId': 'versionId' },
+        ExpressionAttributeValues: { ':count': {N: "1"}, ':sum': {N: "2"}, ':versionId': {"N": "1"} },
         Key: { PK: {S: "ACCOUNT#"+this.ACCOUNT_ID}, SK: {S: "METRIC#0001#M#2020-03#02"} },
         ReturnValues: 'ALL_NEW',
         TableName: TABLE_NAME,
-        UpdateExpression: 'ADD #count :count,#sum :sum '
+        UpdateExpression: 'ADD #count :count,#sum :sum,#versionId :versionId'
     },
     {
-        ExpressionAttributeNames: { '#count': 'count', '#sum': 'sum' },
-        ExpressionAttributeValues: { ':count': {N: "-1"}, ':sum': {N: "-2"}  },
+        ExpressionAttributeNames: { '#count': 'count', '#sum': 'sum', '#versionId': 'versionId' },
+        ExpressionAttributeValues: { ':count': {N: "-1"}, ':sum': {N: "-2"}, ':versionId': {"N": "1"} },
         Key: { PK: {S: "ACCOUNT#"+this.ACCOUNT_ID}, SK: {S: "METRIC#0001#D#2020-03-03#01"} },
         ReturnValues: 'ALL_NEW',
         TableName: TABLE_NAME,
-        UpdateExpression: 'ADD #count :count,#sum :sum '
+        UpdateExpression: 'ADD #count :count,#sum :sum,#versionId :versionId'
     },
     {
-        ExpressionAttributeNames: { '#count': 'count', '#sum': 'sum' },
-        ExpressionAttributeValues: { ':count': {N: "1"}, ':sum': {N: "2"}  },
+        ExpressionAttributeNames: { '#count': 'count', '#sum': 'sum', '#versionId': 'versionId' },
+        ExpressionAttributeValues: { ':count': {N: "1"}, ':sum': {N: "2"}, ':versionId': {"N": "1"} },
         Key: { PK: {S: "ACCOUNT#"+this.ACCOUNT_ID}, SK: {S: "METRIC#0001#D#2020-03-03#02"} },
         ReturnValues: 'ALL_NEW',
         TableName: TABLE_NAME,
-        UpdateExpression: 'ADD #count :count,#sum :sum '
+        UpdateExpression: 'ADD #count :count,#sum :sum,#versionId :versionId'
     },
 ];
 
@@ -273,52 +273,52 @@ exports.categoryAndValueUpdateEvent = {
 
 exports.categoryAndValueUpdateQueryParams = [
     {
-        ExpressionAttributeNames: { '#count': 'count', '#sum': 'sum' },
-        ExpressionAttributeValues: { ':count': {N: "-1"}, ':sum': {N: "-2"}  },
+        ExpressionAttributeNames: { '#count': 'count', '#sum': 'sum', '#versionId': 'versionId' },
+        ExpressionAttributeValues: { ':count': {N: "-1"}, ':sum': {N: "-2"}, ':versionId': {"N": "1"} },
         Key: { PK: {S: "ACCOUNT#"+this.ACCOUNT_ID}, SK: {S: "METRIC#0001#Y#2020#01"} },
         ReturnValues: 'ALL_NEW',
         TableName: TABLE_NAME,
-        UpdateExpression: 'ADD #count :count,#sum :sum '
+        UpdateExpression: 'ADD #count :count,#sum :sum,#versionId :versionId'
     },
     {
-        ExpressionAttributeNames: { '#count': 'count', '#sum': 'sum' },
-        ExpressionAttributeValues: { ':count': {N: "1"}, ':sum': {N: "5"}  },
+        ExpressionAttributeNames: { '#count': 'count', '#sum': 'sum', '#versionId': 'versionId' },
+        ExpressionAttributeValues: { ':count': {N: "1"}, ':sum': {N: "5"}, ':versionId': {"N": "1"} },
         Key: { PK: {S: "ACCOUNT#"+this.ACCOUNT_ID}, SK: {S: "METRIC#0001#Y#2020#02"} },
         ReturnValues: 'ALL_NEW',
         TableName: TABLE_NAME,
-        UpdateExpression: 'ADD #count :count,#sum :sum '
+        UpdateExpression: 'ADD #count :count,#sum :sum,#versionId :versionId'
     },
     {
-        ExpressionAttributeNames: { '#count': 'count', '#sum': 'sum' },
-        ExpressionAttributeValues: { ':count': {N: "-1"}, ':sum': {N: "-2"}  },
+        ExpressionAttributeNames: { '#count': 'count', '#sum': 'sum', '#versionId': 'versionId' },
+        ExpressionAttributeValues: { ':count': {N: "-1"}, ':sum': {N: "-2"}, ':versionId': {"N": "1"} },
         Key: { PK: {S: "ACCOUNT#"+this.ACCOUNT_ID}, SK: {S: "METRIC#0001#M#2020-03#01"} },
         ReturnValues: 'ALL_NEW',
         TableName: TABLE_NAME,
-        UpdateExpression: 'ADD #count :count,#sum :sum '
+        UpdateExpression: 'ADD #count :count,#sum :sum,#versionId :versionId'
     },
     {
-        ExpressionAttributeNames: { '#count': 'count', '#sum': 'sum' },
-        ExpressionAttributeValues: { ':count': {N: "1"}, ':sum': {N: "5"}  },
+        ExpressionAttributeNames: { '#count': 'count', '#sum': 'sum', '#versionId': 'versionId' },
+        ExpressionAttributeValues: { ':count': {N: "1"}, ':sum': {N: "5"}, ':versionId': {"N": "1"} },
         Key: { PK: {S: "ACCOUNT#"+this.ACCOUNT_ID}, SK: {S: "METRIC#0001#M#2020-03#02"} },
         ReturnValues: 'ALL_NEW',
         TableName: TABLE_NAME,
-        UpdateExpression: 'ADD #count :count,#sum :sum '
+        UpdateExpression: 'ADD #count :count,#sum :sum,#versionId :versionId'
     },
     {
-        ExpressionAttributeNames: { '#count': 'count', '#sum': 'sum' },
-        ExpressionAttributeValues: { ':count': {N: "-1"}, ':sum': {N: "-2"}  },
+        ExpressionAttributeNames: { '#count': 'count', '#sum': 'sum', '#versionId': 'versionId' },
+        ExpressionAttributeValues: { ':count': {N: "-1"}, ':sum': {N: "-2"}, ':versionId': {"N": "1"} },
         Key: { PK: {S: "ACCOUNT#"+this.ACCOUNT_ID}, SK: {S: "METRIC#0001#D#2020-03-03#01"} },
         ReturnValues: 'ALL_NEW',
         TableName: TABLE_NAME,
-        UpdateExpression: 'ADD #count :count,#sum :sum '
+        UpdateExpression: 'ADD #count :count,#sum :sum,#versionId :versionId'
     },
     {
-        ExpressionAttributeNames: { '#count': 'count', '#sum': 'sum' },
-        ExpressionAttributeValues: { ':count': {N: "1"}, ':sum': {N: "5"}  },
+        ExpressionAttributeNames: { '#count': 'count', '#sum': 'sum', '#versionId': 'versionId' },
+        ExpressionAttributeValues: { ':count': {N: "1"}, ':sum': {N: "5"}, ':versionId': {"N": "1"} },
         Key: { PK: {S: "ACCOUNT#"+this.ACCOUNT_ID}, SK: {S: "METRIC#0001#D#2020-03-03#02"} },
         ReturnValues: 'ALL_NEW',
         TableName: TABLE_NAME,
-        UpdateExpression: 'ADD #count :count,#sum :sum '
+        UpdateExpression: 'ADD #count :count,#sum :sum,#versionId :versionId'
     },
 ];
 
@@ -383,52 +383,52 @@ exports.multipleCategoriesUpdateEvent = {
 
 exports.multipleCategoriesUpdateQueryParams = [
     {
-        ExpressionAttributeNames: { '#count': 'count', '#sum': 'sum' },
-        ExpressionAttributeValues: { ':count': {N: "-2"}, ':sum': {N: "-5"}  },
+        ExpressionAttributeNames: { '#count': 'count', '#sum': 'sum', '#versionId': 'versionId' },
+        ExpressionAttributeValues: { ':count': {N: "-2"}, ':sum': {N: "-5"}, ':versionId': {"N": "1"} },
         Key: { PK: {S: "ACCOUNT#"+this.ACCOUNT_ID}, SK: {S: "METRIC#0001#Y#2020#01"} },
         ReturnValues: 'ALL_NEW',
         TableName: TABLE_NAME,
-        UpdateExpression: 'ADD #count :count,#sum :sum '
+        UpdateExpression: 'ADD #count :count,#sum :sum,#versionId :versionId'
     },
     {
-        ExpressionAttributeNames: { '#count': 'count', '#sum': 'sum' },
-        ExpressionAttributeValues: { ':count': {N: "2"}, ':sum': {N: "5"}  },
+        ExpressionAttributeNames: { '#count': 'count', '#sum': 'sum', '#versionId': 'versionId' },
+        ExpressionAttributeValues: { ':count': {N: "2"}, ':sum': {N: "5"}, ':versionId': {"N": "1"} },
         Key: { PK: {S: "ACCOUNT#"+this.ACCOUNT_ID}, SK: {S: "METRIC#0001#Y#2020#02"} },
         ReturnValues: 'ALL_NEW',
         TableName: TABLE_NAME,
-        UpdateExpression: 'ADD #count :count,#sum :sum '
+        UpdateExpression: 'ADD #count :count,#sum :sum,#versionId :versionId'
     },
     {
-        ExpressionAttributeNames: { '#count': 'count', '#sum': 'sum' },
-        ExpressionAttributeValues: { ':count': {N: "-2"}, ':sum': {N: "-5"}  },
+        ExpressionAttributeNames: { '#count': 'count', '#sum': 'sum', '#versionId': 'versionId' },
+        ExpressionAttributeValues: { ':count': {N: "-2"}, ':sum': {N: "-5"}, ':versionId': {"N": "1"} },
         Key: { PK: {S: "ACCOUNT#"+this.ACCOUNT_ID}, SK: {S: "METRIC#0001#M#2020-03#01"} },
         ReturnValues: 'ALL_NEW',
         TableName: TABLE_NAME,
-        UpdateExpression: 'ADD #count :count,#sum :sum '
+        UpdateExpression: 'ADD #count :count,#sum :sum,#versionId :versionId'
     },
     {
-        ExpressionAttributeNames: { '#count': 'count', '#sum': 'sum' },
-        ExpressionAttributeValues: { ':count': {N: "2"}, ':sum': {N: "5"}  },
+        ExpressionAttributeNames: { '#count': 'count', '#sum': 'sum', '#versionId': 'versionId' },
+        ExpressionAttributeValues: { ':count': {N: "2"}, ':sum': {N: "5"}, ':versionId': {"N": "1"} },
         Key: { PK: {S: "ACCOUNT#"+this.ACCOUNT_ID}, SK: {S: "METRIC#0001#M#2020-03#02"} },
         ReturnValues: 'ALL_NEW',
         TableName: TABLE_NAME,
-        UpdateExpression: 'ADD #count :count,#sum :sum '
+        UpdateExpression: 'ADD #count :count,#sum :sum,#versionId :versionId'
     },
     {
-        ExpressionAttributeNames: { '#count': 'count', '#sum': 'sum' },
-        ExpressionAttributeValues: { ':count': {N: "-2"}, ':sum': {N: "-5"}  },
+        ExpressionAttributeNames: { '#count': 'count', '#sum': 'sum', '#versionId': 'versionId' },
+        ExpressionAttributeValues: { ':count': {N: "-2"}, ':sum': {N: "-5"}, ':versionId':{"N": "1"} },
         Key: { PK: {S: "ACCOUNT#"+this.ACCOUNT_ID}, SK: {S: "METRIC#0001#D#2020-03-03#01"} },
         ReturnValues: 'ALL_NEW',
         TableName: TABLE_NAME,
-        UpdateExpression: 'ADD #count :count,#sum :sum '
+        UpdateExpression: 'ADD #count :count,#sum :sum,#versionId :versionId'
     },
     {
-        ExpressionAttributeNames: { '#count': 'count', '#sum': 'sum' },
-        ExpressionAttributeValues: { ':count': {N: "2"}, ':sum': {N: "5"}  },
+        ExpressionAttributeNames: { '#count': 'count', '#sum': 'sum', '#versionId': 'versionId' },
+        ExpressionAttributeValues: { ':count': {N: "2"}, ':sum': {N: "5"}, ':versionId':{"N": "1"} },
         Key: { PK: {S: "ACCOUNT#"+this.ACCOUNT_ID}, SK: {S: "METRIC#0001#D#2020-03-03#02"} },
         ReturnValues: 'ALL_NEW',
         TableName: TABLE_NAME,
-        UpdateExpression: 'ADD #count :count,#sum :sum '
+        UpdateExpression: 'ADD #count :count,#sum :sum,#versionId :versionId'
     },
 ];
 

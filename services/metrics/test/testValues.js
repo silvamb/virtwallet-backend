@@ -35,6 +35,24 @@ exports.getMetricsWithWalletEvent = {
     }
 }
 
+exports.getMetricsWithWalletAndGranularityEvent = {
+    httpMethod: "GET",
+    requestContext: {
+        authorizer: {
+            claims: {
+                sub: "ef471999-eb8f-5bc5-b39d-037e99f341c4"
+            }
+        }
+    },
+    queryStringParameters:{
+        walletId: "0001",
+        granularity: "Y"
+    },
+    pathParameters: {
+        accountId: exports.ACCOUNT_ID,
+    }
+}
+
 exports.getMetricsWithWalletAndDateEvent = {
     httpMethod: "GET",
     requestContext: {
@@ -83,7 +101,10 @@ exports.singleResult = {
             count: {
                 N: "1",
             },
-            sum: { N: "3.75" }
+            sum: { N: "3.75" },
+            versionId: {
+                N: "1",
+            },
         },
     ],
     ScannedCount: 1,
@@ -99,6 +120,9 @@ exports.categoryQueryResult = {
             categoryId: { S: "01" },
             name: { S: "Category Name" },
             description: { S: "Category Description" },
+            versionId: {
+                N: "1",
+            },
         },
     ],
     ScannedCount: 1,

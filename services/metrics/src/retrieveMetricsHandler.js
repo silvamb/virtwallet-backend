@@ -6,7 +6,7 @@ exports.retrieveMetrics =  async (dynamodb, event) => {
         throw new Error("Missing account ID");
     }
     const accountId = event.pathParameters.accountId;
-    const { walletId, date, categoryId } = event.queryStringParameters || {};
+    const { walletId, granularity, date, categoryId } = event.queryStringParameters || {};
 
-    return metrics.retrieve(dynamodb, accountId, walletId, date, categoryId);
+    return metrics.retrieve(dynamodb, accountId, walletId, granularity, date, categoryId);
 }

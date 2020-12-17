@@ -41,6 +41,7 @@ apigw-retrieve-handler:
             accountId: true
           querystrings:
             walletId: false
+            granularity: false
             date: false
             categoryId: false
         cors: ${self:custom.cors}
